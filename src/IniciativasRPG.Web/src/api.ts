@@ -131,6 +131,7 @@ export const api = {
     initiative?: number | null;
     rollDice: boolean;
     diceNotation?: string | null;
+    hideHpFromPublic?: boolean;
   }) =>
     request<BattleSnapshot>('/api/battle/invoke-creature', {
       method: 'POST',

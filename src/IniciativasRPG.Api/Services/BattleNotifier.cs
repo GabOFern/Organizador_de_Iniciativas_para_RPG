@@ -6,7 +6,10 @@ namespace IniciativasRPG.Api.Services;
 
 public interface IBattleNotifier
 {
-    Task NotifyBattleUpdatedAsync(BattleSnapshotDto snapshot, CancellationToken ct = default);
+    Task NotifyBattleUpdatedAsync(
+        string publicToken,
+        BattleSnapshotDto? masterSnapshot = null,
+        CancellationToken ct = default);
 }
 
 public class BattleNotifier : IBattleNotifier
@@ -14,21 +17,37 @@ public class BattleNotifier : IBattleNotifier
     public const string BattleUpdatedEvent = "BattleUpdated";
 
     private readonly IHubContext<BattleHub> _hub;
+    private readonly IServiceScopeFactory _scopeFactory;
 
-    public BattleNotifier(IHubContext<BattleHub> hub)
+    public BattleNotifier(IHubContext<BattleHub> hub, IServiceScopeFactory scopeFactory)
     {
         _hub = hub;
+        _scopeFactory = scopeFactory;
     }
 
-    public async Task NotifyBattleUpdatedAsync(BattleSnapshotDto snapshot, CancellationToken ct = default)
+    public async Task NotifyBattleUpdatedAsync(
+        string publicToken,
+        BattleSnapshotDto? masterSnapshot = null,
+        CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(snapshot.PublicToken))
+        if (string.IsNullOrWhiteSpace(publicToken))
         {
             return;
         }
 
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var battleService = scope.ServiceProvider.GetRequiredService<IBattleService>();
+
+        var master = masterSnapshot
+            ?? await battleService.GetByPublicTokenAsync(publicToken, forPublic: false, ct);
+        var publicSnapshot = await battleService.GetByPublicTokenAsync(publicToken, forPublic: true, ct);
+
         await _hub.Clients
-            .Group(BattleHub.GroupName(snapshot.PublicToken))
-            .SendAsync(BattleUpdatedEvent, snapshot, ct);
+            .Group(BattleHub.MasterGroupName(publicToken))
+            .SendAsync(BattleUpdatedEvent, master, ct);
+
+        await _hub.Clients
+            .Group(BattleHub.PublicGroupName(publicToken))
+            .SendAsync(BattleUpdatedEvent, publicSnapshot, ct);
     }
 }

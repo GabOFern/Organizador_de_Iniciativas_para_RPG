@@ -73,6 +73,7 @@ public record CombatantDto(
     bool IsDead,
     int SortOrder,
     bool IsCurrentTurn,
+    bool HideHpFromPublic,
     IReadOnlyList<ActiveModifierDto> Modifiers);
 
 public record BattleSnapshotDto(
@@ -91,7 +92,8 @@ public record InvokeCreatureRequest(
     Guid SheetId,
     int? Initiative,
     bool RollDice,
-    string? DiceNotation);
+    string? DiceNotation,
+    bool HideHpFromPublic = true);
 public record DamageRequest(Guid CombatantId, int Amount);
 public record HealRequest(Guid CombatantId, int Amount);
 public record KillRequest(Guid CombatantId);

@@ -85,7 +85,15 @@ export function CombatantCard({
           <div>
             <dt>Vida</dt>
             <dd>
-              {combatant.currentHp}/{combatant.maxHp}
+              {readOnly && combatant.hideHpFromPublic
+                ? '???'
+                : `${combatant.currentHp}/${combatant.maxHp}`}
+              {!readOnly && combatant.hideHpFromPublic && (
+                <span className="hp-hidden-hint" title="Vida oculta no link público">
+                  {' '}
+                  (oculta)
+                </span>
+              )}
             </dd>
           </div>
           <div>

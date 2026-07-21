@@ -13,7 +13,11 @@ public class BattleHub : Hub
         _battleService = battleService;
     }
 
-    public static string GroupName(string publicToken) => $"battle:{publicToken}";
+    public static string PublicGroupName(string publicToken) => $"battle:{publicToken}:public";
+    public static string MasterGroupName(string publicToken) => $"battle:{publicToken}:master";
+
+    [Obsolete("Use PublicGroupName / MasterGroupName")]
+    public static string GroupName(string publicToken) => PublicGroupName(publicToken);
 
     [AllowAnonymous]
     public async Task JoinBattle(string publicToken)
@@ -23,8 +27,21 @@ public class BattleHub : Hub
             return;
         }
 
-        await Groups.AddToGroupAsync(Context.ConnectionId, GroupName(publicToken));
-        var snapshot = await _battleService.GetByPublicTokenAsync(publicToken);
+        await Groups.AddToGroupAsync(Context.ConnectionId, PublicGroupName(publicToken));
+        var snapshot = await _battleService.GetByPublicTokenAsync(publicToken, forPublic: true);
+        await Clients.Caller.SendAsync(BattleNotifier.BattleUpdatedEvent, snapshot);
+    }
+
+    [Authorize]
+    public async Task JoinBattleMaster(string publicToken)
+    {
+        if (string.IsNullOrWhiteSpace(publicToken))
+        {
+            return;
+        }
+
+        await Groups.AddToGroupAsync(Context.ConnectionId, MasterGroupName(publicToken));
+        var snapshot = await _battleService.GetByPublicTokenAsync(publicToken, forPublic: false);
         await Clients.Caller.SendAsync(BattleNotifier.BattleUpdatedEvent, snapshot);
     }
 }

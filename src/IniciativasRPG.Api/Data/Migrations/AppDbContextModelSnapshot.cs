@@ -151,6 +151,9 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<bool>("HasSkipTurnEffectActive")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("HideHpFromPublic")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Initiative")
                         .HasColumnType("INTEGER");
 

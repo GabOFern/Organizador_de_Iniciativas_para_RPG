@@ -65,7 +65,7 @@ Fonte da verdade do que deve ser feito. Use este arquivo para consultar escopo, 
 | ID | Descrição |
 |---|---|
 | BR-RULE-001 | Empate de iniciativa: desempate pelo **maior modificador de destreza** |
-| BR-RULE-005 | Fichas do tipo **criatura** não têm estatísticas persistidas automaticamente ao final da batalha |
+| BR-RULE-005 | Fichas **criatura** e **NPC** não têm estatísticas persistidas automaticamente ao final da batalha |
 | BR-RULE-007 | Escopo: **1 batalha ativa por vez**; tela pública sem combate mostra mensagem adequada |
 
 ### NFRs
@@ -126,7 +126,7 @@ flowchart LR
 | Entidade | Responsabilidade |
 |---|---|
 | `User` | Credenciais do mestre |
-| `Sheet` | Ficha reutilizável (player ou criatura): nome, imagem, HP atual/máx, CA base, DEX mod |
+| `Sheet` | Ficha reutilizável (player, criatura ou NPC): nome, imagem, HP atual/máx, CA base, DEX mod |
 | `Battle` | Sessão de combate (status, token público, índice do turno) |
 | `Combatant` | Instância na fila: iniciativa, HP/CA de combate, morto?, referência à Sheet |
 | `ModifierType` | Catálogo (nome, duração padrão, flag pula turno) |

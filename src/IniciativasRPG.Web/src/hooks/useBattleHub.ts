@@ -30,12 +30,13 @@ export function useBattleHub(
     });
 
     let cancelled = false;
+    const joinMethod = accessToken ? 'JoinBattleMaster' : 'JoinBattle';
 
     (async () => {
       try {
         await connection.start();
         if (!cancelled) {
-          await connection.invoke('JoinBattle', publicToken);
+          await connection.invoke(joinMethod, publicToken);
         }
       } catch (err) {
         console.error('Falha ao conectar no hub de batalha', err);

@@ -12,7 +12,7 @@ public static class DomainMessages
     public const string BattleNotActive = "A batalha não está ativa.";
     public const string PlayerAlreadyInBattle = "Este player já está na fila da batalha atual.";
     public const string SheetMustBePlayer = "A ficha selecionada deve ser do tipo player.";
-    public const string SheetMustBeCreature = "A ficha selecionada deve ser do tipo criatura.";
+    public const string SheetMustBeNonPlayer = "A ficha selecionada deve ser do tipo criatura ou NPC.";
     public const string CombatantNotFound = "Combatente não encontrado.";
     public const string KillOnlyAtZeroHp = "Só é possível marcar como morto quando a vida atual é 0.";
     public const string InvalidDiceNotation = "Notação de dado inválida. Use o formato XdY+Z (ex.: 1d20+3).";

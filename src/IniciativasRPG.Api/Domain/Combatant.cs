@@ -16,6 +16,11 @@ public class Combatant
     public int SortOrder { get; set; }
 
     /// <summary>
+    /// Quando true, a vida não é exposta no snapshot/link público.
+    /// </summary>
+    public bool HideHpFromPublic { get; set; }
+
+    /// <summary>
     /// Indica se o combatente deve ser pulado nesta rodada (sincronizado a partir de ActiveModifiers).
     /// </summary>
     public bool HasSkipTurnEffectActive { get; set; }

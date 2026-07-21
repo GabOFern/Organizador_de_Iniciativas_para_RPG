@@ -7,6 +7,7 @@ export interface InvokePayload {
   initiative: number;
   rollDice: boolean;
   diceNotation: string;
+  hideHpFromPublic: boolean;
 }
 
 interface InvokeModalProps {
@@ -16,6 +17,10 @@ interface InvokeModalProps {
   onInvoke: (payload: InvokePayload) => Promise<void>;
 }
 
+function isNonPlayer(type: SheetType) {
+  return type === 'Creature' || type === 'Npc';
+}
+
 export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProps) {
   const titleId = useId();
   const [type, setType] = useState<SheetType>('Player');
@@ -23,6 +28,7 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
   const [initiative, setInitiative] = useState(10);
   const [rollDice, setRollDice] = useState(false);
   const [diceNotation, setDiceNotation] = useState('1d20');
+  const [hideHpFromPublic, setHideHpFromPublic] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -37,6 +43,7 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
     setInitiative(10);
     setRollDice(false);
     setDiceNotation('1d20');
+    setHideHpFromPublic(true);
 
     const players = sheets.filter((s) => s.type === 'Player');
     setSheetId(players[0]?.id ?? '');
@@ -80,8 +87,9 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
         type,
         sheetId,
         initiative,
-        rollDice: type === 'Creature' && rollDice,
+        rollDice: isNonPlayer(type) && rollDice,
         diceNotation,
+        hideHpFromPublic: isNonPlayer(type) ? hideHpFromPublic : false,
       });
       onClose();
     } catch (err) {
@@ -128,6 +136,15 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
               />
               Criatura
             </label>
+            <label className={type === 'Npc' ? 'is-active' : ''}>
+              <input
+                type="radio"
+                name="sheetType"
+                checked={type === 'Npc'}
+                onChange={() => setType('Npc')}
+              />
+              NPC
+            </label>
           </fieldset>
 
           <label>
@@ -150,7 +167,7 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
             </select>
           </label>
 
-          {type === 'Creature' && (
+          {isNonPlayer(type) && (
             <label className="checkbox">
               <input
                 type="checkbox"
@@ -161,7 +178,7 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
             </label>
           )}
 
-          {type === 'Creature' && rollDice ? (
+          {isNonPlayer(type) && rollDice ? (
             <label>
               Notação
               <input
@@ -180,6 +197,17 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
                 onChange={(e) => setInitiative(Number(e.target.value))}
                 required
               />
+            </label>
+          )}
+
+          {isNonPlayer(type) && (
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={hideHpFromPublic}
+                onChange={(e) => setHideHpFromPublic(e.target.checked)}
+              />
+              Ocultar vida no link público
             </label>
           )}
 

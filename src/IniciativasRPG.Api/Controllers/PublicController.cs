@@ -19,5 +19,5 @@ public class PublicController : ControllerBase
 
     [HttpGet("battles/{token}")]
     public async Task<ActionResult<BattleSnapshotDto>> GetBattle(string token, CancellationToken ct) =>
-        Ok(await _battleService.GetByPublicTokenAsync(token, ct));
+        Ok(await _battleService.GetByPublicTokenAsync(token, forPublic: true, ct));
 }

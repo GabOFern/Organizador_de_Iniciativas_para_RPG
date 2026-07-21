@@ -111,6 +111,7 @@ export function SheetsPage() {
             >
               <option value="Player">Player</option>
               <option value="Creature">Criatura</option>
+              <option value="Npc">NPC</option>
             </select>
           </label>
           <div className="row">

@@ -131,6 +131,7 @@ export function BattlePage() {
           initiative: payload.rollDice ? null : payload.initiative,
           rollDice: payload.rollDice,
           diceNotation: payload.rollDice ? payload.diceNotation : null,
+          hideHpFromPublic: payload.hideHpFromPublic,
         }),
       );
     } catch (err) {

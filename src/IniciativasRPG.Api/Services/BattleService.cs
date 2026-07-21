@@ -9,7 +9,7 @@ namespace IniciativasRPG.Api.Services;
 public interface IBattleService
 {
     Task<BattleSnapshotDto> GetCurrentAsync(CancellationToken ct = default);
-    Task<BattleSnapshotDto> GetByPublicTokenAsync(string token, CancellationToken ct = default);
+    Task<BattleSnapshotDto> GetByPublicTokenAsync(string token, bool forPublic = false, CancellationToken ct = default);
     Task<BattleSnapshotDto> InvokePlayerAsync(InvokePlayerRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> InvokeCreatureAsync(InvokeCreatureRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> StartAsync(CancellationToken ct = default);
@@ -48,7 +48,10 @@ public class BattleService : IBattleService
         return await BuildSnapshotAsync(battleId.Value, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> GetByPublicTokenAsync(string token, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> GetByPublicTokenAsync(
+        string token,
+        bool forPublic = false,
+        CancellationToken ct = default)
     {
         var battle = await _db.Battles
             .AsNoTracking()
@@ -59,7 +62,7 @@ public class BattleService : IBattleService
             return EmptySnapshot(DomainMessages.NoPublicBattle);
         }
 
-        return await BuildSnapshotAsync(battle.Id, ct: ct);
+        return await BuildSnapshotAsync(battle.Id, forPublic: forPublic, ct: ct);
     }
 
     public async Task<BattleSnapshotDto> InvokePlayerAsync(InvokePlayerRequest request, CancellationToken ct = default)
@@ -83,7 +86,7 @@ public class BattleService : IBattleService
             throw new DomainException(DomainMessages.PlayerAlreadyInBattle, StatusCodes.Status409Conflict);
         }
 
-        await InsertCombatantAsync(battleId, sheet, request.Initiative, ct);
+        await InsertCombatantAsync(battleId, sheet, request.Initiative, hideHpFromPublic: false, ct);
         await ReorderAsync(battleId, ct);
 
         return await BuildAndNotifyAsync(battleId, ct: ct);
@@ -94,9 +97,9 @@ public class BattleService : IBattleService
         var sheet = await _db.Sheets.AsNoTracking().FirstOrDefaultAsync(s => s.Id == request.SheetId, ct)
             ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);
 
-        if (sheet.Type != SheetType.Creature)
+        if (sheet.Type is not (SheetType.Creature or SheetType.Npc))
         {
-            throw new DomainException(DomainMessages.SheetMustBeCreature);
+            throw new DomainException(DomainMessages.SheetMustBeNonPlayer);
         }
 
         int initiative;
@@ -121,7 +124,7 @@ public class BattleService : IBattleService
         }
 
         var battleId = await EnsureOpenBattleIdAsync(ct);
-        await InsertCombatantAsync(battleId, sheet, initiative, ct);
+        await InsertCombatantAsync(battleId, sheet, initiative, request.HideHpFromPublic, ct);
         await ReorderAsync(battleId, ct);
 
         return await BuildAndNotifyAsync(battleId, lastDiceRoll: diceRoll, ct: ct);
@@ -218,7 +221,7 @@ public class BattleService : IBattleService
 
         var canSave = await CanSavePlayerStatsForBattleAsync(battle.Id, ct);
         var snapshot = EmptySnapshot(DomainMessages.NoPublicBattle, token, canSave);
-        await _notifier.NotifyBattleUpdatedAsync(snapshot, ct);
+        await _notifier.NotifyBattleUpdatedAsync(token, masterSnapshot: snapshot, ct);
         return snapshot;
     }
 
@@ -263,7 +266,7 @@ public class BattleService : IBattleService
         await _db.SaveChangesAsync(ct);
 
         var snapshot = EmptySnapshot(DomainMessages.PlayerStatsSaved, battle.PublicToken, canSavePlayerStats: false);
-        await _notifier.NotifyBattleUpdatedAsync(snapshot, ct);
+        await _notifier.NotifyBattleUpdatedAsync(battle.PublicToken, masterSnapshot: snapshot, ct);
         return snapshot;
     }
 
@@ -649,7 +652,12 @@ public class BattleService : IBattleService
         return battle.Id;
     }
 
-    private async Task InsertCombatantAsync(Guid battleId, Sheet sheet, int initiative, CancellationToken ct)
+    private async Task InsertCombatantAsync(
+        Guid battleId,
+        Sheet sheet,
+        int initiative,
+        bool hideHpFromPublic,
+        CancellationToken ct)
     {
         _db.Combatants.Add(new Combatant
         {
@@ -662,6 +670,7 @@ public class BattleService : IBattleService
             BaseAc = sheet.BaseAc,
             CurrentAc = sheet.BaseAc,
             IsDead = false,
+            HideHpFromPublic = hideHpFromPublic,
             HasSkipTurnEffectActive = false,
             SortOrder = 0
         });
@@ -749,8 +758,15 @@ public class BattleService : IBattleService
         IReadOnlyList<ModifierTickEventDto>? lastTickEvents = null,
         CancellationToken ct = default)
     {
-        var snapshot = await BuildSnapshotAsync(battleId, lastDiceRoll, lastTickEvents, ct);
-        await _notifier.NotifyBattleUpdatedAsync(snapshot, ct);
+        var snapshot = await BuildSnapshotAsync(
+            battleId,
+            lastDiceRoll,
+            lastTickEvents,
+            forPublic: false,
+            ct: ct);
+
+        var battle = await _db.Battles.AsNoTracking().FirstAsync(b => b.Id == battleId, ct);
+        await _notifier.NotifyBattleUpdatedAsync(battle.PublicToken, ct: ct);
         return snapshot;
     }
 
@@ -758,6 +774,7 @@ public class BattleService : IBattleService
         Guid battleId,
         int? lastDiceRoll = null,
         IReadOnlyList<ModifierTickEventDto>? lastTickEvents = null,
+        bool forPublic = false,
         CancellationToken ct = default)
     {
         var battle = await _db.Battles
@@ -772,24 +789,28 @@ public class BattleService : IBattleService
             .OrderBy(c => c.SortOrder)
             .ToListAsync(ct);
 
-        var combatants = ordered.Select((c, index) => new CombatantDto(
-            c.Id,
-            c.SheetId,
-            c.Sheet.Name,
-            c.Sheet.ImageUrl,
-            c.Sheet.Type.ToString(),
-            c.Initiative,
-            c.CurrentHp,
-            c.MaxHp,
-            c.CurrentAc,
-            c.IsDead,
-            c.SortOrder,
-            battle.Status == BattleStatus.Active && index == battle.CurrentTurnIndex && !c.IsDead,
-            c.ActiveModifiers
-                .OrderBy(m => m.Name)
-                .Select(MapActiveModifier)
-                .ToList()
-        )).ToList();
+        var combatants = ordered.Select((c, index) =>
+        {
+            var hideHp = forPublic && c.HideHpFromPublic;
+            return new CombatantDto(
+                c.Id,
+                c.SheetId,
+                c.Sheet.Name,
+                c.Sheet.ImageUrl,
+                c.Sheet.Type.ToString(),
+                c.Initiative,
+                hideHp ? 0 : c.CurrentHp,
+                hideHp ? 0 : c.MaxHp,
+                c.CurrentAc,
+                c.IsDead,
+                c.SortOrder,
+                battle.Status == BattleStatus.Active && index == battle.CurrentTurnIndex && !c.IsDead,
+                c.HideHpFromPublic,
+                c.ActiveModifiers
+                    .OrderBy(m => m.Name)
+                    .Select(MapActiveModifier)
+                    .ToList());
+        }).ToList();
 
         return new BattleSnapshotDto(
             battle.Id,

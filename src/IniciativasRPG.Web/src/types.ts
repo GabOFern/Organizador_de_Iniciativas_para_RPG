@@ -1,4 +1,4 @@
-export type SheetType = 'Player' | 'Creature';
+export type SheetType = 'Player' | 'Creature' | 'Npc';
 export type DamageMode = 'None' | 'Fixed' | 'DicePerTurn' | 'DiceOnce';
 
 export interface Sheet {
@@ -55,6 +55,7 @@ export interface Combatant {
   isDead: boolean;
   sortOrder: number;
   isCurrentTurn: boolean;
+  hideHpFromPublic: boolean;
   modifiers: ActiveModifier[];
 }
 
