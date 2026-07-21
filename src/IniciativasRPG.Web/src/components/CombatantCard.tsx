@@ -26,6 +26,7 @@ export function CombatantCard({
         .join(' ')}
     >
       <div className="combatant-media">
+        <div className="combatant-media-frame" aria-hidden />
         {combatant.imageUrl ? (
           <img src={combatant.imageUrl} alt={combatant.name} />
         ) : (

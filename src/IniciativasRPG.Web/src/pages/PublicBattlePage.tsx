@@ -43,9 +43,11 @@ export function PublicBattlePage() {
 
   return (
     <main className="page public-page">
-      <header className="public-header">
-        <h1>Iniciativas RPG</h1>
-        <p className="lede">Acompanhamento ao vivo (somente leitura)</p>
+      <header className="public-header brand-mark">
+        <div className="brand-ornament" aria-hidden />
+        <h1 className="brand-title">Iniciativas RPG</h1>
+        <p className="lede">Acompanhamento ao vivo — somente leitura</p>
+        <div className="brand-ornament" aria-hidden />
       </header>
 
       {error && <p className="error">{error}</p>}

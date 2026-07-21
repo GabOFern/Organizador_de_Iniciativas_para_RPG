@@ -16,9 +16,9 @@ export function MestreLayout() {
   return (
     <div className="mestre-shell">
       <header className="mestre-header">
-        <div>
-          <strong>Iniciativas RPG</strong>
-          <span className="muted"> · Mestre: {username}</span>
+        <div className="mestre-brand">
+          <div className="mestre-brand-name">Iniciativas RPG</div>
+          <span className="muted">Mestre: {username}</span>
         </div>
         <nav className="mestre-nav">
           <NavLink to={routes.mestreBattle}>Batalha</NavLink>
