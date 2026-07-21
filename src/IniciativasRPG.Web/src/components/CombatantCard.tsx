@@ -1,4 +1,6 @@
-import type { Combatant, ModifierType } from '../types';
+import { ModifierIcon } from './ModifierIcon';
+import { summarizeModifierEffect } from '../modifierIcons';
+import type { ActiveModifier, Combatant, ModifierType } from '../types';
 
 interface CombatantCardProps {
   combatant: Combatant;
@@ -10,6 +12,25 @@ interface CombatantCardProps {
   onRevive?: (combatantId: string, healAmount?: number) => void;
   onApplyModifier?: (combatantId: string, modifierTypeId: string, duration?: number) => void;
   onRemoveModifier?: (activeModifierId: string) => void;
+}
+
+function modifierTitle(m: ActiveModifier): string {
+  const effect = summarizeModifierEffect(m);
+  return `${m.name} · ${effect} · ${m.remainingDuration} turno(s)`;
+}
+
+function damageBadgeValue(m: ActiveModifier): number | null {
+  if (m.lastTickDamage != null) return m.lastTickDamage;
+  if (m.damageMode === 'DiceOnce' && m.resolvedDamage != null) return m.resolvedDamage;
+  if (m.damageMode === 'Fixed' && m.damageAmount != null) return m.damageAmount;
+  return null;
+}
+
+function healBadgeValue(m: ActiveModifier): number | null {
+  if (m.lastTickHeal != null) return m.lastTickHeal;
+  if (m.healMode === 'DiceOnce' && m.resolvedHeal != null) return m.resolvedHeal;
+  if (m.healMode === 'Fixed' && m.healAmount != null) return m.healAmount;
+  return null;
 }
 
 export function CombatantCard({
@@ -75,23 +96,39 @@ export function CombatantCard({
 
         {modifiers.length > 0 && (
           <ul className="modifier-tags">
-            {modifiers.map((m) => (
-              <li key={m.id} className={m.skipsTurn ? 'skips-turn' : ''}>
-                <span>
-                  {m.name} ({m.remainingDuration})
-                </span>
-                {!readOnly && onRemoveModifier && (
-                  <button
-                    type="button"
-                    className="ghost tag-remove"
-                    aria-label={`Remover ${m.name}`}
-                    onClick={() => onRemoveModifier(m.id)}
-                  >
-                    ×
-                  </button>
-                )}
-              </li>
-            ))}
+            {modifiers.map((m) => {
+              const dmg = damageBadgeValue(m);
+              const heal = healBadgeValue(m);
+              return (
+                <li
+                  key={m.id}
+                  className={[
+                    m.skipsTurn ? 'skips-turn' : '',
+                    m.acDelta !== 0 ? 'has-ac' : '',
+                    m.damageMode !== 'None' ? 'has-damage' : '',
+                    m.healMode !== 'None' ? 'has-heal' : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
+                  title={modifierTitle(m)}
+                >
+                  <ModifierIcon iconKey={m.iconKey} iconUrl={m.iconUrl} title={m.name} />
+                  <span className="mod-duration">{m.remainingDuration}</span>
+                  {dmg != null && <span className="mod-damage">{dmg}</span>}
+                  {heal != null && <span className="mod-heal">+{heal}</span>}
+                  {!readOnly && onRemoveModifier && (
+                    <button
+                      type="button"
+                      className="ghost tag-remove"
+                      aria-label={`Remover ${m.name}`}
+                      onClick={() => onRemoveModifier(m.id)}
+                    >
+                      ×
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
 
@@ -165,7 +202,11 @@ export function CombatantCard({
             </form>
 
             {showKill && onKill && (
-              <button type="button" className="danger action-full" onClick={() => onKill(combatant.id)}>
+              <button
+                type="button"
+                className="danger action-full"
+                onClick={() => onKill(combatant.id)}
+              >
                 Matar
               </button>
             )}
@@ -195,7 +236,10 @@ export function CombatantCard({
                     {modifierTypes.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
-                        {t.skipsTurn ? ' (pula turno)' : ''}
+                        {t.skipsTurn ? ' (pula)' : ''}
+                        {t.acDelta !== 0 ? ` CA${t.acDelta > 0 ? '+' : ''}${t.acDelta}` : ''}
+                        {t.damageMode !== 'None' ? ' · dano' : ''}
+                        {t.healMode !== 'None' ? ' · regen' : ''}
                       </option>
                     ))}
                   </select>

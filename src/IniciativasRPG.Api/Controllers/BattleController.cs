@@ -41,6 +41,10 @@ public class BattleController : ControllerBase
     public async Task<ActionResult<BattleSnapshotDto>> Finish(CancellationToken ct) =>
         Ok(await _battleService.FinishAsync(ct));
 
+    [HttpPost("save-player-stats")]
+    public async Task<ActionResult<BattleSnapshotDto>> SavePlayerStats(CancellationToken ct) =>
+        Ok(await _battleService.SavePlayerStatsAsync(ct));
+
     [HttpPost("damage")]
     public async Task<ActionResult<BattleSnapshotDto>> Damage([FromBody] DamageRequest request, CancellationToken ct) =>
         Ok(await _battleService.ApplyDamageAsync(request, ct));

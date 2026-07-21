@@ -15,6 +15,7 @@ public interface IBattleService
     Task<BattleSnapshotDto> StartAsync(CancellationToken ct = default);
     Task<BattleSnapshotDto> NextAsync(CancellationToken ct = default);
     Task<BattleSnapshotDto> FinishAsync(CancellationToken ct = default);
+    Task<BattleSnapshotDto> SavePlayerStatsAsync(CancellationToken ct = default);
     Task<BattleSnapshotDto> ApplyDamageAsync(DamageRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> ApplyHealAsync(HealRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> KillAsync(KillRequest request, CancellationToken ct = default);
@@ -153,7 +154,11 @@ public class BattleService : IBattleService
         battle.CurrentTurnIndex = FindNextEligibleIndex(ordered, -1);
         await _db.SaveChangesAsync(ct);
 
-        return await BuildAndNotifyAsync(battle.Id, ct: ct);
+        var tickEvents = await ResolveDamageTicksForCurrentAsync(battle, ordered, ct);
+        await RecalcAcForBattleAsync(battle.Id, ct);
+        await _db.SaveChangesAsync(ct);
+
+        return await BuildAndNotifyAsync(battle.Id, lastTickEvents: tickEvents, ct: ct);
     }
 
     public async Task<BattleSnapshotDto> NextAsync(CancellationToken ct = default)
@@ -181,6 +186,9 @@ public class BattleService : IBattleService
         var completedRound = DidCompleteRound(previousIndex, nextIndex, ordered.Count);
 
         ConsumeSkipTurnBetween(ordered, previousIndex, nextIndex);
+        battle.CurrentTurnIndex = nextIndex;
+
+        var tickEvents = await ResolveDamageTicksForCurrentAsync(battle, ordered, ct);
 
         if (completedRound)
         {
@@ -188,10 +196,10 @@ public class BattleService : IBattleService
             await RearmSkipTurnFlagsAsync(battle.Id, ct);
         }
 
-        battle.CurrentTurnIndex = nextIndex;
+        await RecalcAcForBattleAsync(battle.Id, ct);
         await _db.SaveChangesAsync(ct);
 
-        return await BuildAndNotifyAsync(battle.Id, ct: ct);
+        return await BuildAndNotifyAsync(battle.Id, lastTickEvents: tickEvents, ct: ct);
     }
 
     public async Task<BattleSnapshotDto> FinishAsync(CancellationToken ct = default)
@@ -208,9 +216,68 @@ public class BattleService : IBattleService
         battle.Status = BattleStatus.Finished;
         await _db.SaveChangesAsync(ct);
 
-        var snapshot = EmptySnapshot(DomainMessages.NoPublicBattle, token);
+        var canSave = await CanSavePlayerStatsForBattleAsync(battle.Id, ct);
+        var snapshot = EmptySnapshot(DomainMessages.NoPublicBattle, token, canSave);
         await _notifier.NotifyBattleUpdatedAsync(snapshot, ct);
         return snapshot;
+    }
+
+    public async Task<BattleSnapshotDto> SavePlayerStatsAsync(CancellationToken ct = default)
+    {
+        var battle = await _db.Battles
+            .Where(b => b.Status == BattleStatus.Finished)
+            .OrderByDescending(b => b.CreatedAtUtc)
+            .FirstOrDefaultAsync(ct)
+            ?? throw new DomainException(DomainMessages.NoFinishedBattleToSave);
+
+        if (battle.PlayerStatsSavedAtUtc is not null)
+        {
+            throw new DomainException(DomainMessages.PlayerStatsAlreadySaved, StatusCodes.Status409Conflict);
+        }
+
+        var combatants = await _db.Combatants
+            .Include(c => c.Sheet)
+            .Where(c => c.BattleId == battle.Id)
+            .OrderBy(c => c.SortOrder)
+            .ToListAsync(ct);
+
+        var playerCombatants = combatants
+            .Where(c => c.Sheet.Type == SheetType.Player)
+            .ToList();
+
+        if (playerCombatants.Count == 0)
+        {
+            throw new DomainException(DomainMessages.NoPlayersToSave);
+        }
+
+        // Last SortOrder wins when the same sheet appears more than once.
+        foreach (var group in playerCombatants.GroupBy(c => c.SheetId))
+        {
+            var source = group.OrderBy(c => c.SortOrder).Last();
+            var sheet = source.Sheet;
+            sheet.CurrentHp = Math.Clamp(source.CurrentHp, BattleRules.MinHp, sheet.MaxHp);
+            sheet.BaseAc = source.BaseAc;
+        }
+
+        battle.PlayerStatsSavedAtUtc = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        var snapshot = EmptySnapshot(DomainMessages.PlayerStatsSaved, battle.PublicToken, canSavePlayerStats: false);
+        await _notifier.NotifyBattleUpdatedAsync(snapshot, ct);
+        return snapshot;
+    }
+
+    private async Task<bool> CanSavePlayerStatsForBattleAsync(Guid battleId, CancellationToken ct)
+    {
+        var battle = await _db.Battles.AsNoTracking().FirstAsync(b => b.Id == battleId, ct);
+        if (battle.Status != BattleStatus.Finished || battle.PlayerStatsSavedAtUtc is not null)
+        {
+            return false;
+        }
+
+        return await _db.Combatants
+            .AsNoTracking()
+            .AnyAsync(c => c.BattleId == battleId && c.Sheet.Type == SheetType.Player, ct);
     }
 
     public async Task<BattleSnapshotDto> ApplyDamageAsync(DamageRequest request, CancellationToken ct = default)
@@ -327,6 +394,18 @@ public class BattleService : IBattleService
             throw new DomainException(DomainMessages.DurationMustBePositive);
         }
 
+        int? resolvedDamage = null;
+        if (type.DamageMode == DamageMode.DiceOnce)
+        {
+            resolvedDamage = _diceService.Roll(type.DamageDice!);
+        }
+
+        int? resolvedHeal = null;
+        if (type.HealMode == DamageMode.DiceOnce)
+        {
+            resolvedHeal = _diceService.Roll(type.HealDice!);
+        }
+
         _db.ActiveModifiers.Add(new ActiveModifier
         {
             Id = Guid.NewGuid(),
@@ -334,7 +413,20 @@ public class BattleService : IBattleService
             ModifierTypeId = type.Id,
             Name = type.Name,
             RemainingDuration = duration,
-            SkipsTurn = type.SkipsTurn
+            SkipsTurn = type.SkipsTurn,
+            IconKey = type.IconKey,
+            IconUrl = type.IconUrl,
+            AcDelta = type.AcDelta,
+            DamageMode = type.DamageMode,
+            DamageAmount = type.DamageAmount,
+            DamageDice = type.DamageDice,
+            ResolvedDamage = resolvedDamage,
+            LastTickDamage = null,
+            HealMode = type.HealMode,
+            HealAmount = type.HealAmount,
+            HealDice = type.HealDice,
+            ResolvedHeal = resolvedHeal,
+            LastTickHeal = null
         });
 
         if (type.SkipsTurn)
@@ -342,6 +434,8 @@ public class BattleService : IBattleService
             combatant.HasSkipTurnEffectActive = true;
         }
 
+        await _db.SaveChangesAsync(ct);
+        await RecalcAcForCombatantAsync(combatant.Id, ct);
         await _db.SaveChangesAsync(ct);
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
@@ -360,9 +454,118 @@ public class BattleService : IBattleService
         _db.ActiveModifiers.Remove(modifier);
         await _db.SaveChangesAsync(ct);
         await SyncSkipTurnFlagAsync(combatantId, ct);
+        await RecalcAcForCombatantAsync(combatantId, ct);
         await _db.SaveChangesAsync(ct);
 
         return await BuildAndNotifyAsync(battleId, ct: ct);
+    }
+
+    private async Task<IReadOnlyList<ModifierTickEventDto>> ResolveDamageTicksForCurrentAsync(
+        Battle battle,
+        IReadOnlyList<Combatant> ordered,
+        CancellationToken ct)
+    {
+        if (battle.CurrentTurnIndex < 0 || battle.CurrentTurnIndex >= ordered.Count)
+        {
+            return Array.Empty<ModifierTickEventDto>();
+        }
+
+        var current = ordered[battle.CurrentTurnIndex];
+        if (current.IsDead)
+        {
+            return Array.Empty<ModifierTickEventDto>();
+        }
+
+        await _db.Entry(current).Collection(c => c.ActiveModifiers).LoadAsync(ct);
+        await _db.Entry(current).Reference(c => c.Sheet).LoadAsync(ct);
+
+        var events = new List<ModifierTickEventDto>();
+        foreach (var modifier in current.ActiveModifiers.Where(m => m.RemainingDuration > 0).ToList())
+        {
+            var damage = ResolveTickAmount(
+                modifier.DamageMode,
+                modifier.DamageAmount,
+                modifier.DamageDice,
+                modifier.ResolvedDamage);
+            if (damage is > 0)
+            {
+                current.CurrentHp = Math.Max(BattleRules.MinHp, current.CurrentHp - damage.Value);
+                modifier.LastTickDamage = damage.Value;
+                events.Add(new ModifierTickEventDto(
+                    current.Id,
+                    current.Sheet.Name,
+                    modifier.Id,
+                    modifier.Name,
+                    damage.Value,
+                    "Damage",
+                    modifier.DamageMode == DamageMode.DicePerTurn ? modifier.DamageDice : null));
+            }
+
+            var heal = ResolveTickAmount(
+                modifier.HealMode,
+                modifier.HealAmount,
+                modifier.HealDice,
+                modifier.ResolvedHeal);
+            if (heal is > 0)
+            {
+                current.CurrentHp = Math.Min(current.MaxHp, current.CurrentHp + heal.Value);
+                modifier.LastTickHeal = heal.Value;
+                events.Add(new ModifierTickEventDto(
+                    current.Id,
+                    current.Sheet.Name,
+                    modifier.Id,
+                    modifier.Name,
+                    heal.Value,
+                    "Heal",
+                    modifier.HealMode == DamageMode.DicePerTurn ? modifier.HealDice : null));
+            }
+        }
+
+        return events;
+    }
+
+    private int? ResolveTickAmount(
+        DamageMode mode,
+        int? fixedAmount,
+        string? dice,
+        int? resolvedOnce) =>
+        mode switch
+        {
+            DamageMode.Fixed => fixedAmount,
+            DamageMode.DicePerTurn => string.IsNullOrWhiteSpace(dice)
+                ? null
+                : _diceService.Roll(dice),
+            DamageMode.DiceOnce => resolvedOnce,
+            _ => null
+        };
+
+    private async Task RecalcAcForBattleAsync(Guid battleId, CancellationToken ct)
+    {
+        var combatants = await _db.Combatants
+            .Include(c => c.ActiveModifiers)
+            .Where(c => c.BattleId == battleId)
+            .ToListAsync(ct);
+
+        foreach (var combatant in combatants)
+        {
+            ApplyAc(combatant);
+        }
+    }
+
+    private async Task RecalcAcForCombatantAsync(Guid combatantId, CancellationToken ct)
+    {
+        var combatant = await _db.Combatants
+            .Include(c => c.ActiveModifiers)
+            .FirstAsync(c => c.Id == combatantId, ct);
+        ApplyAc(combatant);
+    }
+
+    private static void ApplyAc(Combatant combatant)
+    {
+        var delta = combatant.ActiveModifiers
+            .Where(m => m.RemainingDuration > 0)
+            .Sum(m => m.AcDelta);
+        combatant.CurrentAc = combatant.BaseAc + delta;
     }
 
     private async Task DecrementModifiersForBattleAsync(Guid battleId, CancellationToken ct)
@@ -456,6 +659,7 @@ public class BattleService : IBattleService
             Initiative = initiative,
             CurrentHp = sheet.CurrentHp,
             MaxHp = sheet.MaxHp,
+            BaseAc = sheet.BaseAc,
             CurrentAc = sheet.BaseAc,
             IsDead = false,
             HasSkipTurnEffectActive = false,
@@ -542,9 +746,10 @@ public class BattleService : IBattleService
     private async Task<BattleSnapshotDto> BuildAndNotifyAsync(
         Guid battleId,
         int? lastDiceRoll = null,
+        IReadOnlyList<ModifierTickEventDto>? lastTickEvents = null,
         CancellationToken ct = default)
     {
-        var snapshot = await BuildSnapshotAsync(battleId, lastDiceRoll, ct);
+        var snapshot = await BuildSnapshotAsync(battleId, lastDiceRoll, lastTickEvents, ct);
         await _notifier.NotifyBattleUpdatedAsync(snapshot, ct);
         return snapshot;
     }
@@ -552,6 +757,7 @@ public class BattleService : IBattleService
     private async Task<BattleSnapshotDto> BuildSnapshotAsync(
         Guid battleId,
         int? lastDiceRoll = null,
+        IReadOnlyList<ModifierTickEventDto>? lastTickEvents = null,
         CancellationToken ct = default)
     {
         var battle = await _db.Battles
@@ -581,7 +787,7 @@ public class BattleService : IBattleService
             battle.Status == BattleStatus.Active && index == battle.CurrentTurnIndex && !c.IsDead,
             c.ActiveModifiers
                 .OrderBy(m => m.Name)
-                .Select(m => new ActiveModifierDto(m.Id, m.Name, m.RemainingDuration, m.SkipsTurn))
+                .Select(MapActiveModifier)
                 .ToList()
         )).ToList();
 
@@ -592,11 +798,45 @@ public class BattleService : IBattleService
             battle.CurrentTurnIndex,
             combatants,
             null,
-            lastDiceRoll);
+            lastDiceRoll,
+            lastTickEvents,
+            CanSavePlayerStats: false);
     }
 
-    private static BattleSnapshotDto EmptySnapshot(string message, string? token = null) =>
-        new(null, token, BattleStatus.Finished.ToString(), 0, Array.Empty<CombatantDto>(), message, null);
+    private static ActiveModifierDto MapActiveModifier(ActiveModifier m) =>
+        new(
+            m.Id,
+            m.Name,
+            m.RemainingDuration,
+            m.SkipsTurn,
+            m.IconKey,
+            m.IconUrl,
+            m.AcDelta,
+            m.DamageMode.ToString(),
+            m.DamageAmount,
+            m.DamageDice,
+            m.ResolvedDamage,
+            m.LastTickDamage,
+            m.HealMode.ToString(),
+            m.HealAmount,
+            m.HealDice,
+            m.ResolvedHeal,
+            m.LastTickHeal);
+
+    private static BattleSnapshotDto EmptySnapshot(
+        string message,
+        string? token = null,
+        bool canSavePlayerStats = false) =>
+        new(
+            null,
+            token,
+            BattleStatus.Finished.ToString(),
+            0,
+            Array.Empty<CombatantDto>(),
+            message,
+            null,
+            null,
+            canSavePlayerStats);
 
     private static string GeneratePublicToken()
     {

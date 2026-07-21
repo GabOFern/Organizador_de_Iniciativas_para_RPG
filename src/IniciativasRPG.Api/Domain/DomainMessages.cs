@@ -24,6 +24,15 @@ public static class DomainMessages
     public const string ModifierTypeNotFound = "Tipo de modificador não encontrado.";
     public const string ActiveModifierNotFound = "Modificador ativo não encontrado.";
     public const string DurationMustBePositive = "A duração deve ser maior que zero.";
+    public const string InvalidModifierIcon = "Ícone de modificador inválido.";
+    public const string DamageAmountRequired = "Informe o valor de dano fixo.";
+    public const string DamageDiceRequired = "Informe a notação de dado (ex.: 1d6).";
+    public const string HealAmountRequired = "Informe o valor de regeneração fixo.";
+    public const string HealDiceRequired = "Informe a notação de dado da regeneração (ex.: 1d4).";
+    public const string PlayerStatsAlreadySaved = "As estatísticas desta batalha já foram salvas.";
+    public const string NoPlayersToSave = "Não há fichas de player nesta batalha para persistir.";
+    public const string NoFinishedBattleToSave = "Não há batalha finalizada recente para salvar estatísticas.";
+    public const string PlayerStatsSaved = "Estatísticas dos players salvas nas fichas.";
     public const string NoPublicBattle = "Não há combate em andamento.";
     public const string ConfigMissing = "Configuração obrigatória ausente. Verifique User Secrets ou variáveis de ambiente.";
 }

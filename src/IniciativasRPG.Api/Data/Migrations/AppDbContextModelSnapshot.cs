@@ -23,8 +23,50 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("AcDelta")
+                        .HasColumnType("INTEGER");
+
                     b.Property<Guid>("CombatantId")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("DamageAmount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DamageDice")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("HealAmount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HealDice")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HealMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IconKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("LastTickDamage")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("LastTickHeal")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid?>("ModifierTypeId")
                         .HasColumnType("TEXT");
@@ -35,6 +77,12 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<int>("RemainingDuration")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ResolvedDamage")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ResolvedHeal")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("SkipsTurn")
@@ -61,6 +109,9 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<int>("CurrentTurnIndex")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("PlayerStatsSavedAtUtc")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PublicToken")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -84,6 +135,9 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("BaseAc")
+                        .HasColumnType("INTEGER");
 
                     b.Property<Guid>("BattleId")
                         .HasColumnType("TEXT");
@@ -127,8 +181,44 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("AcDelta")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("DamageAmount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("DamageDice")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("DefaultDuration")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int?>("HealAmount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("HealDice")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HealMode")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IconKey")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Name")
                         .IsRequired()

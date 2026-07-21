@@ -10,6 +10,7 @@ public class Combatant
     public int Initiative { get; set; }
     public int CurrentHp { get; set; }
     public int MaxHp { get; set; }
+    public int BaseAc { get; set; }
     public int CurrentAc { get; set; }
     public bool IsDead { get; set; }
     public int SortOrder { get; set; }

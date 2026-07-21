@@ -3,6 +3,7 @@ import type {
   BattleSnapshot,
   LoginResponse,
   ModifierType,
+  ModifierTypePayload,
   Sheet,
   SheetType,
 } from './types';
@@ -99,20 +100,13 @@ export const api = {
 
   listModifierTypes: () => request<ModifierType[]>('/api/modifier-types'),
 
-  createModifierType: (body: {
-    name: string;
-    defaultDuration: number;
-    skipsTurn: boolean;
-  }) =>
+  createModifierType: (body: ModifierTypePayload) =>
     request<ModifierType>('/api/modifier-types', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
-  updateModifierType: (
-    id: string,
-    body: { name: string; defaultDuration: number; skipsTurn: boolean },
-  ) =>
+  updateModifierType: (id: string, body: ModifierTypePayload) =>
     request<ModifierType>(`/api/modifier-types/${id}`, {
       method: 'PUT',
       body: JSON.stringify(body),
@@ -151,6 +145,9 @@ export const api = {
 
   finishBattle: () =>
     request<BattleSnapshot>('/api/battle/finish', { method: 'POST' }),
+
+  savePlayerStats: () =>
+    request<BattleSnapshot>('/api/battle/save-player-stats', { method: 'POST' }),
 
   applyDamage: (combatantId: string, amount: number) =>
     request<BattleSnapshot>('/api/battle/damage', {

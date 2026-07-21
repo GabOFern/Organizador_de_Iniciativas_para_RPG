@@ -59,12 +59,24 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            e.Property(x => x.IconKey).HasMaxLength(40).IsRequired();
+            e.Property(x => x.IconUrl).HasMaxLength(1000);
+            e.Property(x => x.DamageMode).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.DamageDice).HasMaxLength(40);
+            e.Property(x => x.HealMode).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.HealDice).HasMaxLength(40);
         });
 
         modelBuilder.Entity<ActiveModifier>(e =>
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            e.Property(x => x.IconKey).HasMaxLength(40).IsRequired();
+            e.Property(x => x.IconUrl).HasMaxLength(1000);
+            e.Property(x => x.DamageMode).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.DamageDice).HasMaxLength(40);
+            e.Property(x => x.HealMode).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.HealDice).HasMaxLength(40);
             e.HasOne(x => x.Combatant)
                 .WithMany(c => c.ActiveModifiers)
                 .HasForeignKey(x => x.CombatantId)

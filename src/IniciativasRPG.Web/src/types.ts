@@ -1,4 +1,5 @@
 export type SheetType = 'Player' | 'Creature';
+export type DamageMode = 'None' | 'Fixed' | 'DicePerTurn' | 'DiceOnce';
 
 export interface Sheet {
   id: string;
@@ -16,6 +17,29 @@ export interface ActiveModifier {
   name: string;
   remainingDuration: number;
   skipsTurn: boolean;
+  iconKey: string;
+  iconUrl: string | null;
+  acDelta: number;
+  damageMode: DamageMode | string;
+  damageAmount: number | null;
+  damageDice: string | null;
+  resolvedDamage: number | null;
+  lastTickDamage: number | null;
+  healMode: DamageMode | string;
+  healAmount: number | null;
+  healDice: string | null;
+  resolvedHeal: number | null;
+  lastTickHeal: number | null;
+}
+
+export interface ModifierTickEvent {
+  combatantId: string;
+  combatantName: string;
+  modifierId: string;
+  modifierName: string;
+  amount: number;
+  kind: 'Damage' | 'Heal' | string;
+  rollDetail: string | null;
 }
 
 export interface Combatant {
@@ -42,6 +66,8 @@ export interface BattleSnapshot {
   combatants: Combatant[];
   message: string | null;
   lastDiceRoll: number | null;
+  lastTickEvents?: ModifierTickEvent[] | null;
+  canSavePlayerStats?: boolean;
 }
 
 export interface ModifierType {
@@ -49,6 +75,30 @@ export interface ModifierType {
   name: string;
   defaultDuration: number;
   skipsTurn: boolean;
+  iconKey: string;
+  iconUrl: string | null;
+  acDelta: number;
+  damageMode: DamageMode | string;
+  damageAmount: number | null;
+  damageDice: string | null;
+  healMode: DamageMode | string;
+  healAmount: number | null;
+  healDice: string | null;
+}
+
+export interface ModifierTypePayload {
+  name: string;
+  defaultDuration: number;
+  skipsTurn: boolean;
+  iconKey: string;
+  iconUrl: string | null;
+  acDelta: number;
+  damageMode: DamageMode;
+  damageAmount: number | null;
+  damageDice: string | null;
+  healMode: DamageMode;
+  healAmount: number | null;
+  healDice: string | null;
 }
 
 export interface LoginResponse {

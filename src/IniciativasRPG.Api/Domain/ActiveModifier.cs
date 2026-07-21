@@ -10,4 +10,17 @@ public class ActiveModifier
     public string Name { get; set; } = string.Empty;
     public int RemainingDuration { get; set; }
     public bool SkipsTurn { get; set; }
+    public string IconKey { get; set; } = ModifierIconKeys.Default;
+    public string? IconUrl { get; set; }
+    public int AcDelta { get; set; }
+    public DamageMode DamageMode { get; set; } = DamageMode.None;
+    public int? DamageAmount { get; set; }
+    public string? DamageDice { get; set; }
+    public int? ResolvedDamage { get; set; }
+    public int? LastTickDamage { get; set; }
+    public DamageMode HealMode { get; set; } = DamageMode.None;
+    public int? HealAmount { get; set; }
+    public string? HealDice { get; set; }
+    public int? ResolvedHeal { get; set; }
+    public int? LastTickHeal { get; set; }
 }

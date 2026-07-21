@@ -15,6 +15,7 @@ const emptyBattle: BattleSnapshot = {
   combatants: [],
   message: null,
   lastDiceRoll: null,
+  canSavePlayerStats: false,
 };
 
 export function BattlePage() {
@@ -22,14 +23,29 @@ export function BattlePage() {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [modifierTypes, setModifierTypes] = useState<ModifierType[]>([]);
   const [battle, setBattle] = useState<BattleSnapshot>(emptyBattle);
+  const [canSavePlayerStats, setCanSavePlayerStats] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [invokeOpen, setInvokeOpen] = useState(false);
 
   const applySnapshot = useCallback((snapshot: BattleSnapshot) => {
     setBattle(snapshot);
-    if (snapshot.lastDiceRoll != null) {
+    if (typeof snapshot.canSavePlayerStats === 'boolean') {
+      setCanSavePlayerStats(snapshot.canSavePlayerStats);
+    }
+    if (snapshot.lastTickEvents && snapshot.lastTickEvents.length > 0) {
+      const parts = snapshot.lastTickEvents.map((e) => {
+        const sign = e.kind === 'Heal' ? '+' : '−';
+        return (
+          `${e.combatantName}: ${e.modifierName} ${sign}${e.amount}` +
+          (e.rollDetail ? ` (${e.rollDetail})` : '')
+        );
+      });
+      setInfo(`Efeitos: ${parts.join(' · ')}`);
+    } else if (snapshot.lastDiceRoll != null) {
       setInfo(`Rolagem: ${snapshot.lastDiceRoll}`);
+    } else if (snapshot.message && snapshot.status === 'Finished') {
+      setInfo(snapshot.message);
     }
   }, []);
 
@@ -45,6 +61,7 @@ export function BattlePage() {
         ]);
         setSheets(sheetList);
         setBattle(current);
+        setCanSavePlayerStats(Boolean(current.canSavePlayerStats));
         setModifierTypes(types);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'Falha ao carregar batalha.');
@@ -67,8 +84,27 @@ export function BattlePage() {
     }
   }
 
+  async function handleSavePlayerStats() {
+    if (
+      !window.confirm(
+        'Salvar vida atual e CA base das fichas player desta batalha? Criaturas não serão alteradas.',
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const snapshot = await run(() => api.savePlayerStats());
+      setCanSavePlayerStats(false);
+      setInfo(snapshot.message ?? 'Estatísticas salvas.');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Falha ao salvar estatísticas.');
+    }
+  }
+
   async function handleInvoke(payload: InvokePayload) {
     setError(null);
+    setCanSavePlayerStats(false);
     try {
       if (payload.type === 'Player') {
         try {
@@ -148,8 +184,13 @@ export function BattlePage() {
             <button
               type="button"
               className="ghost"
-              disabled
-              title="Disponível na Fase 3 (ST-020)"
+              disabled={!canSavePlayerStats}
+              title={
+                canSavePlayerStats
+                  ? 'Gravar vida e CA base nas fichas player'
+                  : 'Finalize uma batalha com players para habilitar'
+              }
+              onClick={() => void handleSavePlayerStats()}
             >
               Salvar estatísticas
             </button>

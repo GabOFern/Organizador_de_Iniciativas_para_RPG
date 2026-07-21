@@ -14,7 +14,7 @@ Fonte da verdade do que deve ser feito. Use este arquivo para consultar escopo, 
 |---|---|---|
 | **MUST** | ST-001, ST-002, ST-003, ST-004, ST-005, ST-006, ST-008, ST-009, ST-011, ST-016, ST-017, ST-018, ST-019 | Fase 1 |
 | **SHOULD** | ST-007, ST-010, ST-012, ST-013, ST-014 | Fase 2 |
-| **COULD** | ST-015, ST-020 | Fase 3 |
+| **COULD** | ST-020 | Fase 3 |
 | **WON'T** | Múltiplas batalhas simultâneas; OAuth para login do mestre | Fora do time-box |
 
 ---
@@ -47,8 +47,8 @@ Fonte da verdade do que deve ser feito. Use este arquivo para consultar escopo, 
 
 ### Fase 3 — COULD (produto completo)
 
-- [ ] ST-015 Buff/debuff de CA
-- [ ] ST-020 Persistência de estatísticas pós-batalha (players)
+- [x] ST-015 Buff/debuff de CA (via modificadores avançados)
+- [x] ST-020 Persistência de estatísticas pós-batalha (players)
 
 ---
 
@@ -131,7 +131,7 @@ flowchart LR
 | `Combatant` | Instância na fila: iniciativa, HP/CA de combate, morto?, referência à Sheet |
 | `ModifierType` | Catálogo (nome, duração padrão, flag pula turno) |
 | `ActiveModifier` | Instância no combatente (duração restante, pula turno) |
-| `ArmorModifier` | Buff/debuff de CA com duração (Fase 3) |
+| `ActiveModifier` | Efeitos em combate: pula turno, ΔCA, dano (fixo/dado), ícone |
 
 ---
 
@@ -260,13 +260,15 @@ flowchart LR
   - Remoção manual remove imediatamente exibição e efeito.
 
 #### ST-015 — Buff/debuff de CA
-- **Prioridade:** COULD · **Fase:** 3 · **FR:** FR-015 · **Status:** Todo
-- **Dependências:** FR-013 (conceitualmente alinhado a efeitos com duração)
+- **Prioridade:** COULD · **Fase:** 3 · **FR:** FR-015 · **Status:** Done
+- **Dependências:** FR-013 / FR-014
 - **Como** mestre, **quero** aplicar buff/debuff de CA (valor +/− com duração em turnos).
+- **Implementação:** campo `AcDelta` no tipo/instância de modificador (sem entidade `ArmorModifier` separada). Combina com pula turno e dano periódico (`Fixed` | `DicePerTurn` | `DiceOnce`). Tick de dano no início do turno do afetado; ícone preset ou URL; badge com duração e último dano.
 - **Critérios de aceitação:**
   - Buff +2 CA por 3 turnos → CA exibida = base + 2.
   - Debuff −3 CA → CA reduzida conforme o valor.
   - Duração 0 (via ST-007) → CA volta ao valor base.
+  - Ícone + duração (e dano, se houver) visíveis na fila e na tela pública via SignalR.
 
 #### ST-016 — Card do combatente
 - **Prioridade:** MUST · **Fase:** 1 · **FR:** FR-016 · **Status:** Done
@@ -309,7 +311,7 @@ flowchart LR
 ### EPIC-05 — Persistência entre Batalhas
 
 #### ST-020 — Salvar estatísticas pós-batalha
-- **Prioridade:** COULD · **Fase:** 3 · **FR:** FR-020 · **Status:** Todo
+- **Prioridade:** COULD · **Fase:** 3 · **FR:** FR-020 · **Status:** Done
 - **Dependências:** FR-008 (finalizar batalha)
 - **Como** mestre, **quero** salvar estatísticas (vida, CA, etc.) das fichas **player** ao final da batalha.
 - **Critérios de aceitação:**
@@ -355,6 +357,6 @@ flowchart LR
 
 1. **Fase 1 (MUST)** — plano de implementação cobre apenas o checklist MUST; marcar checkboxes ao concluir.
 2. **Fase 2 (SHOULD)** — novo plano consultando as stories SHOULD e dependências.
-3. **Fase 3 (COULD)** — novo plano até produto completo (ST-015 + ST-020).
+3. **Fase 3 (COULD)** — ST-015 e ST-020 concluídos; backlog MoSCoW completo para o time-box.
 
 Atualize o campo **Status** de cada ST (`Todo` → `Doing` → `Done`) conforme o progresso.

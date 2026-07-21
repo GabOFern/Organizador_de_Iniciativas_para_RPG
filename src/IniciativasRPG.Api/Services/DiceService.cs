@@ -6,35 +6,44 @@ namespace IniciativasRPG.Api.Services;
 public interface IDiceService
 {
     int Roll(string notation);
+    bool IsValidNotation(string notation);
 }
 
 public partial class DiceService : IDiceService
 {
     private static readonly Regex DicePattern = DiceRegex();
 
-    public int Roll(string notation)
+    public bool IsValidNotation(string notation)
     {
         if (string.IsNullOrWhiteSpace(notation))
         {
-            throw new DomainException(DomainMessages.InvalidDiceNotation);
+            return false;
         }
 
         var match = DicePattern.Match(notation.Trim());
         if (!match.Success)
         {
+            return false;
+        }
+
+        var count = int.Parse(match.Groups["count"].Value);
+        var sides = int.Parse(match.Groups["sides"].Value);
+        return count >= 1 && sides >= 2;
+    }
+
+    public int Roll(string notation)
+    {
+        if (!IsValidNotation(notation))
+        {
             throw new DomainException(DomainMessages.InvalidDiceNotation);
         }
 
+        var match = DicePattern.Match(notation.Trim());
         var count = int.Parse(match.Groups["count"].Value);
         var sides = int.Parse(match.Groups["sides"].Value);
         var modifier = match.Groups["mod"].Success
             ? int.Parse(match.Groups["mod"].Value)
             : 0;
-
-        if (count < 1 || sides < 2)
-        {
-            throw new DomainException(DomainMessages.InvalidDiceNotation);
-        }
 
         var total = modifier;
         for (var i = 0; i < count; i++)
