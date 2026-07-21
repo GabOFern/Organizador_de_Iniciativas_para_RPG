@@ -4,6 +4,7 @@ import type {
   LoginResponse,
   ModifierType,
   ModifierTypePayload,
+  PublicBattleSummary,
   Sheet,
   SheetType,
 } from './types';
@@ -116,6 +117,8 @@ export const api = {
     request<void>(`/api/modifier-types/${id}`, { method: 'DELETE' }),
 
   getCurrentBattle: () => request<BattleSnapshot>('/api/battle/current'),
+
+  listPublicBattles: () => request<PublicBattleSummary[]>('/api/public/battles'),
 
   getPublicBattle: (token: string) =>
     request<BattleSnapshot>(`/api/public/battles/${token}`),

@@ -1,11 +1,12 @@
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 const hubUrl = import.meta.env.VITE_HUB_URL;
 
-if (!apiBaseUrl) {
+// String vazia = mesma origem (útil com proxy do Vite + ngrok).
+if (apiBaseUrl === undefined || apiBaseUrl === null) {
   throw new Error('VITE_API_BASE_URL não configurada. Copie .env.example para .env.');
 }
 
-if (!hubUrl) {
+if (hubUrl === undefined || hubUrl === null) {
   throw new Error('VITE_HUB_URL não configurada. Copie .env.example para .env.');
 }
 
@@ -22,5 +23,6 @@ export const routes = {
   mestreSheets: '/mestre/fichas',
   mestreBattle: '/mestre/batalha',
   mestreModifiers: '/mestre/modificadores',
+  publicLobby: '/publico',
   publicBattle: (token: string) => `/publico/${token}`,
 } as const;

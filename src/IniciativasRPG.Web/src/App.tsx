@@ -6,6 +6,7 @@ import { BattlePage } from './pages/BattlePage';
 import { LoginPage } from './pages/LoginPage';
 import { ModifiersPage } from './pages/ModifiersPage';
 import { PublicBattlePage } from './pages/PublicBattlePage';
+import { PublicLobbyPage } from './pages/PublicLobbyPage';
 import { SheetsPage } from './pages/SheetsPage';
 
 export default function App() {
@@ -14,6 +15,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path={routes.login} element={<LoginPage />} />
+          <Route path={routes.publicLobby} element={<PublicLobbyPage />} />
           <Route path="/publico/:token" element={<PublicBattlePage />} />
           <Route
             path={routes.mestre}

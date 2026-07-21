@@ -10,6 +10,7 @@ public interface IBattleService
 {
     Task<BattleSnapshotDto> GetCurrentAsync(CancellationToken ct = default);
     Task<BattleSnapshotDto> GetByPublicTokenAsync(string token, bool forPublic = false, CancellationToken ct = default);
+    Task<IReadOnlyList<PublicBattleSummaryDto>> ListOpenBattlesForPublicAsync(CancellationToken ct = default);
     Task<BattleSnapshotDto> InvokePlayerAsync(InvokePlayerRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> InvokeCreatureAsync(InvokeCreatureRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> StartAsync(CancellationToken ct = default);
@@ -46,6 +47,35 @@ public class BattleService : IBattleService
         }
 
         return await BuildSnapshotAsync(battleId.Value, ct: ct);
+    }
+
+    public async Task<IReadOnlyList<PublicBattleSummaryDto>> ListOpenBattlesForPublicAsync(
+        CancellationToken ct = default)
+    {
+        var battles = await _db.Battles
+            .AsNoTracking()
+            .Where(b => b.Status == BattleStatus.Preparing || b.Status == BattleStatus.Active)
+            .OrderByDescending(b => b.CreatedAtUtc)
+            .Select(b => new
+            {
+                b.PublicToken,
+                b.Status,
+                b.CreatedAtUtc,
+                Names = b.Combatants
+                    .OrderBy(c => c.SortOrder)
+                    .Select(c => c.Sheet.Name)
+                    .ToList()
+            })
+            .ToListAsync(ct);
+
+        return battles
+            .Select(b => new PublicBattleSummaryDto(
+                b.PublicToken,
+                b.Status.ToString(),
+                b.Names.Count,
+                b.Names,
+                b.CreatedAtUtc))
+            .ToList();
     }
 
     public async Task<BattleSnapshotDto> GetByPublicTokenAsync(

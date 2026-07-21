@@ -17,6 +17,10 @@ public class PublicController : ControllerBase
         _battleService = battleService;
     }
 
+    [HttpGet("battles")]
+    public async Task<ActionResult<IReadOnlyList<PublicBattleSummaryDto>>> ListBattles(CancellationToken ct) =>
+        Ok(await _battleService.ListOpenBattlesForPublicAsync(ct));
+
     [HttpGet("battles/{token}")]
     public async Task<ActionResult<BattleSnapshotDto>> GetBattle(string token, CancellationToken ct) =>
         Ok(await _battleService.GetByPublicTokenAsync(token, forPublic: true, ct));

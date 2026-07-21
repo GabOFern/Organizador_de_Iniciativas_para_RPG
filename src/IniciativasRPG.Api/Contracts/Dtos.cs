@@ -87,6 +87,13 @@ public record BattleSnapshotDto(
     IReadOnlyList<ModifierTickEventDto>? LastTickEvents = null,
     bool CanSavePlayerStats = false);
 
+public record PublicBattleSummaryDto(
+    string PublicToken,
+    string Status,
+    int CombatantCount,
+    IReadOnlyList<string> CombatantNames,
+    DateTime CreatedAtUtc);
+
 public record InvokePlayerRequest(Guid SheetId, int Initiative, bool ConfirmDuplicate = false);
 public record InvokeCreatureRequest(
     Guid SheetId,

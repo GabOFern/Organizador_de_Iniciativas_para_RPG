@@ -71,6 +71,14 @@ export interface BattleSnapshot {
   canSavePlayerStats?: boolean;
 }
 
+export interface PublicBattleSummary {
+  publicToken: string;
+  status: 'Preparing' | 'Active' | 'Finished' | string;
+  combatantCount: number;
+  combatantNames: string[];
+  createdAtUtc: string;
+}
+
 export interface ModifierType {
   id: string;
   name: string;

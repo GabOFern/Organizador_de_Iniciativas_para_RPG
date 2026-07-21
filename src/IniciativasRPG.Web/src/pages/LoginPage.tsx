@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api';
 import { useAuth } from '../auth';
 import { routes } from '../config';
@@ -55,6 +55,9 @@ export function LoginPage() {
               {loading ? 'Entrando…' : 'Entrar'}
             </button>
           </form>
+          <p className="login-public-link">
+            <Link to={routes.publicLobby}>Ver batalhas públicas</Link>
+          </p>
         </section>
       </div>
     </main>
