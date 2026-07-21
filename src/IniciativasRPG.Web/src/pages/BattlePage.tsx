@@ -5,7 +5,7 @@ import { CombatantCard } from '../components/CombatantCard';
 import { InvokeModal, type InvokePayload } from '../components/InvokeModal';
 import { routes } from '../config';
 import { useBattleHub } from '../hooks/useBattleHub';
-import type { BattleSnapshot, Sheet } from '../types';
+import type { BattleSnapshot, ModifierType, Sheet } from '../types';
 
 const emptyBattle: BattleSnapshot = {
   id: null,
@@ -20,6 +20,7 @@ const emptyBattle: BattleSnapshot = {
 export function BattlePage() {
   const { token } = useAuth();
   const [sheets, setSheets] = useState<Sheet[]>([]);
+  const [modifierTypes, setModifierTypes] = useState<ModifierType[]>([]);
   const [battle, setBattle] = useState<BattleSnapshot>(emptyBattle);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
@@ -37,12 +38,14 @@ export function BattlePage() {
   useEffect(() => {
     void (async () => {
       try {
-        const [sheetList, current] = await Promise.all([
+        const [sheetList, current, types] = await Promise.all([
           api.listSheets(),
           api.getCurrentBattle(),
+          api.listModifierTypes(),
         ]);
         setSheets(sheetList);
         setBattle(current);
+        setModifierTypes(types);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'Falha ao carregar batalha.');
       }
@@ -182,10 +185,23 @@ export function BattlePage() {
               <CombatantCard
                 key={c.id}
                 combatant={c}
+                modifierTypes={modifierTypes}
                 onDamage={(id, amount) =>
                   void handleBattleAction(() => api.applyDamage(id, amount))
                 }
+                onHeal={(id, amount) =>
+                  void handleBattleAction(() => api.applyHeal(id, amount))
+                }
                 onKill={(id) => void handleBattleAction(() => api.kill(id))}
+                onRevive={(id, healAmount) =>
+                  void handleBattleAction(() => api.revive(id, healAmount))
+                }
+                onApplyModifier={(id, typeId, duration) =>
+                  void handleBattleAction(() => api.applyModifier(id, typeId, duration))
+                }
+                onRemoveModifier={(modifierId) =>
+                  void handleBattleAction(() => api.removeModifier(modifierId))
+                }
               />
             ))}
           </div>

@@ -1,5 +1,11 @@
 import { config } from './config';
-import type { BattleSnapshot, LoginResponse, Sheet, SheetType } from './types';
+import type {
+  BattleSnapshot,
+  LoginResponse,
+  ModifierType,
+  Sheet,
+  SheetType,
+} from './types';
 
 export class ApiError extends Error {
   status: number;
@@ -91,6 +97,30 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  listModifierTypes: () => request<ModifierType[]>('/api/modifier-types'),
+
+  createModifierType: (body: {
+    name: string;
+    defaultDuration: number;
+    skipsTurn: boolean;
+  }) =>
+    request<ModifierType>('/api/modifier-types', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  updateModifierType: (
+    id: string,
+    body: { name: string; defaultDuration: number; skipsTurn: boolean },
+  ) =>
+    request<ModifierType>(`/api/modifier-types/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+
+  deleteModifierType: (id: string) =>
+    request<void>(`/api/modifier-types/${id}`, { method: 'DELETE' }),
+
   getCurrentBattle: () => request<BattleSnapshot>('/api/battle/current'),
 
   getPublicBattle: (token: string) =>
@@ -128,9 +158,36 @@ export const api = {
       body: JSON.stringify({ combatantId, amount }),
     }),
 
+  applyHeal: (combatantId: string, amount: number) =>
+    request<BattleSnapshot>('/api/battle/heal', {
+      method: 'POST',
+      body: JSON.stringify({ combatantId, amount }),
+    }),
+
   kill: (combatantId: string) =>
     request<BattleSnapshot>('/api/battle/kill', {
       method: 'POST',
       body: JSON.stringify({ combatantId }),
+    }),
+
+  revive: (combatantId: string, healAmount?: number) =>
+    request<BattleSnapshot>('/api/battle/revive', {
+      method: 'POST',
+      body: JSON.stringify({ combatantId, healAmount: healAmount ?? null }),
+    }),
+
+  applyModifier: (combatantId: string, modifierTypeId: string, duration?: number) =>
+    request<BattleSnapshot>('/api/battle/modifiers', {
+      method: 'POST',
+      body: JSON.stringify({
+        combatantId,
+        modifierTypeId,
+        duration: duration ?? null,
+      }),
+    }),
+
+  removeModifier: (activeModifierId: string) =>
+    request<BattleSnapshot>(`/api/battle/modifiers/${activeModifierId}`, {
+      method: 'DELETE',
     }),
 };

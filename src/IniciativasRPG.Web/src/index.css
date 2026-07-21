@@ -411,13 +411,20 @@ select:focus {
 
 .sheet-list li {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.75rem 1rem;
   align-items: center;
   padding: 0.75rem;
   border: 1px solid color-mix(in srgb, var(--silver-dim) 35%, transparent);
   border-radius: 4px;
   background: linear-gradient(180deg, #2a1c12, #1a120c);
+  min-width: 0;
+}
+
+.sheet-list li > div:first-child {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 .battle-layout {
@@ -464,7 +471,7 @@ select:focus {
 
 .combatant-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 1rem;
   width: 100%;
   min-width: 0;
@@ -644,20 +651,85 @@ select:focus {
 
 .combatant-actions {
   display: grid;
-  gap: 0.5rem;
+  gap: 0.75rem;
   min-width: 0;
+  padding-top: 0.65rem;
+  margin-top: 0.15rem;
+  border-top: 1px solid color-mix(in srgb, var(--silver-dim) 28%, transparent);
 }
 
-.combatant-actions form {
+.combatant-actions .action-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.5rem;
+  gap: 0.55rem;
   align-items: end;
 }
 
-.combatant-actions input {
+.combatant-actions .action-stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.combatant-actions label {
+  min-width: 0;
+  gap: 0.4rem;
+}
+
+.combatant-actions input,
+.combatant-actions select {
   width: 100%;
   min-width: 0;
+  min-height: 2.5rem;
+  box-sizing: border-box;
+}
+
+.combatant-actions button {
+  min-height: 2.5rem;
+  white-space: nowrap;
+  padding-inline: 0.85rem;
+}
+
+.combatant-actions .action-full {
+  width: 100%;
+}
+
+.combatant-actions .action-stack button:not(.action-full) {
+  width: 100%;
+}
+
+.modifier-tags {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.modifier-tags li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 3px;
+  border: 1px solid color-mix(in srgb, var(--silver-dim) 45%, transparent);
+  background: linear-gradient(180deg, #2a1c12, #1a120c);
+  font-size: 0.78rem;
+  color: var(--silver);
+}
+
+.modifier-tags li.skips-turn {
+  border-color: color-mix(in srgb, var(--accent-ember) 55%, transparent);
+  color: var(--accent-ember);
+}
+
+.tag-remove {
+  padding: 0 0.3rem !important;
+  min-width: auto;
+  font-size: 0.9rem;
+  line-height: 1;
 }
 
 .checkbox {
@@ -822,9 +894,17 @@ select:focus {
   }
 }
 
-@media (max-width: 480px) {
-  .combatant-actions form {
+@media (max-width: 640px) {
+  .combatant-grid {
     grid-template-columns: 1fr;
+  }
+
+  .combatant-actions .action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .combatant-actions .action-row button {
+    width: 100%;
   }
 
   .battle-toolbar-actions {
@@ -833,6 +913,16 @@ select:focus {
 
   .battle-toolbar-actions button {
     flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .combatant-body {
+    padding: 0.75rem;
+  }
+
+  .combatant-stats {
+    gap: 0.3rem;
   }
 }
 

@@ -11,6 +11,13 @@ export interface Sheet {
   dexModifier: number;
 }
 
+export interface ActiveModifier {
+  id: string;
+  name: string;
+  remainingDuration: number;
+  skipsTurn: boolean;
+}
+
 export interface Combatant {
   id: string;
   sheetId: string;
@@ -24,6 +31,7 @@ export interface Combatant {
   isDead: boolean;
   sortOrder: number;
   isCurrentTurn: boolean;
+  modifiers: ActiveModifier[];
 }
 
 export interface BattleSnapshot {
@@ -34,6 +42,13 @@ export interface BattleSnapshot {
   combatants: Combatant[];
   message: string | null;
   lastDiceRoll: number | null;
+}
+
+export interface ModifierType {
+  id: string;
+  name: string;
+  defaultDuration: number;
+  skipsTurn: boolean;
 }
 
 export interface LoginResponse {

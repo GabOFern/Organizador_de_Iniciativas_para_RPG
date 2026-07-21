@@ -15,7 +15,9 @@ public class Combatant
     public int SortOrder { get; set; }
 
     /// <summary>
-    /// Fase 2: combatentes com modificador "pula turno" ativo serão ignorados.
+    /// Indica se o combatente deve ser pulado nesta rodada (sincronizado a partir de ActiveModifiers).
     /// </summary>
     public bool HasSkipTurnEffectActive { get; set; }
+
+    public ICollection<ActiveModifier> ActiveModifiers { get; set; } = new List<ActiveModifier>();
 }

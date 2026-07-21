@@ -16,7 +16,7 @@ public static class DbSeeder
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
-        await db.Database.EnsureCreatedAsync();
+        await db.Database.MigrateAsync();
 
         if (string.IsNullOrWhiteSpace(adminOptions.Username) || string.IsNullOrWhiteSpace(adminOptions.Password))
         {

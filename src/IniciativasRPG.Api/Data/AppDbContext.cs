@@ -13,6 +13,8 @@ public class AppDbContext : DbContext
     public DbSet<Sheet> Sheets => Set<Sheet>();
     public DbSet<Battle> Battles => Set<Battle>();
     public DbSet<Combatant> Combatants => Set<Combatant>();
+    public DbSet<ModifierType> ModifierTypes => Set<ModifierType>();
+    public DbSet<ActiveModifier> ActiveModifiers => Set<ActiveModifier>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -51,6 +53,26 @@ public class AppDbContext : DbContext
                 .WithMany(s => s.Combatants)
                 .HasForeignKey(x => x.SheetId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ModifierType>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+        });
+
+        modelBuilder.Entity<ActiveModifier>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(120).IsRequired();
+            e.HasOne(x => x.Combatant)
+                .WithMany(c => c.ActiveModifiers)
+                .HasForeignKey(x => x.CombatantId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.ModifierType)
+                .WithMany(t => t.ActiveModifiers)
+                .HasForeignKey(x => x.ModifierTypeId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 }

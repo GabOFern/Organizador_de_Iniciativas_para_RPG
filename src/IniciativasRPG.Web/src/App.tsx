@@ -4,6 +4,7 @@ import { routes } from './config';
 import { MestreLayout, RequireAuth } from './layout';
 import { BattlePage } from './pages/BattlePage';
 import { LoginPage } from './pages/LoginPage';
+import { ModifiersPage } from './pages/ModifiersPage';
 import { PublicBattlePage } from './pages/PublicBattlePage';
 import { SheetsPage } from './pages/SheetsPage';
 
@@ -25,6 +26,7 @@ export default function App() {
             <Route index element={<Navigate to={routes.mestreBattle} replace />} />
             <Route path="batalha" element={<BattlePage />} />
             <Route path="fichas" element={<SheetsPage />} />
+            <Route path="modificadores" element={<ModifiersPage />} />
           </Route>
           <Route path="*" element={<Navigate to={routes.login} replace />} />
         </Routes>

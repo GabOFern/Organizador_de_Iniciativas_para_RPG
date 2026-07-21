@@ -16,7 +16,11 @@ public interface IBattleService
     Task<BattleSnapshotDto> NextAsync(CancellationToken ct = default);
     Task<BattleSnapshotDto> FinishAsync(CancellationToken ct = default);
     Task<BattleSnapshotDto> ApplyDamageAsync(DamageRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> ApplyHealAsync(HealRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> KillAsync(KillRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> ReviveAsync(ReviveRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> ApplyModifierAsync(ApplyModifierRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> RemoveModifierAsync(Guid activeModifierId, CancellationToken ct = default);
 }
 
 public class BattleService : IBattleService
@@ -172,9 +176,17 @@ public class BattleService : IBattleService
             throw new DomainException(DomainMessages.NotEnoughCombatants);
         }
 
-        var nextIndex = FindNextEligibleIndex(ordered, battle.CurrentTurnIndex);
-        _ = DidCompleteRound(battle.CurrentTurnIndex, nextIndex, ordered.Count);
-        ConsumeSkipTurnBetween(ordered, battle.CurrentTurnIndex, nextIndex);
+        var previousIndex = battle.CurrentTurnIndex;
+        var nextIndex = FindNextEligibleIndex(ordered, previousIndex);
+        var completedRound = DidCompleteRound(previousIndex, nextIndex, ordered.Count);
+
+        ConsumeSkipTurnBetween(ordered, previousIndex, nextIndex);
+
+        if (completedRound)
+        {
+            await DecrementModifiersForBattleAsync(battle.Id, ct);
+            await RearmSkipTurnFlagsAsync(battle.Id, ct);
+        }
 
         battle.CurrentTurnIndex = nextIndex;
         await _db.SaveChangesAsync(ct);
@@ -221,6 +233,31 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
 
+    public async Task<BattleSnapshotDto> ApplyHealAsync(HealRequest request, CancellationToken ct = default)
+    {
+        if (request.Amount <= 0)
+        {
+            throw new DomainException(DomainMessages.HealMustBePositive);
+        }
+
+        var battleId = await FindOpenBattleIdAsync(ct)
+            ?? throw new DomainException(DomainMessages.BattleNotFound);
+
+        var combatant = await _db.Combatants
+            .FirstOrDefaultAsync(c => c.Id == request.CombatantId && c.BattleId == battleId, ct)
+            ?? throw new DomainException(DomainMessages.CombatantNotFound, StatusCodes.Status404NotFound);
+
+        if (combatant.IsDead)
+        {
+            throw new DomainException(DomainMessages.HealBlockedWhileDead);
+        }
+
+        combatant.CurrentHp = Math.Min(combatant.MaxHp, combatant.CurrentHp + request.Amount);
+        await _db.SaveChangesAsync(ct);
+
+        return await BuildAndNotifyAsync(battleId, ct: ct);
+    }
+
     public async Task<BattleSnapshotDto> KillAsync(KillRequest request, CancellationToken ct = default)
     {
         var battleId = await FindOpenBattleIdAsync(ct)
@@ -239,6 +276,135 @@ public class BattleService : IBattleService
         await _db.SaveChangesAsync(ct);
 
         return await BuildAndNotifyAsync(battleId, ct: ct);
+    }
+
+    public async Task<BattleSnapshotDto> ReviveAsync(ReviveRequest request, CancellationToken ct = default)
+    {
+        var battleId = await FindOpenBattleIdAsync(ct)
+            ?? throw new DomainException(DomainMessages.BattleNotFound);
+
+        var combatant = await _db.Combatants
+            .FirstOrDefaultAsync(c => c.Id == request.CombatantId && c.BattleId == battleId, ct)
+            ?? throw new DomainException(DomainMessages.CombatantNotFound, StatusCodes.Status404NotFound);
+
+        if (!combatant.IsDead)
+        {
+            throw new DomainException(DomainMessages.CombatantNotDead);
+        }
+
+        if (combatant.CurrentHp <= BattleRules.MinHp)
+        {
+            if (!request.HealAmount.HasValue || request.HealAmount.Value <= 0)
+            {
+                throw new DomainException(DomainMessages.ReviveRequiresHeal);
+            }
+
+            combatant.CurrentHp = Math.Min(combatant.MaxHp, request.HealAmount.Value);
+        }
+
+        combatant.IsDead = false;
+        await SyncSkipTurnFlagAsync(combatant.Id, ct);
+        await _db.SaveChangesAsync(ct);
+
+        return await BuildAndNotifyAsync(battleId, ct: ct);
+    }
+
+    public async Task<BattleSnapshotDto> ApplyModifierAsync(ApplyModifierRequest request, CancellationToken ct = default)
+    {
+        var battleId = await FindOpenBattleIdAsync(ct)
+            ?? throw new DomainException(DomainMessages.BattleNotFound);
+
+        var combatant = await _db.Combatants
+            .FirstOrDefaultAsync(c => c.Id == request.CombatantId && c.BattleId == battleId, ct)
+            ?? throw new DomainException(DomainMessages.CombatantNotFound, StatusCodes.Status404NotFound);
+
+        var type = await _db.ModifierTypes.FirstOrDefaultAsync(t => t.Id == request.ModifierTypeId, ct)
+            ?? throw new DomainException(DomainMessages.ModifierTypeNotFound, StatusCodes.Status404NotFound);
+
+        var duration = request.Duration ?? type.DefaultDuration;
+        if (duration < 1)
+        {
+            throw new DomainException(DomainMessages.DurationMustBePositive);
+        }
+
+        _db.ActiveModifiers.Add(new ActiveModifier
+        {
+            Id = Guid.NewGuid(),
+            CombatantId = combatant.Id,
+            ModifierTypeId = type.Id,
+            Name = type.Name,
+            RemainingDuration = duration,
+            SkipsTurn = type.SkipsTurn
+        });
+
+        if (type.SkipsTurn)
+        {
+            combatant.HasSkipTurnEffectActive = true;
+        }
+
+        await _db.SaveChangesAsync(ct);
+        return await BuildAndNotifyAsync(battleId, ct: ct);
+    }
+
+    public async Task<BattleSnapshotDto> RemoveModifierAsync(Guid activeModifierId, CancellationToken ct = default)
+    {
+        var battleId = await FindOpenBattleIdAsync(ct)
+            ?? throw new DomainException(DomainMessages.BattleNotFound);
+
+        var modifier = await _db.ActiveModifiers
+            .Include(m => m.Combatant)
+            .FirstOrDefaultAsync(m => m.Id == activeModifierId && m.Combatant.BattleId == battleId, ct)
+            ?? throw new DomainException(DomainMessages.ActiveModifierNotFound, StatusCodes.Status404NotFound);
+
+        var combatantId = modifier.CombatantId;
+        _db.ActiveModifiers.Remove(modifier);
+        await _db.SaveChangesAsync(ct);
+        await SyncSkipTurnFlagAsync(combatantId, ct);
+        await _db.SaveChangesAsync(ct);
+
+        return await BuildAndNotifyAsync(battleId, ct: ct);
+    }
+
+    private async Task DecrementModifiersForBattleAsync(Guid battleId, CancellationToken ct)
+    {
+        var modifiers = await _db.ActiveModifiers
+            .Where(m => m.Combatant.BattleId == battleId)
+            .ToListAsync(ct);
+
+        foreach (var modifier in modifiers)
+        {
+            modifier.RemainingDuration -= 1;
+        }
+
+        var expired = modifiers.Where(m => m.RemainingDuration <= 0).ToList();
+        if (expired.Count > 0)
+        {
+            _db.ActiveModifiers.RemoveRange(expired);
+        }
+    }
+
+    private async Task RearmSkipTurnFlagsAsync(Guid battleId, CancellationToken ct)
+    {
+        var combatants = await _db.Combatants
+            .Include(c => c.ActiveModifiers)
+            .Where(c => c.BattleId == battleId)
+            .ToListAsync(ct);
+
+        foreach (var combatant in combatants)
+        {
+            combatant.HasSkipTurnEffectActive = combatant.ActiveModifiers
+                .Any(m => m.SkipsTurn && m.RemainingDuration > 0);
+        }
+    }
+
+    private async Task SyncSkipTurnFlagAsync(Guid combatantId, CancellationToken ct)
+    {
+        var combatant = await _db.Combatants
+            .Include(c => c.ActiveModifiers)
+            .FirstAsync(c => c.Id == combatantId, ct);
+
+        combatant.HasSkipTurnEffectActive = combatant.ActiveModifiers
+            .Any(m => m.SkipsTurn && m.RemainingDuration > 0);
     }
 
     private async Task<Guid?> FindOpenBattleIdAsync(CancellationToken ct)
@@ -395,6 +561,7 @@ public class BattleService : IBattleService
         var ordered = await _db.Combatants
             .AsNoTracking()
             .Include(c => c.Sheet)
+            .Include(c => c.ActiveModifiers)
             .Where(c => c.BattleId == battleId)
             .OrderBy(c => c.SortOrder)
             .ToListAsync(ct);
@@ -411,7 +578,11 @@ public class BattleService : IBattleService
             c.CurrentAc,
             c.IsDead,
             c.SortOrder,
-            battle.Status == BattleStatus.Active && index == battle.CurrentTurnIndex && !c.IsDead
+            battle.Status == BattleStatus.Active && index == battle.CurrentTurnIndex && !c.IsDead,
+            c.ActiveModifiers
+                .OrderBy(m => m.Name)
+                .Select(m => new ActiveModifierDto(m.Id, m.Name, m.RemainingDuration, m.SkipsTurn))
+                .ToList()
         )).ToList();
 
         return new BattleSnapshotDto(

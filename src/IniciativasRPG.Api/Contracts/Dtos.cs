@@ -32,6 +32,12 @@ public record UpdateSheetRequest(
     int BaseAc,
     int DexModifier);
 
+public record ActiveModifierDto(
+    Guid Id,
+    string Name,
+    int RemainingDuration,
+    bool SkipsTurn);
+
 public record CombatantDto(
     Guid Id,
     Guid SheetId,
@@ -44,7 +50,8 @@ public record CombatantDto(
     int CurrentAc,
     bool IsDead,
     int SortOrder,
-    bool IsCurrentTurn);
+    bool IsCurrentTurn,
+    IReadOnlyList<ActiveModifierDto> Modifiers);
 
 public record BattleSnapshotDto(
     Guid? Id,
@@ -62,4 +69,27 @@ public record InvokeCreatureRequest(
     bool RollDice,
     string? DiceNotation);
 public record DamageRequest(Guid CombatantId, int Amount);
+public record HealRequest(Guid CombatantId, int Amount);
 public record KillRequest(Guid CombatantId);
+public record ReviveRequest(Guid CombatantId, int? HealAmount);
+
+public record ModifierTypeDto(
+    Guid Id,
+    string Name,
+    int DefaultDuration,
+    bool SkipsTurn);
+
+public record CreateModifierTypeRequest(
+    string Name,
+    int DefaultDuration,
+    bool SkipsTurn);
+
+public record UpdateModifierTypeRequest(
+    string Name,
+    int DefaultDuration,
+    bool SkipsTurn);
+
+public record ApplyModifierRequest(
+    Guid CombatantId,
+    Guid ModifierTypeId,
+    int? Duration);

@@ -45,7 +45,23 @@ public class BattleController : ControllerBase
     public async Task<ActionResult<BattleSnapshotDto>> Damage([FromBody] DamageRequest request, CancellationToken ct) =>
         Ok(await _battleService.ApplyDamageAsync(request, ct));
 
+    [HttpPost("heal")]
+    public async Task<ActionResult<BattleSnapshotDto>> Heal([FromBody] HealRequest request, CancellationToken ct) =>
+        Ok(await _battleService.ApplyHealAsync(request, ct));
+
     [HttpPost("kill")]
     public async Task<ActionResult<BattleSnapshotDto>> Kill([FromBody] KillRequest request, CancellationToken ct) =>
         Ok(await _battleService.KillAsync(request, ct));
+
+    [HttpPost("revive")]
+    public async Task<ActionResult<BattleSnapshotDto>> Revive([FromBody] ReviveRequest request, CancellationToken ct) =>
+        Ok(await _battleService.ReviveAsync(request, ct));
+
+    [HttpPost("modifiers")]
+    public async Task<ActionResult<BattleSnapshotDto>> ApplyModifier([FromBody] ApplyModifierRequest request, CancellationToken ct) =>
+        Ok(await _battleService.ApplyModifierAsync(request, ct));
+
+    [HttpDelete("modifiers/{id:guid}")]
+    public async Task<ActionResult<BattleSnapshotDto>> RemoveModifier(Guid id, CancellationToken ct) =>
+        Ok(await _battleService.RemoveModifierAsync(id, ct));
 }

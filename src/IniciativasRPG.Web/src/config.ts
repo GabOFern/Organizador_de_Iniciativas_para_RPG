@@ -21,5 +21,6 @@ export const routes = {
   mestre: '/mestre',
   mestreSheets: '/mestre/fichas',
   mestreBattle: '/mestre/batalha',
+  mestreModifiers: '/mestre/modificadores',
   publicBattle: (token: string) => `/publico/${token}`,
 } as const;

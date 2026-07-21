@@ -17,6 +17,13 @@ public static class DomainMessages
     public const string KillOnlyAtZeroHp = "Só é possível marcar como morto quando a vida atual é 0.";
     public const string InvalidDiceNotation = "Notação de dado inválida. Use o formato XdY+Z (ex.: 1d20+3).";
     public const string DamageMustBePositive = "O valor de dano deve ser maior que zero.";
+    public const string HealMustBePositive = "O valor de cura deve ser maior que zero.";
+    public const string HealBlockedWhileDead = "Não é possível curar um combatente morto. Use Reviver antes.";
+    public const string CombatantNotDead = "Este combatente não está marcado como morto.";
+    public const string ReviveRequiresHeal = "Informe a vida a restaurar ao reviver um combatente com vida 0.";
+    public const string ModifierTypeNotFound = "Tipo de modificador não encontrado.";
+    public const string ActiveModifierNotFound = "Modificador ativo não encontrado.";
+    public const string DurationMustBePositive = "A duração deve ser maior que zero.";
     public const string NoPublicBattle = "Não há combate em andamento.";
     public const string ConfigMissing = "Configuração obrigatória ausente. Verifique User Secrets ou variáveis de ambiente.";
 }

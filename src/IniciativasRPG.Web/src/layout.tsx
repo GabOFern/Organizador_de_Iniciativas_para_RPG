@@ -23,6 +23,7 @@ export function MestreLayout() {
         <nav className="mestre-nav">
           <NavLink to={routes.mestreBattle}>Batalha</NavLink>
           <NavLink to={routes.mestreSheets}>Fichas</NavLink>
+          <NavLink to={routes.mestreModifiers}>Modificadores</NavLink>
           <button type="button" className="ghost" onClick={logout}>
             Sair
           </button>
