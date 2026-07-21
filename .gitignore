@@ -1,0 +1,21 @@
+# Build
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+
+# Secrets e ambiente local
+**/appsettings.Development.json
+**/.env
+**/.env.local
+**/.env.*.local
+*.user
+*.db
+*.db-shm
+*.db-wal
+
+# IDE
+.vs/
+.idea/
+*.swp
+.DS_Store
