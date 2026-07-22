@@ -17,22 +17,20 @@ public class SheetsController : ControllerBase
         _sheetService = sheetService;
     }
 
+    private Guid CampaignId => User.GetRequiredCampaignId();
+
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<SheetDto>>> List(CancellationToken ct)
-    {
-        return Ok(await _sheetService.ListAsync(ct));
-    }
+    public async Task<ActionResult<IReadOnlyList<SheetDto>>> List(CancellationToken ct) =>
+        Ok(await _sheetService.ListAsync(CampaignId, ct));
 
     [HttpPost]
     public async Task<ActionResult<SheetDto>> Create([FromBody] CreateSheetRequest request, CancellationToken ct)
     {
-        var sheet = await _sheetService.CreateAsync(request, ct);
+        var sheet = await _sheetService.CreateAsync(CampaignId, request, ct);
         return CreatedAtAction(nameof(List), new { id = sheet.Id }, sheet);
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<ActionResult<SheetDto>> Update(Guid id, [FromBody] UpdateSheetRequest request, CancellationToken ct)
-    {
-        return Ok(await _sheetService.UpdateAsync(id, request, ct));
-    }
+    public async Task<ActionResult<SheetDto>> Update(Guid id, [FromBody] UpdateSheetRequest request, CancellationToken ct) =>
+        Ok(await _sheetService.UpdateAsync(CampaignId, id, request, ct));
 }

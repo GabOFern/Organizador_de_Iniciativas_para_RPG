@@ -3,7 +3,10 @@ namespace IniciativasRPG.Api.Domain;
 public static class DomainMessages
 {
     public const string NameRequired = "O nome é obrigatório.";
-    public const string InvalidCredentials = "Usuário ou senha inválidos.";
+    public const string PasswordRequired = "A senha é obrigatória.";
+    public const string InvalidCredentials = "Credenciais inválidas.";
+    public const string CampaignNotFound = "Campanha não encontrada.";
+    public const string CampaignAlreadyHasOpenBattle = "Já existe uma batalha em andamento nesta campanha. Finalize-a antes de criar outra.";
     public const string SheetNotFound = "Ficha não encontrada.";
     public const string SheetInActiveBattle = "Esta ficha está em uma batalha ativa. Use as ações de combate (dano/cura/modificador).";
     public const string BattleNotFound = "Não há batalha em andamento.";
@@ -13,6 +16,7 @@ public static class DomainMessages
     public const string PlayerAlreadyInBattle = "Este player já está na fila da batalha atual.";
     public const string SheetMustBePlayer = "A ficha selecionada deve ser do tipo player.";
     public const string SheetMustBeNonPlayer = "A ficha selecionada deve ser do tipo criatura ou NPC.";
+    public const string SheetWrongCampaign = "A ficha não pertence a esta campanha.";
     public const string CombatantNotFound = "Combatente não encontrado.";
     public const string KillOnlyAtZeroHp = "Só é possível marcar como morto quando a vida atual é 0.";
     public const string InvalidDiceNotation = "Notação de dado inválida. Use o formato XdY+Z (ex.: 1d20+3).";
@@ -35,4 +39,9 @@ public static class DomainMessages
     public const string PlayerStatsSaved = "Estatísticas dos players salvas nas fichas.";
     public const string NoPublicBattle = "Não há combate em andamento.";
     public const string ConfigMissing = "Configuração obrigatória ausente. Verifique User Secrets ou variáveis de ambiente.";
+    public const string AttackDamageRequired = "Informe o dano do ataque (ex.: 1d8+3).";
+    public const string WeaponDamageRequired = "Informe o dano da arma (ex.: 1d8).";
+    public const string WeaponRangeRequired = "Informe o alcance da arma.";
+    public const string DescriptionRequired = "A descrição é obrigatória.";
+    public const string InvalidSpellSlot = "O nível do slot de magia deve estar entre 0 e 9.";
 }

@@ -3,7 +3,8 @@ namespace IniciativasRPG.Api.Domain;
 public class Battle
 {
     public Guid Id { get; set; }
-    public string PublicToken { get; set; } = string.Empty;
+    public Guid CampaignId { get; set; }
+    public Campaign Campaign { get; set; } = null!;
     public BattleStatus Status { get; set; } = BattleStatus.Preparing;
     public int CurrentTurnIndex { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;

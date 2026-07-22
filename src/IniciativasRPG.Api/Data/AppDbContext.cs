@@ -10,7 +10,11 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<Sheet> Sheets => Set<Sheet>();
+    public DbSet<SheetAttack> SheetAttacks => Set<SheetAttack>();
+    public DbSet<SheetSpell> SheetSpells => Set<SheetSpell>();
+    public DbSet<SheetWeapon> SheetWeapons => Set<SheetWeapon>();
     public DbSet<Battle> Battles => Set<Battle>();
     public DbSet<Combatant> Combatants => Set<Combatant>();
     public DbSet<ModifierType> ModifierTypes => Set<ModifierType>();
@@ -26,20 +30,83 @@ public class AppDbContext : DbContext
             e.Property(x => x.PasswordHash).IsRequired();
         });
 
+        modelBuilder.Entity<Campaign>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.HasIndex(x => x.PublicToken).IsUnique();
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.ImageUrl).HasMaxLength(1000);
+            e.Property(x => x.Description).HasMaxLength(4000);
+            e.Property(x => x.PasswordHash).IsRequired();
+            e.Property(x => x.PublicToken).HasMaxLength(64).IsRequired();
+        });
+
         modelBuilder.Entity<Sheet>(e =>
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
             e.Property(x => x.ImageUrl).HasMaxLength(1000);
             e.Property(x => x.Type).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Class).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Resistances).HasMaxLength(4000);
+            e.HasOne(x => x.Campaign)
+                .WithMany(c => c.Sheets)
+                .HasForeignKey(x => x.CampaignId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.CampaignId);
+        });
+
+        modelBuilder.Entity<SheetAttack>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Description).HasMaxLength(500).IsRequired();
+            e.Property(x => x.DamageDice).HasMaxLength(40).IsRequired();
+            e.Property(x => x.AbilityBase).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.StrikeType).HasConversion<string>().HasMaxLength(20);
+            e.HasOne(x => x.Sheet)
+                .WithMany(s => s.Attacks)
+                .HasForeignKey(x => x.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.SheetId);
+        });
+
+        modelBuilder.Entity<SheetSpell>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Description).HasMaxLength(500).IsRequired();
+            e.Property(x => x.DamageDice).HasMaxLength(40);
+            e.Property(x => x.AbilityBase).HasConversion<string>().HasMaxLength(20);
+            e.HasOne(x => x.Sheet)
+                .WithMany(s => s.Spells)
+                .HasForeignKey(x => x.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.SheetId);
+        });
+
+        modelBuilder.Entity<SheetWeapon>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Description).HasMaxLength(500).IsRequired();
+            e.Property(x => x.DamageDice).HasMaxLength(40).IsRequired();
+            e.Property(x => x.Range).HasMaxLength(80).IsRequired();
+            e.Property(x => x.StrikeType).HasConversion<string>().HasMaxLength(20);
+            e.HasOne(x => x.Sheet)
+                .WithMany(s => s.Weapons)
+                .HasForeignKey(x => x.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.SheetId);
         });
 
         modelBuilder.Entity<Battle>(e =>
         {
             e.HasKey(x => x.Id);
-            e.HasIndex(x => x.PublicToken).IsUnique();
-            e.Property(x => x.PublicToken).HasMaxLength(64).IsRequired();
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.HasOne(x => x.Campaign)
+                .WithMany(c => c.Battles)
+                .HasForeignKey(x => x.CampaignId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.CampaignId);
+            e.HasIndex(x => new { x.CampaignId, x.Status });
         });
 
         modelBuilder.Entity<Combatant>(e =>

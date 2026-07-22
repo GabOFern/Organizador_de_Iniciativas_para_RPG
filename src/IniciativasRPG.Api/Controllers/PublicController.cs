@@ -11,13 +11,19 @@ namespace IniciativasRPG.Api.Controllers;
 public class PublicController : ControllerBase
 {
     private readonly IBattleService _battleService;
+    private readonly ICampaignService _campaignService;
 
-    public PublicController(IBattleService battleService)
+    public PublicController(IBattleService battleService, ICampaignService campaignService)
     {
         _battleService = battleService;
+        _campaignService = campaignService;
     }
 
-    [HttpGet("battles/{token}")]
-    public async Task<ActionResult<BattleSnapshotDto>> GetBattle(string token, CancellationToken ct) =>
+    [HttpGet("campaigns")]
+    public async Task<ActionResult<IReadOnlyList<CampaignSummaryDto>>> ListCampaigns(CancellationToken ct) =>
+        Ok(await _campaignService.ListAsync(ct));
+
+    [HttpGet("campaigns/{token}")]
+    public async Task<ActionResult<BattleSnapshotDto>> GetCampaignBattle(string token, CancellationToken ct) =>
         Ok(await _battleService.GetByPublicTokenAsync(token, forPublic: true, ct));
 }

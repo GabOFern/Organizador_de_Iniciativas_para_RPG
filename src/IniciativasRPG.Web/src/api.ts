@@ -1,11 +1,13 @@
 import { config } from './config';
 import type {
   BattleSnapshot,
-  LoginResponse,
+  CampaignMasterLoginResponse,
+  CampaignSummary,
+  CombatantTactical,
   ModifierType,
   ModifierTypePayload,
   Sheet,
-  SheetType,
+  SheetPayload,
 } from './types';
 
 export class ApiError extends Error {
@@ -60,39 +62,34 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  login: (username: string, password: string) =>
-    request<LoginResponse>('/api/auth/login', {
+  listCampaigns: () => request<CampaignSummary[]>('/api/campaigns'),
+
+  createCampaign: (body: {
+    name: string;
+    imageUrl?: string | null;
+    description?: string | null;
+    password: string;
+  }) =>
+    request<CampaignSummary>('/api/campaigns', {
       method: 'POST',
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify(body),
+    }),
+
+  masterLogin: (campaignId: string, password: string) =>
+    request<CampaignMasterLoginResponse>(`/api/campaigns/${campaignId}/master-login`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
     }),
 
   listSheets: () => request<Sheet[]>('/api/sheets'),
 
-  createSheet: (body: {
-    name: string;
-    imageUrl?: string | null;
-    type: SheetType;
-    maxHp: number;
-    baseAc: number;
-    dexModifier: number;
-  }) =>
+  createSheet: (body: SheetPayload) =>
     request<Sheet>('/api/sheets', {
       method: 'POST',
       body: JSON.stringify(body),
     }),
 
-  updateSheet: (
-    id: string,
-    body: {
-      name: string;
-      imageUrl?: string | null;
-      type: SheetType;
-      maxHp: number;
-      currentHp: number;
-      baseAc: number;
-      dexModifier: number;
-    },
-  ) =>
+  updateSheet: (id: string, body: SheetPayload & { currentHp: number }) =>
     request<Sheet>(`/api/sheets/${id}`, {
       method: 'PUT',
       body: JSON.stringify(body),
@@ -118,7 +115,10 @@ export const api = {
   getCurrentBattle: () => request<BattleSnapshot>('/api/battle/current'),
 
   getPublicBattle: (token: string) =>
-    request<BattleSnapshot>(`/api/public/battles/${token}`),
+    request<BattleSnapshot>(`/api/public/campaigns/${token}`),
+
+  getCombatantTactical: (combatantId: string) =>
+    request<CombatantTactical>(`/api/battle/combatants/${combatantId}/tactical`),
 
   invokePlayer: (sheetId: string, initiative: number, confirmDuplicate = false) =>
     request<BattleSnapshot>('/api/battle/invoke-player', {

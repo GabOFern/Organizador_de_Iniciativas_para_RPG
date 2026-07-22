@@ -3,9 +3,10 @@ import { api, ApiError } from '../api';
 import { useAuth } from '../auth';
 import { CombatantCard } from '../components/CombatantCard';
 import { InvokeModal, type InvokePayload } from '../components/InvokeModal';
+import { TacticalPanel } from '../components/TacticalPanel';
 import { routes } from '../config';
 import { useBattleHub } from '../hooks/useBattleHub';
-import type { BattleSnapshot, ModifierType, Sheet } from '../types';
+import type { BattleSnapshot, CombatantTactical, ModifierType, Sheet } from '../types';
 
 const emptyBattle: BattleSnapshot = {
   id: null,
@@ -27,6 +28,7 @@ export function BattlePage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [invokeOpen, setInvokeOpen] = useState(false);
+  const [tactical, setTactical] = useState<CombatantTactical | null>(null);
 
   const applySnapshot = useCallback((snapshot: BattleSnapshot) => {
     setBattle(snapshot);
@@ -81,6 +83,15 @@ export function BattlePage() {
       await run(action);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Falha na ação de combate.');
+    }
+  }
+
+  async function openTactical(combatantId: string) {
+    setError(null);
+    try {
+      setTactical(await api.getCombatantTactical(combatantId));
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Falha ao carregar detalhes táticos.');
     }
   }
 
@@ -228,6 +239,7 @@ export function BattlePage() {
                 key={c.id}
                 combatant={c}
                 modifierTypes={modifierTypes}
+                onOpenTactical={(id) => void openTactical(id)}
                 onDamage={(id, amount) =>
                   void handleBattleAction(() => api.applyDamage(id, amount))
                 }
@@ -256,6 +268,8 @@ export function BattlePage() {
         onClose={() => setInvokeOpen(false)}
         onInvoke={handleInvoke}
       />
+
+      {tactical && <TacticalPanel data={tactical} onClose={() => setTactical(null)} />}
     </div>
   );
 }

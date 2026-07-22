@@ -1,3 +1,4 @@
+import { CardFrame } from './CardFrame';
 import { ModifierIcon } from './ModifierIcon';
 import { summarizeModifierEffect } from '../modifierIcons';
 import type { ActiveModifier, Combatant, ModifierType } from '../types';
@@ -12,6 +13,7 @@ interface CombatantCardProps {
   onRevive?: (combatantId: string, healAmount?: number) => void;
   onApplyModifier?: (combatantId: string, modifierTypeId: string, duration?: number) => void;
   onRemoveModifier?: (activeModifierId: string) => void;
+  onOpenTactical?: (combatantId: string) => void;
 }
 
 function modifierTitle(m: ActiveModifier): string {
@@ -43,6 +45,7 @@ export function CombatantCard({
   onRevive,
   onApplyModifier,
   onRemoveModifier,
+  onOpenTactical,
 }: CombatantCardProps) {
   const showKill = !readOnly && combatant.currentHp === 0 && !combatant.isDead;
   const modifiers = combatant.modifiers ?? [];
@@ -57,10 +60,17 @@ export function CombatantCard({
         .filter(Boolean)
         .join(' ')}
     >
+      <CardFrame />
       <div className="combatant-media">
         <div className="combatant-media-frame" aria-hidden />
         {combatant.imageUrl ? (
-          <img src={combatant.imageUrl} alt={combatant.name} />
+          <img
+            src={combatant.imageUrl}
+            alt={combatant.name}
+            style={{
+              objectPosition: `${combatant.imageFocusX ?? 50}% ${combatant.imageFocusY ?? 50}%`,
+            }}
+          />
         ) : (
           <div className="combatant-placeholder" aria-hidden>
             {combatant.name.slice(0, 1).toUpperCase()}
@@ -72,9 +82,20 @@ export function CombatantCard({
       <div className="combatant-body">
         <header className="combatant-header">
           <h3>{combatant.name}</h3>
-          {combatant.isCurrentTurn && !combatant.isDead && (
-            <span className="turn-badge">Turno</span>
-          )}
+          <div className="combatant-header-actions">
+            {combatant.isCurrentTurn && !combatant.isDead && (
+              <span className="turn-badge">Turno</span>
+            )}
+            {!readOnly && onOpenTactical && (
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => onOpenTactical(combatant.id)}
+              >
+                Detalhes
+              </button>
+            )}
+          </div>
         </header>
 
         <dl className="combatant-stats">

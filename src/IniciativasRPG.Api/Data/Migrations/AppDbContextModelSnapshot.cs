@@ -103,6 +103,9 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -112,11 +115,6 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<DateTime?>("PlayerStatsSavedAtUtc")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("PublicToken")
-                        .IsRequired()
-                        .HasMaxLength(64)
-                        .HasColumnType("TEXT");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -124,10 +122,50 @@ namespace IniciativasRPG.Api.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CampaignId");
+
+                    b.HasIndex("CampaignId", "Status");
+
+                    b.ToTable("Battles");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.Campaign", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PublicToken")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
                     b.HasIndex("PublicToken")
                         .IsUnique();
 
-                    b.ToTable("Battles");
+                    b.ToTable("Campaigns");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
@@ -245,15 +283,41 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<int>("BaseAc")
                         .HasColumnType("INTEGER");
 
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Charisma")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Class")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Constitution")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("CurrentHp")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("DexModifier")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Dexterity")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("ImageFocusX")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("ImageFocusY")
+                        .HasColumnType("REAL");
+
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("Intelligence")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("MaxHp")
                         .HasColumnType("INTEGER");
@@ -263,14 +327,143 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Resistances")
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Strength")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Wisdom")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("Sheets");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetAttack", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AbilityBase")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageDice")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SheetId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StrikeType")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Sheets");
+                    b.HasIndex("SheetId");
+
+                    b.ToTable("SheetAttacks");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetSpell", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("AbilityBase")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageDice")
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("RequiresMaterial")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<Guid>("SheetId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SlotLevel")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SheetId");
+
+                    b.ToTable("SheetSpells");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetWeapon", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DamageDice")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Range")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SheetId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("StrikeType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SheetId");
+
+                    b.ToTable("SheetWeapons");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.User", b =>
@@ -314,6 +507,17 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("ModifierType");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.Battle", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Campaign", "Campaign")
+                        .WithMany("Battles")
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Campaign");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
                 {
                     b.HasOne("IniciativasRPG.Api.Domain.Battle", "Battle")
@@ -333,9 +537,60 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Sheet");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.Sheet", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Campaign", "Campaign")
+                        .WithMany("Sheets")
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Campaign");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetAttack", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
+                        .WithMany("Attacks")
+                        .HasForeignKey("SheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sheet");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetSpell", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
+                        .WithMany("Spells")
+                        .HasForeignKey("SheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sheet");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetWeapon", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
+                        .WithMany("Weapons")
+                        .HasForeignKey("SheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sheet");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Battle", b =>
                 {
                     b.Navigation("Combatants");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.Campaign", b =>
+                {
+                    b.Navigation("Battles");
+
+                    b.Navigation("Sheets");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
@@ -350,7 +605,13 @@ namespace IniciativasRPG.Api.Data.Migrations
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Sheet", b =>
                 {
+                    b.Navigation("Attacks");
+
                     b.Navigation("Combatants");
+
+                    b.Navigation("Spells");
+
+                    b.Navigation("Weapons");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,15 +1,164 @@
 export type SheetType = 'Player' | 'Creature' | 'Npc';
 export type DamageMode = 'None' | 'Fixed' | 'DicePerTurn' | 'DiceOnce';
+export type CharacterClass =
+  | 'None'
+  | 'Barbarian'
+  | 'Bard'
+  | 'Cleric'
+  | 'Druid'
+  | 'Fighter'
+  | 'Monk'
+  | 'Paladin'
+  | 'Ranger'
+  | 'Rogue'
+  | 'Sorcerer'
+  | 'Warlock'
+  | 'Wizard';
+
+export type AbilityName =
+  | 'Strength'
+  | 'Dexterity'
+  | 'Constitution'
+  | 'Intelligence'
+  | 'Wisdom'
+  | 'Charisma';
+
+export type StrikeType = 'Melee' | 'Ranged';
+
+export interface SheetAttack {
+  id?: string | null;
+  description: string;
+  damageDice: string;
+  abilityBase: AbilityName | string;
+  strikeType: StrikeType | string;
+  sortOrder: number;
+}
+
+export interface SheetSpell {
+  id?: string | null;
+  description: string;
+  damageDice: string | null;
+  slotLevel: number;
+  requiresMaterial: boolean;
+  abilityBase: AbilityName | string;
+  sortOrder: number;
+}
+
+export interface SheetWeapon {
+  id?: string | null;
+  description: string;
+  damageDice: string;
+  range: string;
+  strikeType: StrikeType | string;
+  sortOrder: number;
+}
 
 export interface Sheet {
   id: string;
   name: string;
   imageUrl: string | null;
+  imageFocusX: number;
+  imageFocusY: number;
   type: SheetType;
+  class: CharacterClass | string;
   maxHp: number;
   currentHp: number;
   baseAc: number;
   dexModifier: number;
+  strength: number;
+  strengthMod: number;
+  dexterity: number;
+  dexterityMod: number;
+  constitution: number;
+  constitutionMod: number;
+  intelligence: number;
+  intelligenceMod: number;
+  wisdom: number;
+  wisdomMod: number;
+  charisma: number;
+  charismaMod: number;
+  resistances: string | null;
+  attacks: SheetAttack[];
+  spells: SheetSpell[];
+  weapons: SheetWeapon[];
+}
+
+export interface SheetPayload {
+  name: string;
+  imageUrl?: string | null;
+  imageFocusX?: number;
+  imageFocusY?: number;
+  type: SheetType;
+  class: CharacterClass;
+  maxHp: number;
+  currentHp?: number;
+  baseAc: number;
+  strength: number;
+  dexterity: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
+  resistances?: string | null;
+  attacks?: Array<{
+    description: string;
+    damageDice: string;
+    abilityBase: AbilityName;
+    strikeType: StrikeType;
+  }>;
+  spells?: Array<{
+    description: string;
+    damageDice?: string | null;
+    slotLevel: number;
+    requiresMaterial: boolean;
+    abilityBase: AbilityName;
+  }>;
+  weapons?: Array<{
+    description: string;
+    damageDice: string;
+    range: string;
+    strikeType: StrikeType;
+  }>;
+}
+
+export interface CampaignSummary {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  description: string | null;
+  publicToken: string;
+  createdAtUtc: string;
+}
+
+export interface CampaignMasterLoginResponse {
+  token: string;
+  campaignId: string;
+  campaignName: string;
+  publicToken: string;
+}
+
+export interface CombatantTactical {
+  combatantId: string;
+  sheetId: string;
+  name: string;
+  sheetType: string;
+  class: string;
+  strength: number;
+  strengthMod: number;
+  dexterity: number;
+  dexterityMod: number;
+  constitution: number;
+  constitutionMod: number;
+  intelligence: number;
+  intelligenceMod: number;
+  wisdom: number;
+  wisdomMod: number;
+  charisma: number;
+  charismaMod: number;
+  resistances: string | null;
+  attacks: SheetAttack[];
+  spells: SheetSpell[];
+  weapons: SheetWeapon[];
 }
 
 export interface ActiveModifier {
@@ -47,6 +196,8 @@ export interface Combatant {
   sheetId: string;
   name: string;
   imageUrl: string | null;
+  imageFocusX: number;
+  imageFocusY: number;
   sheetType: SheetType;
   initiative: number;
   currentHp: number;
@@ -100,9 +251,4 @@ export interface ModifierTypePayload {
   healMode: DamageMode;
   healAmount: number | null;
   healDice: string | null;
-}
-
-export interface LoginResponse {
-  token: string;
-  username: string;
 }

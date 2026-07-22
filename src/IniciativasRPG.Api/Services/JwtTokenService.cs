@@ -11,6 +11,7 @@ namespace IniciativasRPG.Api.Services;
 public interface IJwtTokenService
 {
     string CreateToken(User user);
+    string CreateCampaignToken(Campaign campaign);
 }
 
 public class JwtTokenService : IJwtTokenService
@@ -36,6 +37,24 @@ public class JwtTokenService : IJwtTokenService
             new Claim(ClaimTypes.Name, user.Username)
         };
 
+        return WriteToken(claims);
+    }
+
+    public string CreateCampaignToken(Campaign campaign)
+    {
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, campaign.Id.ToString()),
+            new Claim(CampaignClaims.CampaignId, campaign.Id.ToString()),
+            new Claim(CampaignClaims.CampaignName, campaign.Name),
+            new Claim(ClaimTypes.Name, campaign.Name)
+        };
+
+        return WriteToken(claims);
+    }
+
+    private string WriteToken(IEnumerable<Claim> claims)
+    {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
         var expires = DateTime.UtcNow.AddMinutes(_options.ExpirationMinutes);

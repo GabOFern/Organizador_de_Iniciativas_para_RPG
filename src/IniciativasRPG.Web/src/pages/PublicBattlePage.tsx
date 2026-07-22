@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { CombatantCard } from '../components/CombatantCard';
+import { ThemePicker } from '../components/ThemePicker';
+import { routes } from '../config';
 import { useBattleHub } from '../hooks/useBattleHub';
 import type { BattleSnapshot } from '../types';
 
@@ -48,6 +50,12 @@ export function PublicBattlePage() {
         <h1 className="brand-title">Iniciativas RPG</h1>
         <p className="lede">Acompanhamento ao vivo — somente leitura</p>
         <div className="brand-ornament" aria-hidden />
+        <div className="public-header-actions">
+          <ThemePicker />
+          <Link to={routes.publicLobby} className="public-back-link">
+            Voltar às campanhas
+          </Link>
+        </div>
       </header>
 
       {error && <p className="error">{error}</p>}

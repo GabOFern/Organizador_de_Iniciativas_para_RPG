@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using IniciativasRPG.Api.Contracts;
 using IniciativasRPG.Api.Data;
 using IniciativasRPG.Api.Domain;
@@ -8,20 +7,21 @@ namespace IniciativasRPG.Api.Services;
 
 public interface IBattleService
 {
-    Task<BattleSnapshotDto> GetCurrentAsync(CancellationToken ct = default);
+    Task<BattleSnapshotDto> GetCurrentAsync(Guid campaignId, CancellationToken ct = default);
     Task<BattleSnapshotDto> GetByPublicTokenAsync(string token, bool forPublic = false, CancellationToken ct = default);
-    Task<BattleSnapshotDto> InvokePlayerAsync(InvokePlayerRequest request, CancellationToken ct = default);
-    Task<BattleSnapshotDto> InvokeCreatureAsync(InvokeCreatureRequest request, CancellationToken ct = default);
-    Task<BattleSnapshotDto> StartAsync(CancellationToken ct = default);
-    Task<BattleSnapshotDto> NextAsync(CancellationToken ct = default);
-    Task<BattleSnapshotDto> FinishAsync(CancellationToken ct = default);
-    Task<BattleSnapshotDto> SavePlayerStatsAsync(CancellationToken ct = default);
-    Task<BattleSnapshotDto> ApplyDamageAsync(DamageRequest request, CancellationToken ct = default);
-    Task<BattleSnapshotDto> ApplyHealAsync(HealRequest request, CancellationToken ct = default);
-    Task<BattleSnapshotDto> KillAsync(KillRequest request, CancellationToken ct = default);
-    Task<BattleSnapshotDto> ReviveAsync(ReviveRequest request, CancellationToken ct = default);
-    Task<BattleSnapshotDto> ApplyModifierAsync(ApplyModifierRequest request, CancellationToken ct = default);
-    Task<BattleSnapshotDto> RemoveModifierAsync(Guid activeModifierId, CancellationToken ct = default);
+    Task<BattleSnapshotDto> InvokePlayerAsync(Guid campaignId, InvokePlayerRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> InvokeCreatureAsync(Guid campaignId, InvokeCreatureRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> StartAsync(Guid campaignId, CancellationToken ct = default);
+    Task<BattleSnapshotDto> NextAsync(Guid campaignId, CancellationToken ct = default);
+    Task<BattleSnapshotDto> FinishAsync(Guid campaignId, CancellationToken ct = default);
+    Task<BattleSnapshotDto> SavePlayerStatsAsync(Guid campaignId, CancellationToken ct = default);
+    Task<BattleSnapshotDto> ApplyDamageAsync(Guid campaignId, DamageRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> ApplyHealAsync(Guid campaignId, HealRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> KillAsync(Guid campaignId, KillRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> ReviveAsync(Guid campaignId, ReviveRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> ApplyModifierAsync(Guid campaignId, ApplyModifierRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> RemoveModifierAsync(Guid campaignId, Guid activeModifierId, CancellationToken ct = default);
+    Task<CombatantTacticalDto> GetCombatantTacticalAsync(Guid campaignId, Guid combatantId, CancellationToken ct = default);
 }
 
 public class BattleService : IBattleService
@@ -37,9 +37,9 @@ public class BattleService : IBattleService
         _notifier = notifier;
     }
 
-    public async Task<BattleSnapshotDto> GetCurrentAsync(CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> GetCurrentAsync(Guid campaignId, CancellationToken ct = default)
     {
-        var battleId = await FindOpenBattleIdAsync(ct);
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct);
         if (battleId is null)
         {
             return EmptySnapshot(DomainMessages.NoPublicBattle);
@@ -53,21 +53,31 @@ public class BattleService : IBattleService
         bool forPublic = false,
         CancellationToken ct = default)
     {
-        var battle = await _db.Battles
+        var campaign = await _db.Campaigns
             .AsNoTracking()
-            .FirstOrDefaultAsync(b => b.PublicToken == token, ct);
+            .FirstOrDefaultAsync(c => c.PublicToken == token, ct);
 
-        if (battle is null || battle.Status == BattleStatus.Finished)
+        if (campaign is null)
         {
             return EmptySnapshot(DomainMessages.NoPublicBattle);
         }
 
-        return await BuildSnapshotAsync(battle.Id, forPublic: forPublic, ct: ct);
+        var battleId = await FindOpenBattleIdAsync(campaign.Id, ct);
+        if (battleId is null)
+        {
+            return EmptySnapshot(DomainMessages.NoPublicBattle, campaign.PublicToken);
+        }
+
+        return await BuildSnapshotAsync(battleId.Value, forPublic: forPublic, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> InvokePlayerAsync(InvokePlayerRequest request, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> InvokePlayerAsync(
+        Guid campaignId,
+        InvokePlayerRequest request,
+        CancellationToken ct = default)
     {
-        var sheet = await _db.Sheets.AsNoTracking().FirstOrDefaultAsync(s => s.Id == request.SheetId, ct)
+        var sheet = await _db.Sheets.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == request.SheetId && s.CampaignId == campaignId, ct)
             ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);
 
         if (sheet.Type != SheetType.Player)
@@ -75,7 +85,7 @@ public class BattleService : IBattleService
             throw new DomainException(DomainMessages.SheetMustBePlayer);
         }
 
-        var battleId = await EnsureOpenBattleIdAsync(ct);
+        var battleId = await EnsureOpenBattleIdAsync(campaignId, ct);
 
         var alreadyIn = await _db.Combatants.AnyAsync(
             c => c.BattleId == battleId && c.SheetId == sheet.Id,
@@ -92,9 +102,13 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> InvokeCreatureAsync(InvokeCreatureRequest request, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> InvokeCreatureAsync(
+        Guid campaignId,
+        InvokeCreatureRequest request,
+        CancellationToken ct = default)
     {
-        var sheet = await _db.Sheets.AsNoTracking().FirstOrDefaultAsync(s => s.Id == request.SheetId, ct)
+        var sheet = await _db.Sheets.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == request.SheetId && s.CampaignId == campaignId, ct)
             ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);
 
         if (sheet.Type is not (SheetType.Creature or SheetType.Npc))
@@ -123,16 +137,16 @@ public class BattleService : IBattleService
             initiative = request.Initiative.Value;
         }
 
-        var battleId = await EnsureOpenBattleIdAsync(ct);
+        var battleId = await EnsureOpenBattleIdAsync(campaignId, ct);
         await InsertCombatantAsync(battleId, sheet, initiative, request.HideHpFromPublic, ct);
         await ReorderAsync(battleId, ct);
 
         return await BuildAndNotifyAsync(battleId, lastDiceRoll: diceRoll, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> StartAsync(CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> StartAsync(Guid campaignId, CancellationToken ct = default)
     {
-        var battle = await LoadTrackedBattleAsync(ct)
+        var battle = await LoadTrackedBattleAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         if (battle.Status == BattleStatus.Active)
@@ -164,9 +178,9 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battle.Id, lastTickEvents: tickEvents, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> NextAsync(CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> NextAsync(Guid campaignId, CancellationToken ct = default)
     {
-        var battle = await LoadTrackedBattleAsync(ct)
+        var battle = await LoadTrackedBattleAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         if (battle.Status != BattleStatus.Active)
@@ -205,9 +219,9 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battle.Id, lastTickEvents: tickEvents, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> FinishAsync(CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> FinishAsync(Guid campaignId, CancellationToken ct = default)
     {
-        var battle = await LoadTrackedBattleAsync(ct)
+        var battle = await LoadTrackedBattleAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         if (battle.Status == BattleStatus.Finished)
@@ -215,7 +229,7 @@ public class BattleService : IBattleService
             throw new DomainException(DomainMessages.BattleNotActive);
         }
 
-        var token = battle.PublicToken;
+        var token = await GetCampaignPublicTokenAsync(battle.CampaignId, ct);
         battle.Status = BattleStatus.Finished;
         await _db.SaveChangesAsync(ct);
 
@@ -225,10 +239,10 @@ public class BattleService : IBattleService
         return snapshot;
     }
 
-    public async Task<BattleSnapshotDto> SavePlayerStatsAsync(CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> SavePlayerStatsAsync(Guid campaignId, CancellationToken ct = default)
     {
         var battle = await _db.Battles
-            .Where(b => b.Status == BattleStatus.Finished)
+            .Where(b => b.CampaignId == campaignId && b.Status == BattleStatus.Finished)
             .OrderByDescending(b => b.CreatedAtUtc)
             .FirstOrDefaultAsync(ct)
             ?? throw new DomainException(DomainMessages.NoFinishedBattleToSave);
@@ -265,8 +279,9 @@ public class BattleService : IBattleService
         battle.PlayerStatsSavedAtUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync(ct);
 
-        var snapshot = EmptySnapshot(DomainMessages.PlayerStatsSaved, battle.PublicToken, canSavePlayerStats: false);
-        await _notifier.NotifyBattleUpdatedAsync(battle.PublicToken, masterSnapshot: snapshot, ct);
+        var token = await GetCampaignPublicTokenAsync(campaignId, ct);
+        var snapshot = EmptySnapshot(DomainMessages.PlayerStatsSaved, token, canSavePlayerStats: false);
+        await _notifier.NotifyBattleUpdatedAsync(token, masterSnapshot: snapshot, ct);
         return snapshot;
     }
 
@@ -283,14 +298,14 @@ public class BattleService : IBattleService
             .AnyAsync(c => c.BattleId == battleId && c.Sheet.Type == SheetType.Player, ct);
     }
 
-    public async Task<BattleSnapshotDto> ApplyDamageAsync(DamageRequest request, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> ApplyDamageAsync(Guid campaignId, DamageRequest request, CancellationToken ct = default)
     {
         if (request.Amount <= 0)
         {
             throw new DomainException(DomainMessages.DamageMustBePositive);
         }
 
-        var battleId = await FindOpenBattleIdAsync(ct)
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         var combatant = await _db.Combatants
@@ -303,14 +318,14 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> ApplyHealAsync(HealRequest request, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> ApplyHealAsync(Guid campaignId, HealRequest request, CancellationToken ct = default)
     {
         if (request.Amount <= 0)
         {
             throw new DomainException(DomainMessages.HealMustBePositive);
         }
 
-        var battleId = await FindOpenBattleIdAsync(ct)
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         var combatant = await _db.Combatants
@@ -328,9 +343,9 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> KillAsync(KillRequest request, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> KillAsync(Guid campaignId, KillRequest request, CancellationToken ct = default)
     {
-        var battleId = await FindOpenBattleIdAsync(ct)
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         var combatant = await _db.Combatants
@@ -348,9 +363,9 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> ReviveAsync(ReviveRequest request, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> ReviveAsync(Guid campaignId, ReviveRequest request, CancellationToken ct = default)
     {
-        var battleId = await FindOpenBattleIdAsync(ct)
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         var combatant = await _db.Combatants
@@ -379,9 +394,9 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> ApplyModifierAsync(ApplyModifierRequest request, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> ApplyModifierAsync(Guid campaignId, ApplyModifierRequest request, CancellationToken ct = default)
     {
-        var battleId = await FindOpenBattleIdAsync(ct)
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         var combatant = await _db.Combatants
@@ -443,9 +458,9 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battleId, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> RemoveModifierAsync(Guid activeModifierId, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> RemoveModifierAsync(Guid campaignId, Guid activeModifierId, CancellationToken ct = default)
     {
-        var battleId = await FindOpenBattleIdAsync(ct)
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
 
         var modifier = await _db.ActiveModifiers
@@ -613,36 +628,46 @@ public class BattleService : IBattleService
             .Any(m => m.SkipsTurn && m.RemainingDuration > 0);
     }
 
-    private async Task<Guid?> FindOpenBattleIdAsync(CancellationToken ct)
+    private async Task<Guid?> FindOpenBattleIdAsync(Guid campaignId, CancellationToken ct)
     {
         return await _db.Battles
             .AsNoTracking()
-            .Where(b => b.Status == BattleStatus.Preparing || b.Status == BattleStatus.Active)
+            .Where(b =>
+                b.CampaignId == campaignId &&
+                (b.Status == BattleStatus.Preparing || b.Status == BattleStatus.Active))
             .OrderByDescending(b => b.CreatedAtUtc)
             .Select(b => (Guid?)b.Id)
             .FirstOrDefaultAsync(ct);
     }
 
-    private async Task<Battle?> LoadTrackedBattleAsync(CancellationToken ct)
+    private async Task<Battle?> LoadTrackedBattleAsync(Guid campaignId, CancellationToken ct)
     {
         return await _db.Battles
-            .Where(b => b.Status == BattleStatus.Preparing || b.Status == BattleStatus.Active)
+            .Where(b =>
+                b.CampaignId == campaignId &&
+                (b.Status == BattleStatus.Preparing || b.Status == BattleStatus.Active))
             .OrderByDescending(b => b.CreatedAtUtc)
             .FirstOrDefaultAsync(ct);
     }
 
-    private async Task<Guid> EnsureOpenBattleIdAsync(CancellationToken ct)
+    private async Task<Guid> EnsureOpenBattleIdAsync(Guid campaignId, CancellationToken ct)
     {
-        var existing = await FindOpenBattleIdAsync(ct);
+        var existing = await FindOpenBattleIdAsync(campaignId, ct);
         if (existing is not null)
         {
             return existing.Value;
         }
 
+        var campaignExists = await _db.Campaigns.AnyAsync(c => c.Id == campaignId, ct);
+        if (!campaignExists)
+        {
+            throw new DomainException(DomainMessages.CampaignNotFound, StatusCodes.Status404NotFound);
+        }
+
         var battle = new Battle
         {
             Id = Guid.NewGuid(),
-            PublicToken = GeneratePublicToken(),
+            CampaignId = campaignId,
             Status = BattleStatus.Preparing,
             CurrentTurnIndex = 0,
             CreatedAtUtc = DateTime.UtcNow
@@ -650,6 +675,15 @@ public class BattleService : IBattleService
         _db.Battles.Add(battle);
         await _db.SaveChangesAsync(ct);
         return battle.Id;
+    }
+
+    private async Task<string> GetCampaignPublicTokenAsync(Guid campaignId, CancellationToken ct)
+    {
+        return await _db.Campaigns
+            .AsNoTracking()
+            .Where(c => c.Id == campaignId)
+            .Select(c => c.PublicToken)
+            .FirstAsync(ct);
     }
 
     private async Task InsertCombatantAsync(
@@ -765,8 +799,11 @@ public class BattleService : IBattleService
             forPublic: false,
             ct: ct);
 
-        var battle = await _db.Battles.AsNoTracking().FirstAsync(b => b.Id == battleId, ct);
-        await _notifier.NotifyBattleUpdatedAsync(battle.PublicToken, ct: ct);
+        var battle = await _db.Battles
+            .AsNoTracking()
+            .Include(b => b.Campaign)
+            .FirstAsync(b => b.Id == battleId, ct);
+        await _notifier.NotifyBattleUpdatedAsync(battle.Campaign.PublicToken, ct: ct);
         return snapshot;
     }
 
@@ -779,6 +816,7 @@ public class BattleService : IBattleService
     {
         var battle = await _db.Battles
             .AsNoTracking()
+            .Include(b => b.Campaign)
             .FirstAsync(b => b.Id == battleId, ct);
 
         var ordered = await _db.Combatants
@@ -797,6 +835,8 @@ public class BattleService : IBattleService
                 c.SheetId,
                 c.Sheet.Name,
                 c.Sheet.ImageUrl,
+                c.Sheet.ImageFocusX,
+                c.Sheet.ImageFocusY,
                 c.Sheet.Type.ToString(),
                 c.Initiative,
                 hideHp ? 0 : c.CurrentHp,
@@ -814,7 +854,7 @@ public class BattleService : IBattleService
 
         return new BattleSnapshotDto(
             battle.Id,
-            battle.PublicToken,
+            battle.Campaign.PublicToken,
             battle.Status.ToString(),
             battle.CurrentTurnIndex,
             combatants,
@@ -859,9 +899,47 @@ public class BattleService : IBattleService
             null,
             canSavePlayerStats);
 
-    private static string GeneratePublicToken()
+    public async Task<CombatantTacticalDto> GetCombatantTacticalAsync(
+        Guid campaignId,
+        Guid combatantId,
+        CancellationToken ct = default)
     {
-        var bytes = RandomNumberGenerator.GetBytes(BattleRules.PublicTokenLength);
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        var battleId = await FindOpenBattleIdAsync(campaignId, ct)
+            ?? throw new DomainException(DomainMessages.BattleNotFound);
+
+        var combatant = await _db.Combatants
+            .AsNoTracking()
+            .Include(c => c.Sheet)
+                .ThenInclude(s => s.Attacks)
+            .Include(c => c.Sheet)
+                .ThenInclude(s => s.Spells)
+            .Include(c => c.Sheet)
+                .ThenInclude(s => s.Weapons)
+            .FirstOrDefaultAsync(c => c.Id == combatantId && c.BattleId == battleId, ct)
+            ?? throw new DomainException(DomainMessages.CombatantNotFound, StatusCodes.Status404NotFound);
+
+        var sheet = combatant.Sheet;
+        return new CombatantTacticalDto(
+            combatant.Id,
+            sheet.Id,
+            sheet.Name,
+            sheet.Type.ToString(),
+            sheet.Class.ToString(),
+            sheet.Strength,
+            AbilityScores.Modifier(sheet.Strength),
+            sheet.Dexterity,
+            AbilityScores.Modifier(sheet.Dexterity),
+            sheet.Constitution,
+            AbilityScores.Modifier(sheet.Constitution),
+            sheet.Intelligence,
+            AbilityScores.Modifier(sheet.Intelligence),
+            sheet.Wisdom,
+            AbilityScores.Modifier(sheet.Wisdom),
+            sheet.Charisma,
+            AbilityScores.Modifier(sheet.Charisma),
+            sheet.Resistances,
+            sheet.Attacks.OrderBy(a => a.SortOrder).Select(SheetService.MapAttack).ToList(),
+            sheet.Spells.OrderBy(s => s.SortOrder).Select(SheetService.MapSpell).ToList(),
+            sheet.Weapons.OrderBy(w => w.SortOrder).Select(SheetService.MapWeapon).ToList());
     }
 }

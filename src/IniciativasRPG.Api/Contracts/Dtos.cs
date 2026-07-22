@@ -5,32 +5,153 @@ namespace IniciativasRPG.Api.Contracts;
 public record LoginRequest(string Username, string Password);
 public record LoginResponse(string Token, string Username);
 
+public record CreateCampaignRequest(string Name, string? ImageUrl, string? Description, string Password);
+public record CampaignMasterLoginRequest(string Password);
+public record CampaignSummaryDto(
+    Guid Id,
+    string Name,
+    string? ImageUrl,
+    string? Description,
+    string PublicToken,
+    DateTime CreatedAtUtc);
+public record CampaignMasterLoginResponse(string Token, Guid CampaignId, string CampaignName, string PublicToken);
+
 public record SheetDto(
     Guid Id,
     string Name,
     string? ImageUrl,
+    double ImageFocusX,
+    double ImageFocusY,
     string Type,
+    string Class,
     int MaxHp,
     int CurrentHp,
     int BaseAc,
-    int DexModifier);
+    int DexModifier,
+    int Strength,
+    int StrengthMod,
+    int Dexterity,
+    int DexterityMod,
+    int Constitution,
+    int ConstitutionMod,
+    int Intelligence,
+    int IntelligenceMod,
+    int Wisdom,
+    int WisdomMod,
+    int Charisma,
+    int CharismaMod,
+    string? Resistances,
+    IReadOnlyList<SheetAttackDto> Attacks,
+    IReadOnlyList<SheetSpellDto> Spells,
+    IReadOnlyList<SheetWeaponDto> Weapons);
+
+public record SheetAttackDto(
+    Guid? Id,
+    string Description,
+    string DamageDice,
+    string AbilityBase,
+    string StrikeType,
+    int SortOrder);
+
+public record SheetSpellDto(
+    Guid? Id,
+    string Description,
+    string? DamageDice,
+    int SlotLevel,
+    bool RequiresMaterial,
+    string AbilityBase,
+    int SortOrder);
+
+public record SheetWeaponDto(
+    Guid? Id,
+    string Description,
+    string DamageDice,
+    string Range,
+    string StrikeType,
+    int SortOrder);
+
+public record SheetAttackInput(
+    string Description,
+    string DamageDice,
+    AbilityName AbilityBase,
+    StrikeType StrikeType);
+
+public record SheetSpellInput(
+    string Description,
+    string? DamageDice,
+    int SlotLevel,
+    bool RequiresMaterial,
+    AbilityName AbilityBase);
+
+public record SheetWeaponInput(
+    string Description,
+    string DamageDice,
+    string Range,
+    StrikeType StrikeType);
 
 public record CreateSheetRequest(
     string Name,
     string? ImageUrl,
     SheetType Type,
+    CharacterClass Class,
     int MaxHp,
     int BaseAc,
-    int DexModifier);
+    int Strength,
+    int Dexterity,
+    int Constitution,
+    int Intelligence,
+    int Wisdom,
+    int Charisma,
+    string? Resistances = null,
+    IReadOnlyList<SheetAttackInput>? Attacks = null,
+    IReadOnlyList<SheetSpellInput>? Spells = null,
+    IReadOnlyList<SheetWeaponInput>? Weapons = null,
+    double ImageFocusX = 50,
+    double ImageFocusY = 50);
 
 public record UpdateSheetRequest(
     string Name,
     string? ImageUrl,
     SheetType Type,
+    CharacterClass Class,
     int MaxHp,
     int CurrentHp,
     int BaseAc,
-    int DexModifier);
+    int Strength,
+    int Dexterity,
+    int Constitution,
+    int Intelligence,
+    int Wisdom,
+    int Charisma,
+    string? Resistances = null,
+    IReadOnlyList<SheetAttackInput>? Attacks = null,
+    IReadOnlyList<SheetSpellInput>? Spells = null,
+    IReadOnlyList<SheetWeaponInput>? Weapons = null,
+    double ImageFocusX = 50,
+    double ImageFocusY = 50);
+
+public record CombatantTacticalDto(
+    Guid CombatantId,
+    Guid SheetId,
+    string Name,
+    string SheetType,
+    string Class,
+    int Strength,
+    int StrengthMod,
+    int Dexterity,
+    int DexterityMod,
+    int Constitution,
+    int ConstitutionMod,
+    int Intelligence,
+    int IntelligenceMod,
+    int Wisdom,
+    int WisdomMod,
+    int Charisma,
+    int CharismaMod,
+    string? Resistances,
+    IReadOnlyList<SheetAttackDto> Attacks,
+    IReadOnlyList<SheetSpellDto> Spells,
+    IReadOnlyList<SheetWeaponDto> Weapons);
 
 public record ActiveModifierDto(
     Guid Id,
@@ -65,6 +186,8 @@ public record CombatantDto(
     Guid SheetId,
     string Name,
     string? ImageUrl,
+    double ImageFocusX,
+    double ImageFocusY,
     string SheetType,
     int Initiative,
     int CurrentHp,
@@ -86,6 +209,13 @@ public record BattleSnapshotDto(
     int? LastDiceRoll,
     IReadOnlyList<ModifierTickEventDto>? LastTickEvents = null,
     bool CanSavePlayerStats = false);
+
+public record PublicBattleSummaryDto(
+    string PublicToken,
+    string Status,
+    int CombatantCount,
+    IReadOnlyList<string> CombatantNames,
+    DateTime CreatedAtUtc);
 
 public record InvokePlayerRequest(Guid SheetId, int Initiative, bool ConfirmDuplicate = false);
 public record InvokeCreatureRequest(

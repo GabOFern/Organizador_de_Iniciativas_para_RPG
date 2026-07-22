@@ -14,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
+builder.Services.Configure<CampaignSeedOptions>(builder.Configuration.GetSection(CampaignSeedOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
@@ -32,8 +33,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ?? throw new InvalidOperationException($"{DomainMessages.ConfigMissing} ConnectionStrings:Default.")));
 
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddSingleton<IPasswordHasher<Campaign>, PasswordHasher<Campaign>>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<ISheetService, SheetService>();
 builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddScoped<IModifierTypeService, ModifierTypeService>();

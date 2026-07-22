@@ -12,54 +12,68 @@ import { config } from './config';
 
 interface AuthState {
   token: string | null;
-  username: string | null;
-  login: (username: string, password: string) => Promise<void>;
+  campaignId: string | null;
+  campaignName: string | null;
+  campaignPublicToken: string | null;
+  loginCampaign: (campaignId: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
-function readSessionToken() {
-  return sessionStorage.getItem(config.authTokenStorageKey);
-}
-
-function readSessionUser() {
-  return sessionStorage.getItem(config.authUserStorageKey);
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => readSessionToken());
-  const [username, setUsername] = useState<string | null>(() => readSessionUser());
+  const [token, setToken] = useState<string | null>(() =>
+    sessionStorage.getItem(config.authTokenStorageKey),
+  );
+  const [campaignId, setCampaignId] = useState<string | null>(() =>
+    sessionStorage.getItem(config.authCampaignIdKey),
+  );
+  const [campaignName, setCampaignName] = useState<string | null>(() =>
+    sessionStorage.getItem(config.authCampaignNameKey),
+  );
+  const [campaignPublicToken, setCampaignPublicToken] = useState<string | null>(() =>
+    sessionStorage.getItem(config.authCampaignTokenKey),
+  );
 
   useEffect(() => {
     setTokenProvider(() => token);
   }, [token]);
 
-  const login = useCallback(async (user: string, password: string) => {
-    const result = await api.login(user, password);
+  const loginCampaign = useCallback(async (id: string, password: string) => {
+    const result = await api.masterLogin(id, password);
     sessionStorage.setItem(config.authTokenStorageKey, result.token);
-    sessionStorage.setItem(config.authUserStorageKey, result.username);
+    sessionStorage.setItem(config.authCampaignIdKey, result.campaignId);
+    sessionStorage.setItem(config.authCampaignNameKey, result.campaignName);
+    sessionStorage.setItem(config.authCampaignTokenKey, result.publicToken);
     setToken(result.token);
-    setUsername(result.username);
+    setCampaignId(result.campaignId);
+    setCampaignName(result.campaignName);
+    setCampaignPublicToken(result.publicToken);
   }, []);
 
   const logout = useCallback(() => {
     sessionStorage.removeItem(config.authTokenStorageKey);
-    sessionStorage.removeItem(config.authUserStorageKey);
+    sessionStorage.removeItem(config.authCampaignIdKey);
+    sessionStorage.removeItem(config.authCampaignNameKey);
+    sessionStorage.removeItem(config.authCampaignTokenKey);
     setToken(null);
-    setUsername(null);
+    setCampaignId(null);
+    setCampaignName(null);
+    setCampaignPublicToken(null);
   }, []);
 
   const value = useMemo(
     () => ({
       token,
-      username,
-      login,
+      campaignId,
+      campaignName,
+      campaignPublicToken,
+      loginCampaign,
       logout,
-      isAuthenticated: Boolean(token),
+      isAuthenticated: Boolean(token && campaignId),
     }),
-    [token, username, login, logout],
+    [token, campaignId, campaignName, campaignPublicToken, loginCampaign, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
