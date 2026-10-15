@@ -57,6 +57,8 @@ public static class DomainMessages
     public const string SceneTitleTooLong = "O título da imagem é longo demais.";
     public const string SceneImageSourceRequired = "Informe o link ou o arquivo.";
     public const string SceneImageSourceConflict = "Use o link ou o arquivo.";
+    public const string SceneKindRequired = "Escolha o tipo da imagem.";
+    public const string SceneKindInvalid = "Tipo de imagem inválido.";
     public static readonly string SceneCampaignFull =
         $"Esta campanha já tem {SceneRules.MaxScenesPerCampaign} imagens.";
     public const string SceneNotFound = "Imagem não encontrada.";

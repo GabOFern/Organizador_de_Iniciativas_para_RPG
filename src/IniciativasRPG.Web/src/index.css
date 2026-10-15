@@ -2158,6 +2158,66 @@ html[data-theme='Warlock'] {
   gap: 0.5rem;
 }
 
+.scene-row-master {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.scene-row-master .scene-open {
+  width: 100%;
+  align-items: flex-start;
+}
+
+.scene-row-master .scene-open span {
+  flex: 1;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.scene-row-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.scene-filters {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.scene-filters label,
+.scene-form label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.scene-open-text {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.scene-kind {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--accent-ember);
+  text-transform: none;
+}
+
+.scene-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.scene-row-unread .scene-open {
+  border: 2px solid var(--accent-ember);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent-ember) 35%, transparent);
+}
+
 button.scene-open {
   flex: 1;
   min-width: 0;
@@ -2172,6 +2232,20 @@ button.scene-open {
   color: var(--ink);
   background: color-mix(in srgb, var(--wood-deep) 55%, transparent);
   box-shadow: none;
+}
+
+button.scene-visibility {
+  flex: none;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35rem;
+}
+
+button.scene-visibility-off {
+  opacity: 0.72;
 }
 
 button.scene-open span {

@@ -271,11 +271,17 @@ export interface ModifierType {
   healDice: string | null;
 }
 
+export type SceneKind = 'Uncategorized' | 'Item' | 'Npc' | 'Card' | 'Map';
+
+export type SceneKindFilter = 'all' | SceneKind;
+
 export interface CampaignScene {
   id: string;
   title: string;
   imageUrl: string;
   sortOrder: number;
+  isVisibleToPlayers: boolean;
+  kind: SceneKind;
 }
 
 export interface ModifierTypePayload {

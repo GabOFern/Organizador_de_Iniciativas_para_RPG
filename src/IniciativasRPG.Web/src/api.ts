@@ -115,6 +115,9 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  deleteSheet: (id: string) =>
+    request<void>(`/api/sheets/${id}`, { method: 'DELETE' }),
+
   setSheetImage: (id: string, file: File) => {
     const body = new FormData();
     body.append('file', file);
@@ -132,13 +135,37 @@ export const api = {
   listPublicScenes: (token: string) =>
     request<CampaignScene[]>(`/api/public/campaigns/${token}/scenes`),
 
-  createScene: (body: { title: string; imageUrl?: string; file?: File }) => {
+  createScene: (body: {
+    title: string;
+    kind: string;
+    imageUrl?: string;
+    file?: File;
+  }) => {
     const form = new FormData();
     form.append('title', body.title);
+    form.append('kind', body.kind);
     if (body.imageUrl) form.append('imageUrl', body.imageUrl);
     if (body.file) form.append('file', body.file);
     return request<CampaignScene[]>('/api/scenes', { method: 'POST', body: form });
   },
+
+  updateScene: (
+    id: string,
+    body: { title: string; kind: string; imageUrl?: string; file?: File },
+  ) => {
+    const form = new FormData();
+    form.append('title', body.title);
+    form.append('kind', body.kind);
+    if (body.imageUrl) form.append('imageUrl', body.imageUrl);
+    if (body.file) form.append('file', body.file);
+    return request<CampaignScene[]>(`/api/scenes/${id}`, { method: 'PUT', body: form });
+  },
+
+  setSceneVisibility: (id: string, isVisibleToPlayers: boolean) =>
+    request<CampaignScene[]>(`/api/scenes/${id}/visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isVisibleToPlayers }),
+    }),
 
   deleteScene: (id: string) =>
     request<CampaignScene[]>(`/api/scenes/${id}`, { method: 'DELETE' }),

@@ -28,10 +28,29 @@ public class ScenesController : ControllerBase
     [RequestSizeLimit(SceneRules.MaxImageRequestBytes)]
     public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> Create(
         [FromForm] string? title,
+        [FromForm] string? kind,
         [FromForm] string? imageUrl,
         IFormFile? file,
         CancellationToken ct) =>
-        Ok(await _sceneService.CreateAsync(CampaignId, title, imageUrl, file, ct));
+        Ok(await _sceneService.CreateAsync(CampaignId, title, kind, imageUrl, file, ct));
+
+    [HttpPut("{id:guid}")]
+    [RequestSizeLimit(SceneRules.MaxImageRequestBytes)]
+    public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> Update(
+        Guid id,
+        [FromForm] string? title,
+        [FromForm] string? kind,
+        [FromForm] string? imageUrl,
+        IFormFile? file,
+        CancellationToken ct) =>
+        Ok(await _sceneService.UpdateAsync(CampaignId, id, title, kind, imageUrl, file, ct));
+
+    [HttpPatch("{id:guid}/visibility")]
+    public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> SetVisibility(
+        Guid id,
+        [FromBody] SetSceneVisibilityRequest request,
+        CancellationToken ct) =>
+        Ok(await _sceneService.SetVisibilityAsync(CampaignId, id, request.IsVisibleToPlayers, ct));
 
     [HttpDelete("{id:guid}")]
     public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> Delete(Guid id, CancellationToken ct) =>

@@ -33,7 +33,7 @@ public class BattleHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, PublicGroupName(publicToken));
         var snapshot = await _battleService.GetByPublicTokenAsync(publicToken, forPublic: true);
         await Clients.Caller.SendAsync(BattleNotifier.BattleUpdatedEvent, snapshot);
-        await SendScenesAsync(publicToken);
+        await SendScenesAsync(publicToken, forPublic: true);
     }
 
     [Authorize]
@@ -47,15 +47,17 @@ public class BattleHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, MasterGroupName(publicToken));
         var snapshot = await _battleService.GetByPublicTokenAsync(publicToken, forPublic: false);
         await Clients.Caller.SendAsync(BattleNotifier.BattleUpdatedEvent, snapshot);
-        await SendScenesAsync(publicToken);
+        await SendScenesAsync(publicToken, forPublic: false);
     }
 
-    private async Task SendScenesAsync(string publicToken)
+    private async Task SendScenesAsync(string publicToken, bool forPublic)
     {
         IReadOnlyList<CampaignSceneDto> scenes;
         try
         {
-            scenes = await _sceneService.ListByPublicTokenAsync(publicToken);
+            scenes = forPublic
+                ? await _sceneService.ListByPublicTokenAsync(publicToken)
+                : await _sceneService.ListMasterByPublicTokenAsync(publicToken);
         }
         catch (DomainException)
         {

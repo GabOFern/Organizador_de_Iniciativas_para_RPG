@@ -9,12 +9,27 @@ public interface ISceneService
 {
     Task<IReadOnlyList<CampaignSceneDto>> ListByCampaignAsync(Guid campaignId, CancellationToken ct = default);
     Task<IReadOnlyList<CampaignSceneDto>> ListByPublicTokenAsync(string publicToken, CancellationToken ct = default);
+    Task<IReadOnlyList<CampaignSceneDto>> ListMasterByPublicTokenAsync(string publicToken, CancellationToken ct = default);
     Task<SceneImageFile> GetPublicImageAsync(string publicToken, Guid sceneId, CancellationToken ct = default);
     Task<IReadOnlyList<CampaignSceneDto>> CreateAsync(
         Guid campaignId,
         string? title,
+        string? kind,
         string? imageUrl,
         IFormFile? file,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<CampaignSceneDto>> UpdateAsync(
+        Guid campaignId,
+        Guid sceneId,
+        string? title,
+        string? kind,
+        string? imageUrl,
+        IFormFile? file,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<CampaignSceneDto>> SetVisibilityAsync(
+        Guid campaignId,
+        Guid sceneId,
+        bool isVisibleToPlayers,
         CancellationToken ct = default);
     Task<IReadOnlyList<CampaignSceneDto>> DeleteAsync(Guid campaignId, Guid sceneId, CancellationToken ct = default);
 }
@@ -35,21 +50,23 @@ public class SceneService : ISceneService
         CancellationToken ct = default)
     {
         var token = await PublicTokenAsync(campaignId, ct);
-        return await ListAsync(campaignId, token, ct);
+        return await ListAsync(campaignId, token, visibleOnly: false, ct);
     }
 
     public async Task<IReadOnlyList<CampaignSceneDto>> ListByPublicTokenAsync(
         string publicToken,
         CancellationToken ct = default)
     {
-        var campaignId = await _db.Campaigns
-            .AsNoTracking()
-            .Where(c => c.PublicToken == publicToken)
-            .Select(c => (Guid?)c.Id)
-            .FirstOrDefaultAsync(ct)
-            ?? throw new DomainException(DomainMessages.CampaignNotFound, StatusCodes.Status404NotFound);
+        var campaignId = await ResolveCampaignIdAsync(publicToken, ct);
+        return await ListAsync(campaignId, publicToken, visibleOnly: true, ct);
+    }
 
-        return await ListAsync(campaignId, publicToken, ct);
+    public async Task<IReadOnlyList<CampaignSceneDto>> ListMasterByPublicTokenAsync(
+        string publicToken,
+        CancellationToken ct = default)
+    {
+        var campaignId = await ResolveCampaignIdAsync(publicToken, ct);
+        return await ListAsync(campaignId, publicToken, visibleOnly: false, ct);
     }
 
     public async Task<SceneImageFile> GetPublicImageAsync(
@@ -59,7 +76,11 @@ public class SceneService : ISceneService
     {
         var image = await _db.CampaignScenes
             .AsNoTracking()
-            .Where(s => s.Id == sceneId && s.Campaign.PublicToken == publicToken && s.ImageContent != null)
+            .Where(s =>
+                s.Id == sceneId &&
+                s.Campaign.PublicToken == publicToken &&
+                s.IsVisibleToPlayers &&
+                s.ImageContent != null)
             .Select(s => new SceneImageFile(s.ImageContent!, s.ImageContentType!))
             .FirstOrDefaultAsync(ct);
 
@@ -74,11 +95,13 @@ public class SceneService : ISceneService
     public async Task<IReadOnlyList<CampaignSceneDto>> CreateAsync(
         Guid campaignId,
         string? title,
+        string? kind,
         string? imageUrl,
         IFormFile? file,
         CancellationToken ct = default)
     {
         var normalizedTitle = NormalizeTitle(title);
+        var sceneKind = ParseAssignableKind(kind);
         var hasFile = file is not null && file.Length > 0;
         var trimmedUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
 
@@ -107,30 +130,74 @@ public class SceneService : ISceneService
             Id = Guid.NewGuid(),
             CampaignId = campaignId,
             Title = normalizedTitle,
+            Kind = sceneKind,
             SortOrder = nextOrder + 1,
+            IsVisibleToPlayers = SceneRules.VisibleToPlayersDefault,
             CreatedAtUtc = DateTime.UtcNow,
         };
 
-        if (hasFile)
-        {
-            var content = await ReadImageAsync(file!, ct);
-            var contentType = SheetRules.DetectImageContentType(content)
-                ?? throw new DomainException(DomainMessages.SheetImageTypeInvalid);
-            scene.ImageContent = content;
-            scene.ImageContentType = contentType;
-        }
-        else
-        {
-            scene.ImageUrl = NormalizeImageUrl(trimmedUrl);
-        }
+        await ApplyImageSourceAsync(scene, trimmedUrl, file, hasFile, ct);
 
         _db.CampaignScenes.Add(scene);
         await _db.SaveChangesAsync(ct);
 
         var token = await PublicTokenAsync(campaignId, ct);
-        var list = await ListAsync(campaignId, token, ct);
-        await _notifier.NotifyScenesUpdatedAsync(token, list, ct);
-        return list;
+        await _notifier.NotifyScenesUpdatedAsync(token, ct);
+        return await ListAsync(campaignId, token, visibleOnly: false, ct);
+    }
+
+    public async Task<IReadOnlyList<CampaignSceneDto>> UpdateAsync(
+        Guid campaignId,
+        Guid sceneId,
+        string? title,
+        string? kind,
+        string? imageUrl,
+        IFormFile? file,
+        CancellationToken ct = default)
+    {
+        var scene = await _db.CampaignScenes
+                .FirstOrDefaultAsync(s => s.Id == sceneId && s.CampaignId == campaignId, ct)
+            ?? throw new DomainException(DomainMessages.SceneNotFound, StatusCodes.Status404NotFound);
+
+        scene.Title = NormalizeTitle(title);
+        scene.Kind = ParseAssignableKind(kind);
+
+        var hasFile = file is not null && file.Length > 0;
+        var trimmedUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+
+        if (hasFile && trimmedUrl is not null)
+        {
+            throw new DomainException(DomainMessages.SceneImageSourceConflict);
+        }
+
+        if (hasFile || trimmedUrl is not null)
+        {
+            await ApplyImageSourceAsync(scene, trimmedUrl, file, hasFile, ct);
+        }
+
+        await _db.SaveChangesAsync(ct);
+
+        var token = await PublicTokenAsync(campaignId, ct);
+        await _notifier.NotifyScenesUpdatedAsync(token, ct);
+        return await ListAsync(campaignId, token, visibleOnly: false, ct);
+    }
+
+    public async Task<IReadOnlyList<CampaignSceneDto>> SetVisibilityAsync(
+        Guid campaignId,
+        Guid sceneId,
+        bool isVisibleToPlayers,
+        CancellationToken ct = default)
+    {
+        var scene = await _db.CampaignScenes
+                .FirstOrDefaultAsync(s => s.Id == sceneId && s.CampaignId == campaignId, ct)
+            ?? throw new DomainException(DomainMessages.SceneNotFound, StatusCodes.Status404NotFound);
+
+        scene.IsVisibleToPlayers = isVisibleToPlayers;
+        await _db.SaveChangesAsync(ct);
+
+        var token = await PublicTokenAsync(campaignId, ct);
+        await _notifier.NotifyScenesUpdatedAsync(token, ct);
+        return await ListAsync(campaignId, token, visibleOnly: false, ct);
     }
 
     public async Task<IReadOnlyList<CampaignSceneDto>> DeleteAsync(
@@ -148,22 +215,39 @@ public class SceneService : ISceneService
         }
 
         var token = await PublicTokenAsync(campaignId, ct);
-        var list = await ListAsync(campaignId, token, ct);
-        await _notifier.NotifyScenesUpdatedAsync(token, list, ct);
-        return list;
+        await _notifier.NotifyScenesUpdatedAsync(token, ct);
+        return await ListAsync(campaignId, token, visibleOnly: false, ct);
     }
+
+    private async Task<Guid> ResolveCampaignIdAsync(string publicToken, CancellationToken ct) =>
+        await _db.Campaigns
+            .AsNoTracking()
+            .Where(c => c.PublicToken == publicToken)
+            .Select(c => (Guid?)c.Id)
+            .FirstOrDefaultAsync(ct)
+        ?? throw new DomainException(DomainMessages.CampaignNotFound, StatusCodes.Status404NotFound);
 
     private async Task<IReadOnlyList<CampaignSceneDto>> ListAsync(
         Guid campaignId,
         string publicToken,
+        bool visibleOnly,
         CancellationToken ct)
     {
-        var rows = await _db.CampaignScenes
+        var query = _db.CampaignScenes
             .AsNoTracking()
-            .Where(s => s.CampaignId == campaignId)
-            .OrderBy(s => s.SortOrder)
-            .ThenBy(s => s.CreatedAtUtc)
-            .Select(s => new { s.Id, s.Title, s.ImageUrl, s.SortOrder })
+            .Where(s => s.CampaignId == campaignId);
+
+        if (visibleOnly)
+        {
+            query = query.Where(s => s.IsVisibleToPlayers);
+        }
+
+        var ordered = visibleOnly
+            ? query.OrderByDescending(s => s.SortOrder).ThenByDescending(s => s.CreatedAtUtc)
+            : query.OrderBy(s => s.SortOrder).ThenBy(s => s.CreatedAtUtc);
+
+        var rows = await ordered
+            .Select(s => new { s.Id, s.Title, s.ImageUrl, s.SortOrder, s.IsVisibleToPlayers, s.Kind })
             .ToListAsync(ct);
 
         return rows
@@ -171,7 +255,9 @@ public class SceneService : ISceneService
                 s.Id,
                 s.Title,
                 s.ImageUrl ?? SceneImagePaths.Public(publicToken, s.Id),
-                s.SortOrder))
+                s.SortOrder,
+                s.IsVisibleToPlayers,
+                s.Kind))
             .ToList();
     }
 
@@ -180,6 +266,45 @@ public class SceneService : ISceneService
             .Where(c => c.Id == campaignId)
             .Select(c => c.PublicToken)
             .FirstAsync(ct);
+
+    private static SceneKind ParseAssignableKind(string? kind)
+    {
+        if (string.IsNullOrWhiteSpace(kind))
+        {
+            throw new DomainException(DomainMessages.SceneKindRequired);
+        }
+
+        if (!Enum.TryParse<SceneKind>(kind.Trim(), ignoreCase: true, out var parsed)
+            || !SceneRules.IsAssignableKind(parsed))
+        {
+            throw new DomainException(DomainMessages.SceneKindInvalid);
+        }
+
+        return parsed;
+    }
+
+    private static async Task ApplyImageSourceAsync(
+        CampaignScene scene,
+        string? trimmedUrl,
+        IFormFile? file,
+        bool hasFile,
+        CancellationToken ct)
+    {
+        if (hasFile)
+        {
+            var content = await ReadImageAsync(file!, ct);
+            var contentType = SheetRules.DetectImageContentType(content)
+                ?? throw new DomainException(DomainMessages.SheetImageTypeInvalid);
+            scene.ImageContent = content;
+            scene.ImageContentType = contentType;
+            scene.ImageUrl = null;
+            return;
+        }
+
+        scene.ImageUrl = NormalizeImageUrl(trimmedUrl);
+        scene.ImageContent = null;
+        scene.ImageContentType = null;
+    }
 
     private static string NormalizeTitle(string? title)
     {

@@ -101,7 +101,15 @@ public record SheetSpellInput(
 
 public sealed record SheetImageFile(byte[] Content, string ContentType);
 
-public record CampaignSceneDto(Guid Id, string Title, string ImageUrl, int SortOrder);
+public record CampaignSceneDto(
+    Guid Id,
+    string Title,
+    string ImageUrl,
+    int SortOrder,
+    bool IsVisibleToPlayers,
+    SceneKind Kind);
+
+public record SetSceneVisibilityRequest(bool IsVisibleToPlayers);
 
 public sealed record SceneImageFile(byte[] Content, string ContentType);
 

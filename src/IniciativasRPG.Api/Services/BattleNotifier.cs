@@ -11,10 +11,7 @@ public interface IBattleNotifier
         BattleSnapshotDto? masterSnapshot = null,
         CancellationToken ct = default);
 
-    Task NotifyScenesUpdatedAsync(
-        string publicToken,
-        IReadOnlyList<CampaignSceneDto> scenes,
-        CancellationToken ct = default);
+    Task NotifyScenesUpdatedAsync(string publicToken, CancellationToken ct = default);
 }
 
 public class BattleNotifier : IBattleNotifier
@@ -57,22 +54,35 @@ public class BattleNotifier : IBattleNotifier
             .SendAsync(BattleUpdatedEvent, publicSnapshot, ct);
     }
 
-    public async Task NotifyScenesUpdatedAsync(
-        string publicToken,
-        IReadOnlyList<CampaignSceneDto> scenes,
-        CancellationToken ct = default)
+    public async Task NotifyScenesUpdatedAsync(string publicToken, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(publicToken))
         {
             return;
         }
 
+        await using var scope = _scopeFactory.CreateAsyncScope();
+        var sceneService = scope.ServiceProvider.GetRequiredService<ISceneService>();
+
+        IReadOnlyList<CampaignSceneDto> masterScenes;
+        IReadOnlyList<CampaignSceneDto> publicScenes;
+        try
+        {
+            masterScenes = await sceneService.ListMasterByPublicTokenAsync(publicToken, ct);
+            publicScenes = await sceneService.ListByPublicTokenAsync(publicToken, ct);
+        }
+        catch (DomainException)
+        {
+            masterScenes = Array.Empty<CampaignSceneDto>();
+            publicScenes = Array.Empty<CampaignSceneDto>();
+        }
+
         await _hub.Clients
             .Group(BattleHub.MasterGroupName(publicToken))
-            .SendAsync(ScenesUpdatedEvent, scenes, ct);
+            .SendAsync(ScenesUpdatedEvent, masterScenes, ct);
 
         await _hub.Clients
             .Group(BattleHub.PublicGroupName(publicToken))
-            .SendAsync(ScenesUpdatedEvent, scenes, ct);
+            .SendAsync(ScenesUpdatedEvent, publicScenes, ct);
     }
 }

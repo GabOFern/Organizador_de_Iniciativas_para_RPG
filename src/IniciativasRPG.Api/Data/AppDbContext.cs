@@ -48,8 +48,11 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Title).HasMaxLength(SceneRules.MaxTitleLength).IsRequired();
+            e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(SceneRules.MaxKindLength)
+                .HasDefaultValue(SceneRules.KindDefault);
             e.Property(x => x.ImageUrl).HasMaxLength(SceneRules.MaxImageUrlLength);
             e.Property(x => x.ImageContentType).HasMaxLength(SceneRules.MaxImageContentTypeLength);
+            e.Property(x => x.IsVisibleToPlayers).HasDefaultValue(SceneRules.VisibleToPlayersDefault);
             e.HasOne(x => x.Campaign)
                 .WithMany(c => c.Scenes)
                 .HasForeignKey(x => x.CampaignId)
