@@ -1,6 +1,7 @@
 using IniciativasRPG.Api.Contracts;
 using IniciativasRPG.Api.Data;
 using IniciativasRPG.Api.Domain;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 
 namespace IniciativasRPG.Api.Services;
@@ -10,6 +11,9 @@ public interface ISheetService
     Task<IReadOnlyList<SheetDto>> ListAsync(Guid campaignId, CancellationToken ct = default);
     Task<SheetDto> CreateAsync(Guid campaignId, CreateSheetRequest request, CancellationToken ct = default);
     Task<SheetDto> UpdateAsync(Guid campaignId, Guid id, UpdateSheetRequest request, CancellationToken ct = default);
+    Task<SheetDto> SetImageAsync(Guid campaignId, Guid id, IFormFile file, CancellationToken ct = default);
+    Task<SheetDto> ClearImageAsync(Guid campaignId, Guid id, CancellationToken ct = default);
+    Task<SheetImageFile> GetPublicImageAsync(string publicToken, Guid sheetId, CancellationToken ct = default);
 }
 
 public class SheetService : ISheetService
@@ -35,7 +39,13 @@ public class SheetService : ISheetService
             .OrderBy(s => s.Name)
             .ToListAsync(ct);
 
-        return sheets.Select(Map).ToList();
+        var publicToken = await PublicTokenAsync(campaignId, ct);
+        var storedIds = await _db.SheetImages
+            .Where(i => i.Sheet.CampaignId == campaignId)
+            .Select(i => i.SheetId)
+            .ToListAsync(ct);
+        var stored = storedIds.ToHashSet();
+        return sheets.Select(sheet => Map(sheet, publicToken, stored.Contains(sheet.Id))).ToList();
     }
 
     public async Task<SheetDto> CreateAsync(Guid campaignId, CreateSheetRequest request, CancellationToken ct = default)
@@ -58,7 +68,7 @@ public class SheetService : ISheetService
             Id = Guid.NewGuid(),
             CampaignId = campaignId,
             Name = request.Name.Trim(),
-            ImageUrl = NormalizeUrl(request.ImageUrl),
+            ImageUrl = NormalizeImageUrl(request.ImageUrl),
             ImageFocusX = ClampFocus(request.ImageFocusX),
             ImageFocusY = ClampFocus(request.ImageFocusY),
             Type = request.Type,
@@ -73,13 +83,14 @@ public class SheetService : ISheetService
             Wisdom = wisdom,
             Charisma = charisma,
             DexModifier = AbilityScores.Modifier(dexterity),
-            InitiativeBonus = request.InitiativeBonus
+            InitiativeBonus = request.InitiativeBonus,
+            ProficiencyBonus = request.ProficiencyBonus
         };
 
         ApplyCollections(sheet, features, attacks, spells, weapons);
         _db.Sheets.Add(sheet);
         await _db.SaveChangesAsync(ct);
-        return Map(sheet);
+        return await MapAsync(sheet, ct);
     }
 
     public async Task<SheetDto> UpdateAsync(Guid campaignId, Guid id, UpdateSheetRequest request, CancellationToken ct = default)
@@ -91,10 +102,6 @@ public class SheetService : ISheetService
         var weapons = ValidateWeapons(request.Weapons);
 
         var sheet = await _db.Sheets
-                .Include(s => s.Features)
-                .Include(s => s.Attacks)
-                .Include(s => s.Spells)
-                .Include(s => s.Weapons)
                 .FirstOrDefaultAsync(s => s.Id == id && s.CampaignId == campaignId, ct)
             ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);
 
@@ -118,7 +125,15 @@ public class SheetService : ISheetService
         var charisma = AbilityScores.Clamp(request.Charisma);
 
         sheet.Name = request.Name.Trim();
-        sheet.ImageUrl = NormalizeUrl(request.ImageUrl);
+        sheet.ImageUrl = NormalizeImageUrl(request.ImageUrl);
+        if (sheet.ImageUrl is not null)
+        {
+            var storedImage = await _db.SheetImages.FirstOrDefaultAsync(i => i.SheetId == sheet.Id, ct);
+            if (storedImage is not null)
+            {
+                _db.SheetImages.Remove(storedImage);
+            }
+        }
         sheet.ImageFocusX = ClampFocus(request.ImageFocusX);
         sheet.ImageFocusY = ClampFocus(request.ImageFocusY);
         sheet.Type = request.Type;
@@ -134,19 +149,65 @@ public class SheetService : ISheetService
         sheet.Charisma = charisma;
         sheet.DexModifier = AbilityScores.Modifier(dexterity);
         sheet.InitiativeBonus = request.InitiativeBonus;
+        sheet.ProficiencyBonus = request.ProficiencyBonus;
 
-        _db.SheetFeatures.RemoveRange(sheet.Features);
-        _db.SheetAttacks.RemoveRange(sheet.Attacks);
-        _db.SheetSpells.RemoveRange(sheet.Spells);
-        _db.SheetWeapons.RemoveRange(sheet.Weapons);
-        sheet.Features.Clear();
-        sheet.Attacks.Clear();
-        sheet.Spells.Clear();
-        sheet.Weapons.Clear();
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        await _db.SheetFeatures.Where(f => f.SheetId == sheet.Id).ExecuteDeleteAsync(ct);
+        await _db.SheetAttacks.Where(a => a.SheetId == sheet.Id).ExecuteDeleteAsync(ct);
+        await _db.SheetSpells.Where(s => s.SheetId == sheet.Id).ExecuteDeleteAsync(ct);
+        await _db.SheetWeapons.Where(w => w.SheetId == sheet.Id).ExecuteDeleteAsync(ct);
         ApplyCollections(sheet, features, attacks, spells, weapons);
-
         await _db.SaveChangesAsync(ct);
-        return Map(sheet);
+        await transaction.CommitAsync(ct);
+        return await MapAsync(sheet, ct);
+    }
+
+    public async Task<SheetDto> SetImageAsync(Guid campaignId, Guid id, IFormFile file, CancellationToken ct = default)
+    {
+        var sheet = await FindSheetAsync(campaignId, id, ct);
+        await EnsureNotInOpenBattleAsync(campaignId, id, ct);
+        var content = await ReadImageAsync(file, ct);
+        var contentType = SheetRules.DetectImageContentType(content)
+            ?? throw new DomainException(DomainMessages.SheetImageTypeInvalid);
+
+        sheet.ImageUrl = null;
+        var stored = await _db.SheetImages.FirstOrDefaultAsync(i => i.SheetId == sheet.Id, ct);
+        if (stored is null)
+        {
+            stored = new SheetImage { SheetId = sheet.Id };
+            _db.SheetImages.Add(stored);
+        }
+
+        stored.Content = content;
+        stored.ContentType = contentType;
+        await _db.SaveChangesAsync(ct);
+        return await MapAsync(sheet, ct);
+    }
+
+    public async Task<SheetDto> ClearImageAsync(Guid campaignId, Guid id, CancellationToken ct = default)
+    {
+        var sheet = await FindSheetAsync(campaignId, id, ct);
+        await EnsureNotInOpenBattleAsync(campaignId, id, ct);
+        var stored = await _db.SheetImages.FirstOrDefaultAsync(i => i.SheetId == sheet.Id, ct);
+        if (stored is not null)
+        {
+            _db.SheetImages.Remove(stored);
+            await _db.SaveChangesAsync(ct);
+        }
+
+        return await MapAsync(sheet, ct);
+    }
+
+    public async Task<SheetImageFile> GetPublicImageAsync(string publicToken, Guid sheetId, CancellationToken ct = default)
+    {
+        var image = await _db.SheetImages
+            .AsNoTracking()
+            .Where(i => i.SheetId == sheetId && i.Sheet.Campaign.PublicToken == publicToken)
+            .Select(i => new SheetImageFile(i.Content, i.ContentType))
+            .FirstOrDefaultAsync(ct)
+            ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);
+
+        return image;
     }
 
     private List<SheetFeatureInput> ValidateFeatures(IReadOnlyList<SheetFeatureInput>? items)
@@ -257,7 +318,6 @@ public class SheetService : ISheetService
             var feature = features[i];
             sheet.Features.Add(new SheetFeature
             {
-                Id = Guid.NewGuid(),
                 SheetId = sheet.Id,
                 Kind = feature.Kind,
                 Title = feature.Title.Trim(),
@@ -271,7 +331,6 @@ public class SheetService : ISheetService
             var a = attacks[i];
             sheet.Attacks.Add(new SheetAttack
             {
-                Id = Guid.NewGuid(),
                 SheetId = sheet.Id,
                 Description = a.Description.Trim(),
                 DamageDice = a.DamageDice.Trim(),
@@ -286,7 +345,6 @@ public class SheetService : ISheetService
             var s = spells[i];
             sheet.Spells.Add(new SheetSpell
             {
-                Id = Guid.NewGuid(),
                 SheetId = sheet.Id,
                 Description = s.Description.Trim(),
                 DamageDice = string.IsNullOrWhiteSpace(s.DamageDice) ? null : s.DamageDice.Trim(),
@@ -302,7 +360,6 @@ public class SheetService : ISheetService
             var w = weapons[i];
             sheet.Weapons.Add(new SheetWeapon
             {
-                Id = Guid.NewGuid(),
                 SheetId = sheet.Id,
                 Description = w.Description.Trim(),
                 DamageDice = w.DamageDice.Trim(),
@@ -321,15 +378,96 @@ public class SheetService : ISheetService
         }
     }
 
-    private static string? NormalizeUrl(string? url) =>
-        string.IsNullOrWhiteSpace(url) ? null : url.Trim();
+    private async Task<Sheet> FindSheetAsync(Guid campaignId, Guid id, CancellationToken ct)
+    {
+        return await _db.Sheets
+                .Include(s => s.Features)
+                .Include(s => s.Attacks)
+                .Include(s => s.Spells)
+                .Include(s => s.Weapons)
+                .FirstOrDefaultAsync(s => s.Id == id && s.CampaignId == campaignId, ct)
+            ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);
+    }
+
+    private async Task EnsureNotInOpenBattleAsync(Guid campaignId, Guid id, CancellationToken ct)
+    {
+        var inOpenBattle = await _db.Combatants
+            .AnyAsync(c =>
+                c.SheetId == id &&
+                c.Battle.CampaignId == campaignId &&
+                (c.Battle.Status == BattleStatus.Preparing || c.Battle.Status == BattleStatus.Active),
+                ct);
+
+        if (inOpenBattle)
+        {
+            throw new DomainException(DomainMessages.SheetInActiveBattle);
+        }
+    }
+
+    private static async Task<byte[]> ReadImageAsync(IFormFile file, CancellationToken ct)
+    {
+        if (file.Length == 0)
+        {
+            throw new DomainException(DomainMessages.SheetImageRequired);
+        }
+
+        if (file.Length > SheetRules.MaxImageBytes)
+        {
+            throw new DomainException(DomainMessages.SheetImageTooLarge);
+        }
+
+        await using var stream = file.OpenReadStream();
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, ct);
+        if (buffer.Length > SheetRules.MaxImageBytes)
+        {
+            throw new DomainException(DomainMessages.SheetImageTooLarge);
+        }
+
+        return buffer.ToArray();
+    }
+
+    private async Task<string> PublicTokenAsync(Guid campaignId, CancellationToken ct) =>
+        await _db.Campaigns
+            .Where(c => c.Id == campaignId)
+            .Select(c => c.PublicToken)
+            .FirstAsync(ct);
+
+    private async Task<SheetDto> MapAsync(Sheet sheet, CancellationToken ct)
+    {
+        var publicToken = await PublicTokenAsync(sheet.CampaignId, ct);
+        var hasStoredImage = await _db.SheetImages.AnyAsync(i => i.SheetId == sheet.Id, ct);
+        return Map(sheet, publicToken, hasStoredImage);
+    }
+
+    private static string? NormalizeImageUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return null;
+        }
+
+        var trimmed = url.Trim();
+        if (trimmed.Length > SheetRules.MaxImageUrlLength)
+        {
+            throw new DomainException(DomainMessages.SheetImageUrlTooLong);
+        }
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new DomainException(DomainMessages.SheetImageUrlInvalid);
+        }
+
+        return trimmed;
+    }
 
     private static double ClampFocus(double value) => Math.Clamp(value, 0, 100);
 
-    private static SheetDto Map(Sheet sheet) => new(
+    private static SheetDto Map(Sheet sheet, string publicToken, bool hasStoredImage) => new(
         sheet.Id,
         sheet.Name,
-        sheet.ImageUrl,
+        hasStoredImage ? SheetImagePaths.Public(publicToken, sheet.Id) : sheet.ImageUrl,
         sheet.ImageFocusX,
         sheet.ImageFocusY,
         sheet.Type.ToString(),
@@ -339,6 +477,7 @@ public class SheetService : ISheetService
         sheet.BaseAc,
         sheet.DexModifier,
         sheet.InitiativeBonus,
+        sheet.ProficiencyBonus,
         sheet.Strength,
         AbilityScores.Modifier(sheet.Strength),
         sheet.Dexterity,
@@ -354,7 +493,8 @@ public class SheetService : ISheetService
         sheet.Features.OrderBy(f => f.SortOrder).Select(MapFeature).ToList(),
         sheet.Attacks.OrderBy(a => a.SortOrder).Select(MapAttack).ToList(),
         sheet.Spells.OrderBy(s => s.SortOrder).Select(MapSpell).ToList(),
-        sheet.Weapons.OrderBy(w => w.SortOrder).Select(MapWeapon).ToList());
+        sheet.Weapons.OrderBy(w => w.SortOrder).Select(MapWeapon).ToList(),
+        hasStoredImage);
 
     internal static SheetFeatureDto MapFeature(SheetFeature feature) =>
         new(feature.Id, feature.Kind.ToString(), feature.Title, feature.Text, feature.SortOrder);

@@ -10,6 +10,14 @@ if (hubUrl === undefined || hubUrl === null) {
   throw new Error('VITE_HUB_URL não configurada. Copie .env.example para .env.');
 }
 
+export function resolveApiUrl(url: string): string {
+  if (url.startsWith('/')) {
+    return `${apiBaseUrl}${url}`;
+  }
+
+  return url;
+}
+
 export const config = {
   apiBaseUrl: apiBaseUrl as string,
   hubUrl: hubUrl as string,
@@ -81,6 +89,68 @@ export const abilityLabels: Record<(typeof abilityNames)[number], string> = {
   Wisdom: 'Sabedoria',
   Charisma: 'Carisma',
 };
+
+export const defaultProficiencyBonus = 2;
+
+export const sheetImageUrlMaxLength = 1000;
+export const sheetImageMaxBytes = 4 * 1024 * 1024;
+export const sheetImageAccept = 'image/jpeg,image/png,image/webp,image/gif';
+export const sheetImageSourceConflict = 'Use o link ou o arquivo.';
+export const sheetImageTooLarge = 'A imagem passa de 4 MB.';
+export const sheetImageTypeInvalid = 'Use uma imagem jpeg, png, webp ou gif.';
+
+export function formatModifier(value: number) {
+  return value >= 0 ? `+${value}` : String(value);
+}
+
+export function attackHitBonus(proficiencyBonus: number, abilityModifier: number) {
+  return proficiencyBonus + abilityModifier;
+}
+
+export function abilityModifierOf(
+  ability: string,
+  mods: {
+    strengthMod: number;
+    dexterityMod: number;
+    constitutionMod: number;
+    intelligenceMod: number;
+    wisdomMod: number;
+    charismaMod: number;
+  },
+) {
+  switch (ability) {
+    case 'Dexterity':
+      return mods.dexterityMod;
+    case 'Constitution':
+      return mods.constitutionMod;
+    case 'Intelligence':
+      return mods.intelligenceMod;
+    case 'Wisdom':
+      return mods.wisdomMod;
+    case 'Charisma':
+      return mods.charismaMod;
+    default:
+      return mods.strengthMod;
+  }
+}
+
+export function formatAttackHit(
+  ability: string,
+  mods: {
+    strengthMod: number;
+    dexterityMod: number;
+    constitutionMod: number;
+    intelligenceMod: number;
+    wisdomMod: number;
+    charismaMod: number;
+  },
+  proficiencyBonus: number,
+) {
+  const modifier = abilityModifierOf(ability, mods);
+  const hit = attackHitBonus(proficiencyBonus, modifier);
+  const label = abilityLabels[ability as (typeof abilityNames)[number]] ?? ability;
+  return `${label} ${formatModifier(modifier)} · acerto ${formatModifier(hit)}`;
+}
 
 export const strikeTypes = ['Melee', 'Ranged'] as const;
 

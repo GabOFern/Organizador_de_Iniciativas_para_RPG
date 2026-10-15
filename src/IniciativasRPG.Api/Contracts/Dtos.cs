@@ -29,6 +29,7 @@ public record SheetDto(
     int BaseAc,
     int DexModifier,
     int InitiativeBonus,
+    int ProficiencyBonus,
     int Strength,
     int StrengthMod,
     int Dexterity,
@@ -44,7 +45,8 @@ public record SheetDto(
     IReadOnlyList<SheetFeatureDto> Features,
     IReadOnlyList<SheetAttackDto> Attacks,
     IReadOnlyList<SheetSpellDto> Spells,
-    IReadOnlyList<SheetWeaponDto> Weapons);
+    IReadOnlyList<SheetWeaponDto> Weapons,
+    bool HasStoredImage);
 
 public record SheetFeatureDto(
     Guid? Id,
@@ -96,6 +98,8 @@ public record SheetSpellInput(
     bool RequiresMaterial,
     AbilityName AbilityBase);
 
+public sealed record SheetImageFile(byte[] Content, string ContentType);
+
 public record SheetWeaponInput(
     string Description,
     string DamageDice,
@@ -121,7 +125,8 @@ public record CreateSheetRequest(
     IReadOnlyList<SheetWeaponInput>? Weapons = null,
     double ImageFocusX = 50,
     double ImageFocusY = 50,
-    int InitiativeBonus = 0);
+    int InitiativeBonus = 0,
+    int ProficiencyBonus = SheetRules.DefaultProficiencyBonus);
 
 public record UpdateSheetRequest(
     string Name,
@@ -143,7 +148,8 @@ public record UpdateSheetRequest(
     IReadOnlyList<SheetWeaponInput>? Weapons = null,
     double ImageFocusX = 50,
     double ImageFocusY = 50,
-    int InitiativeBonus = 0);
+    int InitiativeBonus = 0,
+    int ProficiencyBonus = SheetRules.DefaultProficiencyBonus);
 
 public record CombatantTacticalDto(
     Guid CombatantId,
@@ -163,6 +169,7 @@ public record CombatantTacticalDto(
     int WisdomMod,
     int Charisma,
     int CharismaMod,
+    int ProficiencyBonus,
     IReadOnlyList<SheetFeatureDto> Features,
     IReadOnlyList<SheetAttackDto> Attacks,
     IReadOnlyList<SheetSpellDto> Spells,

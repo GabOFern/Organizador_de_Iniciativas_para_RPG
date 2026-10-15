@@ -827,14 +827,23 @@ public class BattleService : IBattleService
             .OrderBy(c => c.SortOrder)
             .ToListAsync(ct);
 
+        var sheetIds = ordered.Select(c => c.SheetId).ToList();
+        var storedImageIds = (await _db.SheetImages
+            .Where(i => sheetIds.Contains(i.SheetId))
+            .Select(i => i.SheetId)
+            .ToListAsync(ct)).ToHashSet();
+
         var combatants = ordered.Select((c, index) =>
         {
             var hideHp = forPublic && c.HideHpFromPublic;
+            var imageUrl = storedImageIds.Contains(c.SheetId)
+                ? SheetImagePaths.Public(battle.Campaign.PublicToken, c.SheetId)
+                : c.Sheet.ImageUrl;
             return new CombatantDto(
                 c.Id,
                 c.SheetId,
                 c.Sheet.Name,
-                c.Sheet.ImageUrl,
+                imageUrl,
                 c.Sheet.ImageFocusX,
                 c.Sheet.ImageFocusY,
                 c.Sheet.Type.ToString(),
@@ -949,6 +958,7 @@ public class BattleService : IBattleService
             AbilityScores.Modifier(sheet.Wisdom),
             sheet.Charisma,
             AbilityScores.Modifier(sheet.Charisma),
+            sheet.ProficiencyBonus,
             sheet.Features.OrderBy(f => f.SortOrder).Select(SheetService.MapFeature).ToList(),
             sheet.Attacks.OrderBy(a => a.SortOrder).Select(SheetService.MapAttack).ToList(),
             sheet.Spells.OrderBy(s => s.SortOrder).Select(SheetService.MapSpell).ToList(),

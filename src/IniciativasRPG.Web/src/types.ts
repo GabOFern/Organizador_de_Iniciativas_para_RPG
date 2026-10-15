@@ -86,6 +86,7 @@ export interface Sheet {
   baseAc: number;
   dexModifier: number;
   initiativeBonus: number;
+  proficiencyBonus: number;
   strength: number;
   strengthMod: number;
   dexterity: number;
@@ -102,6 +103,7 @@ export interface Sheet {
   attacks: SheetAttack[];
   spells: SheetSpell[];
   weapons: SheetWeapon[];
+  hasStoredImage: boolean;
 }
 
 export interface SheetPayload {
@@ -121,6 +123,7 @@ export interface SheetPayload {
   wisdom: number;
   charisma: number;
   initiativeBonus?: number;
+  proficiencyBonus?: number;
   features?: Array<{
     kind: SheetFeatureKind;
     title: string;
@@ -181,6 +184,7 @@ export interface CombatantTactical {
   wisdomMod: number;
   charisma: number;
   charismaMod: number;
+  proficiencyBonus: number;
   features: SheetFeature[];
   attacks: SheetAttack[];
   spells: SheetSpell[];

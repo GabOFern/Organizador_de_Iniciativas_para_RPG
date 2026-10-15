@@ -18,6 +18,7 @@ public class Sheet
     public int BaseAc { get; set; }
     public int DexModifier { get; set; }
     public int InitiativeBonus { get; set; }
+    public int ProficiencyBonus { get; set; } = SheetRules.DefaultProficiencyBonus;
 
     public int Strength { get; set; } = AbilityScores.DefaultScore;
     public int Dexterity { get; set; } = AbilityScores.DefaultScore;
@@ -33,4 +34,5 @@ public class Sheet
     public ICollection<SheetAttack> Attacks { get; set; } = new List<SheetAttack>();
     public ICollection<SheetSpell> Spells { get; set; } = new List<SheetSpell>();
     public ICollection<SheetWeapon> Weapons { get; set; } = new List<SheetWeapon>();
+    public SheetImage? Image { get; set; }
 }

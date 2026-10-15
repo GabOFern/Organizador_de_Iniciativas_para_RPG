@@ -48,4 +48,9 @@ public static class DomainMessages
     public const string FeatureTitleTooLong = "O título da linha é longo demais.";
     public const string FeatureTextTooLong = "O texto da linha é longo demais.";
     public const string InvalidSpellSlot = "O nível do slot de magia deve estar entre 0 e 9.";
+    public const string SheetImageUrlInvalid = "O link da imagem precisa ser http ou https.";
+    public const string SheetImageUrlTooLong = "O link da imagem é longo demais.";
+    public const string SheetImageRequired = "Escolha um arquivo de imagem.";
+    public const string SheetImageTooLarge = "A imagem passa de 4 MB.";
+    public const string SheetImageTypeInvalid = "Use uma imagem jpeg, png, webp ou gif.";
 }

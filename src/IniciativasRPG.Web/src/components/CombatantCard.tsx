@@ -1,3 +1,4 @@
+import { resolveApiUrl } from '../config';
 import { CardFrame } from './CardFrame';
 import { ModifierIcon } from './ModifierIcon';
 import { summarizeModifierEffect } from '../modifierIcons';
@@ -65,7 +66,7 @@ export function CombatantCard({
         <div className="combatant-media-frame" aria-hidden />
         {combatant.imageUrl ? (
           <img
-            src={combatant.imageUrl}
+            src={resolveApiUrl(combatant.imageUrl)}
             alt={combatant.name}
             style={{
               objectPosition: `${combatant.imageFocusX ?? 50}% ${combatant.imageFocusY ?? 50}%`,

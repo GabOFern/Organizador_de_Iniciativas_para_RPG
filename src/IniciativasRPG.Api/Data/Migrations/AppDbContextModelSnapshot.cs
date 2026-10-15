@@ -330,6 +330,9 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("ProficiencyBonus")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Resistances")
                         .HasMaxLength(4000)
                         .HasColumnType("TEXT");
@@ -423,6 +426,25 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.HasIndex("SheetId");
 
                     b.ToTable("SheetFeatures");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetImage", b =>
+                {
+                    b.Property<Guid>("SheetId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Content")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("SheetId");
+
+                    b.ToTable("SheetImages");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetSpell", b =>
@@ -607,6 +629,17 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Sheet");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetImage", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
+                        .WithOne("Image")
+                        .HasForeignKey("IniciativasRPG.Api.Domain.SheetImage", "SheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sheet");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetSpell", b =>
                 {
                     b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
@@ -658,6 +691,8 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Combatants");
 
                     b.Navigation("Features");
+
+                    b.Navigation("Image");
 
                     b.Navigation("Spells");
 

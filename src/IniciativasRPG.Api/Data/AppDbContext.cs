@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<SheetAttack> SheetAttacks => Set<SheetAttack>();
     public DbSet<SheetSpell> SheetSpells => Set<SheetSpell>();
     public DbSet<SheetWeapon> SheetWeapons => Set<SheetWeapon>();
+    public DbSet<SheetImage> SheetImages => Set<SheetImage>();
     public DbSet<Battle> Battles => Set<Battle>();
     public DbSet<Combatant> Combatants => Set<Combatant>();
     public DbSet<ModifierType> ModifierTypes => Set<ModifierType>();
@@ -46,7 +47,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
-            e.Property(x => x.ImageUrl).HasMaxLength(1000);
+            e.Property(x => x.ImageUrl).HasMaxLength(SheetRules.MaxImageUrlLength);
             e.Property(x => x.Type).HasConversion<string>().HasMaxLength(20);
             e.Property(x => x.Class).HasConversion<string>().HasMaxLength(20);
             e.Property(x => x.Resistances).HasMaxLength(4000);
@@ -55,6 +56,17 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.CampaignId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.CampaignId);
+        });
+
+        modelBuilder.Entity<SheetImage>(e =>
+        {
+            e.HasKey(x => x.SheetId);
+            e.Property(x => x.Content).IsRequired();
+            e.Property(x => x.ContentType).HasMaxLength(SheetRules.MaxImageContentTypeLength).IsRequired();
+            e.HasOne(x => x.Sheet)
+                .WithOne(s => s.Image)
+                .HasForeignKey<SheetImage>(x => x.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<SheetFeature>(e =>

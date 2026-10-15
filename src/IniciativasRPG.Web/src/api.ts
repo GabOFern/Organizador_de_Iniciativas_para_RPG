@@ -29,7 +29,7 @@ export function setTokenProvider(provider: TokenProvider) {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (!headers.has('Content-Type') && init.body) {
+  if (!headers.has('Content-Type') && init.body && !(init.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
@@ -94,6 +94,18 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
+
+  setSheetImage: (id: string, file: File) => {
+    const body = new FormData();
+    body.append('file', file);
+    return request<Sheet>(`/api/sheets/${id}/image`, {
+      method: 'POST',
+      body,
+    });
+  },
+
+  clearSheetImage: (id: string) =>
+    request<Sheet>(`/api/sheets/${id}/image`, { method: 'DELETE' }),
 
   listModifierTypes: () => request<ModifierType[]>('/api/modifier-types'),
 

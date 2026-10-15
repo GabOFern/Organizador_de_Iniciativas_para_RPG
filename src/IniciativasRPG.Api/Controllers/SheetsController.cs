@@ -1,4 +1,5 @@
 using IniciativasRPG.Api.Contracts;
+using IniciativasRPG.Api.Domain;
 using IniciativasRPG.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -33,4 +34,20 @@ public class SheetsController : ControllerBase
     [HttpPut("{id:guid}")]
     public async Task<ActionResult<SheetDto>> Update(Guid id, [FromBody] UpdateSheetRequest request, CancellationToken ct) =>
         Ok(await _sheetService.UpdateAsync(CampaignId, id, request, ct));
+
+    [HttpPost("{id:guid}/image")]
+    [RequestSizeLimit(SheetRules.MaxImageRequestBytes)]
+    public async Task<ActionResult<SheetDto>> SetImage(Guid id, IFormFile file, CancellationToken ct)
+    {
+        if (file is null)
+        {
+            throw new DomainException(DomainMessages.SheetImageRequired);
+        }
+
+        return Ok(await _sheetService.SetImageAsync(CampaignId, id, file, ct));
+    }
+
+    [HttpDelete("{id:guid}/image")]
+    public async Task<ActionResult<SheetDto>> ClearImage(Guid id, CancellationToken ct) =>
+        Ok(await _sheetService.ClearImageAsync(CampaignId, id, ct));
 }

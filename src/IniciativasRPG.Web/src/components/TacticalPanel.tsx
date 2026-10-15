@@ -1,7 +1,6 @@
 import { MarkdownText } from './MarkdownText';
-import { abilityLabels, characterClassLabels, sheetFeatureKindLabels, sheetFeatureKinds, strikeTypeLabels } from '../config';
+import { characterClassLabels, formatAttackHit, sheetFeatureKindLabels, sheetFeatureKinds, strikeTypeLabels } from '../config';
 import type {
-  AbilityName,
   CharacterClass,
   CombatantTactical,
   SheetAttack,
@@ -20,10 +19,6 @@ function modLabel(mod: number) {
   return mod >= 0 ? `+${mod}` : String(mod);
 }
 
-function abilityLabel(value: string) {
-  return abilityLabels[value as AbilityName] ?? value;
-}
-
 function strikeLabel(value: string) {
   return strikeTypeLabels[value as StrikeType] ?? value;
 }
@@ -37,26 +32,28 @@ function FeatureItem({ item }: { item: SheetFeature }) {
   );
 }
 
-function AttackItem({ item }: { item: SheetAttack }) {
+function AttackItem({ item, data }: { item: SheetAttack; data: CombatantTactical }) {
   return (
     <li>
       <strong>{item.description}</strong>
       <span className="muted">
         {' '}
-        · {item.damageDice} · {abilityLabel(item.abilityBase)} · {strikeLabel(item.strikeType)}
+        · {item.damageDice} · {formatAttackHit(item.abilityBase, data, data.proficiencyBonus)} ·{' '}
+        {strikeLabel(item.strikeType)}
       </span>
     </li>
   );
 }
 
-function SpellItem({ item }: { item: SheetSpell }) {
+function SpellItem({ item, data }: { item: SheetSpell; data: CombatantTactical }) {
   return (
     <li>
       <strong>{item.description}</strong>
       <span className="muted">
         {' '}
         · slot {item.slotLevel}
-        {item.damageDice ? ` · ${item.damageDice}` : ''} · {abilityLabel(item.abilityBase)}
+        {item.damageDice ? ` · ${item.damageDice}` : ''} ·{' '}
+        {formatAttackHit(item.abilityBase, data, data.proficiencyBonus)}
         {item.requiresMaterial ? ' · material' : ''}
       </span>
     </li>
@@ -162,7 +159,7 @@ export function TacticalPanel({ data, onClose }: TacticalPanelProps) {
           ) : (
             <ul className="tactical-item-list">
               {data.attacks.map((item, i) => (
-                <AttackItem key={item.id ?? i} item={item} />
+                <AttackItem key={item.id ?? i} item={item} data={data} />
               ))}
             </ul>
           )}
@@ -174,7 +171,7 @@ export function TacticalPanel({ data, onClose }: TacticalPanelProps) {
           ) : (
             <ul className="tactical-item-list">
               {data.spells.map((item, i) => (
-                <SpellItem key={item.id ?? i} item={item} />
+                <SpellItem key={item.id ?? i} item={item} data={data} />
               ))}
             </ul>
           )}

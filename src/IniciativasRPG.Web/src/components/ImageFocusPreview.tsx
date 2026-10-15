@@ -1,4 +1,5 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { resolveApiUrl } from '../config';
 
 interface ImageFocusPreviewProps {
   imageUrl: string;
@@ -76,13 +77,13 @@ export function ImageFocusPreview({ imageUrl, focusX, focusY, onChange }: ImageF
       >
         {url ? (
           <img
-            src={url}
+            src={resolveApiUrl(url)}
             alt=""
             draggable={false}
             style={{ objectPosition: `${focusX}% ${focusY}%` }}
           />
         ) : (
-          <div className="image-focus-placeholder">Cole uma URL de imagem acima</div>
+          <div className="image-focus-placeholder">A imagem aparece aqui</div>
         )}
         {url && <span className="image-focus-crosshair" aria-hidden />}
       </div>

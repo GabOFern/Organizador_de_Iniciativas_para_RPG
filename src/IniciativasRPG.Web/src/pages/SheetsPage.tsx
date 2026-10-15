@@ -7,7 +7,15 @@ import {
   abilityNames,
   characterClassLabels,
   characterClasses,
+  defaultProficiencyBonus,
+  formatAttackHit,
   sheetAnnotationHint,
+  sheetImageAccept,
+  sheetImageMaxBytes,
+  sheetImageSourceConflict,
+  sheetImageTooLarge,
+  sheetImageTypeInvalid,
+  sheetImageUrlMaxLength,
   sheetFeatureKindLabels,
   sheetFeatureKinds,
   sheetFeatureTextLimit,
@@ -25,6 +33,24 @@ import type {
 
 function abilityMod(score: number) {
   return Math.floor((score - 10) / 2);
+}
+
+function formAbilityMods(form: {
+  strength: number;
+  dexterity: number;
+  constitution: number;
+  intelligence: number;
+  wisdom: number;
+  charisma: number;
+}) {
+  return {
+    strengthMod: abilityMod(form.strength),
+    dexterityMod: abilityMod(form.dexterity),
+    constitutionMod: abilityMod(form.constitution),
+    intelligenceMod: abilityMod(form.intelligence),
+    wisdomMod: abilityMod(form.wisdom),
+    charismaMod: abilityMod(form.charisma),
+  };
 }
 
 function formatMod(score: number) {
@@ -91,6 +117,10 @@ const emptyWeapon = (): WeaponDraft => ({
 const emptyForm = {
   name: '',
   imageUrl: '',
+  imageFile: null as File | null,
+  hasStoredImage: false,
+  removeStoredImage: false,
+  storedPreviewUrl: '',
   imageFocusX: 50,
   imageFocusY: 50,
   type: 'Player' as SheetType,
@@ -105,6 +135,7 @@ const emptyForm = {
   wisdom: 10,
   charisma: 10,
   initiativeBonus: 0,
+  proficiencyBonus: defaultProficiencyBonus,
   features: [] as FeatureDraft[],
   attacks: [] as AttackDraft[],
   spells: [] as SpellDraft[],
@@ -118,6 +149,20 @@ export function SheetsPage() {
   const [initiativeTouched, setInitiativeTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [nameQuery, setNameQuery] = useState('');
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!form.imageFile) {
+      setFilePreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(form.imageFile);
+    setFilePreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [form.imageFile]);
 
   async function load() {
     setSheets(await api.listSheets());
@@ -133,7 +178,11 @@ export function SheetsPage() {
     setEditingId(sheet.id);
     setForm({
       name: sheet.name,
-      imageUrl: sheet.imageUrl ?? '',
+      imageUrl: sheet.hasStoredImage ? '' : (sheet.imageUrl ?? ''),
+      imageFile: null,
+      hasStoredImage: sheet.hasStoredImage,
+      removeStoredImage: false,
+      storedPreviewUrl: sheet.hasStoredImage ? (sheet.imageUrl ?? '') : '',
       imageFocusX: sheet.imageFocusX ?? 50,
       imageFocusY: sheet.imageFocusY ?? 50,
       type: sheet.type,
@@ -148,6 +197,7 @@ export function SheetsPage() {
       wisdom: sheet.wisdom,
       charisma: sheet.charisma,
       initiativeBonus: sheet.initiativeBonus ?? 0,
+      proficiencyBonus: sheet.proficiencyBonus ?? defaultProficiencyBonus,
       features: (sheet.features ?? []).map((feature) => ({
         kind: (feature.kind as SheetFeatureKind) || 'Trait',
         title: feature.title,
@@ -176,6 +226,7 @@ export function SheetsPage() {
     setError(null);
     setMessage(null);
     setInitiativeTouched(true);
+    setFileInputKey((key) => key + 1);
   }
 
   function resetForm() {
@@ -188,15 +239,34 @@ export function SheetsPage() {
       weapons: [],
     });
     setInitiativeTouched(false);
+    setFileInputKey((key) => key + 1);
   }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    const link = form.imageUrl.trim();
+    if (link && form.imageFile) {
+      setError(sheetImageSourceConflict);
+      return;
+    }
+
+    if (form.imageFile) {
+      if (form.imageFile.size > sheetImageMaxBytes) {
+        setError(sheetImageTooLarge);
+        return;
+      }
+
+      if (form.imageFile.type && !sheetImageAccept.split(',').includes(form.imageFile.type)) {
+        setError(sheetImageTypeInvalid);
+        return;
+      }
+    }
+
     const payload = {
       name: form.name,
-      imageUrl: form.imageUrl || null,
+      imageUrl: link || null,
       imageFocusX: form.imageFocusX,
       imageFocusY: form.imageFocusY,
       type: form.type,
@@ -210,6 +280,7 @@ export function SheetsPage() {
       wisdom: form.wisdom,
       charisma: form.charisma,
       initiativeBonus: form.initiativeBonus,
+      proficiencyBonus: form.proficiencyBonus,
       features: form.features.map((feature) => ({
         kind: feature.kind,
         title: feature.title,
@@ -236,19 +307,32 @@ export function SheetsPage() {
       })),
     };
     try {
-      if (editingId) {
-        await api.updateSheet(editingId, { ...payload, currentHp: form.currentHp });
-        setMessage('Ficha atualizada.');
+      let sheetId = editingId;
+      if (sheetId) {
+        await api.updateSheet(sheetId, { ...payload, currentHp: form.currentHp });
       } else {
-        await api.createSheet(payload);
-        setMessage('Ficha criada.');
+        sheetId = (await api.createSheet(payload)).id;
+        setEditingId(sheetId);
       }
+
+      if (form.imageFile) {
+        await api.setSheetImage(sheetId, form.imageFile);
+      } else if (form.removeStoredImage || link) {
+        await api.clearSheetImage(sheetId);
+      }
+
+      setMessage(editingId ? 'Ficha atualizada.' : 'Ficha criada.');
       resetForm();
       await load();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Falha ao salvar ficha.');
     }
   }
+
+  const nameNeedle = nameQuery.trim().toLocaleLowerCase();
+  const visibleSheets = nameNeedle
+    ? sheets.filter((sheet) => sheet.name.toLocaleLowerCase().includes(nameNeedle))
+    : sheets;
 
   return (
     <div className="page-grid">
@@ -264,14 +348,54 @@ export function SheetsPage() {
             />
           </label>
           <label>
-            URL da imagem
+            Link da imagem
             <input
               value={form.imageUrl}
+              maxLength={sheetImageUrlMaxLength}
               onChange={(e) => setForm((f) => ({ ...f, imageUrl: e.target.value }))}
             />
           </label>
+          <label>
+            Arquivo da imagem
+            <input
+              key={fileInputKey}
+              type="file"
+              accept={sheetImageAccept}
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                setForm((current) => ({
+                  ...current,
+                  imageFile: file,
+                  removeStoredImage: false,
+                }));
+              }}
+            />
+          </label>
+          {(form.imageUrl.trim() || form.imageFile || form.storedPreviewUrl) && (
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => {
+                setForm((current) => ({
+                  ...current,
+                  imageUrl: '',
+                  imageFile: null,
+                  hasStoredImage: false,
+                  removeStoredImage: true,
+                  storedPreviewUrl: '',
+                }));
+                setFileInputKey((key) => key + 1);
+              }}
+            >
+              Remover imagem
+            </button>
+          )}
           <ImageFocusPreview
-            imageUrl={form.imageUrl}
+            imageUrl={
+              filePreviewUrl
+              || form.imageUrl.trim()
+              || (form.removeStoredImage ? '' : form.storedPreviewUrl)
+            }
             focusX={form.imageFocusX}
             focusY={form.imageFocusY}
             onChange={(imageFocusX, imageFocusY) =>
@@ -380,6 +504,16 @@ export function SheetsPage() {
                 setInitiativeTouched(true);
                 setForm((f) => ({ ...f, initiativeBonus: Number(e.target.value) }));
               }}
+              required
+            />
+          </label>
+
+          <label>
+            Bônus de proficiência
+            <input
+              type="number"
+              value={form.proficiencyBonus}
+              onChange={(e) => setForm((f) => ({ ...f, proficiencyBonus: Number(e.target.value) }))}
               required
             />
           </label>
@@ -561,6 +695,9 @@ export function SheetsPage() {
                     ))}
                   </select>
                 </label>
+                <p className="sheet-collection-span muted">
+                  {formatAttackHit(attack.abilityBase, formAbilityMods(form), form.proficiencyBonus)}
+                </p>
                 <button
                   type="button"
                   className="ghost"
@@ -673,6 +810,9 @@ export function SheetsPage() {
                   />
                   Material
                 </label>
+                <p className="sheet-collection-span muted">
+                  {formatAttackHit(spell.abilityBase, formAbilityMods(form), form.proficiencyBonus)}
+                </p>
                 <button
                   type="button"
                   className="ghost"
@@ -805,11 +945,20 @@ export function SheetsPage() {
 
       <section className="panel">
         <h2>Repositório de fichas</h2>
+        <label>
+          Filtrar por nome
+          <input
+            value={nameQuery}
+            onChange={(e) => setNameQuery(e.target.value)}
+          />
+        </label>
         {sheets.length === 0 ? (
           <p className="muted">Nenhuma ficha cadastrada.</p>
+        ) : visibleSheets.length === 0 ? (
+          <p className="muted">Nenhuma ficha com esse nome.</p>
         ) : (
           <ul className="sheet-list">
-            {sheets.map((sheet) => (
+            {visibleSheets.map((sheet) => (
               <li key={sheet.id}>
                 <div>
                   <strong>{sheet.name}</strong>
