@@ -11,6 +11,9 @@ public class Sheet
     public double ImageFocusX { get; set; } = 50;
     /// <summary>Ponto de foco vertical da imagem (0–100). Default 50 = centro.</summary>
     public double ImageFocusY { get; set; } = 50;
+
+    /// <summary>Escala em relação ao preenchimento do card. 1 cobre o card.</summary>
+    public double ImageScale { get; set; } = SheetRules.ImageScaleDefault;
     public SheetType Type { get; set; }
     public CharacterClass Class { get; set; } = CharacterClass.None;
     public int MaxHp { get; set; }

@@ -98,6 +98,14 @@ export const sheetImageAccept = 'image/jpeg,image/png,image/webp,image/gif';
 export const sheetImageSourceConflict = 'Use o link ou o arquivo.';
 export const sheetImageTooLarge = 'A imagem passa de 4 MB.';
 export const sheetImageTypeInvalid = 'Use uma imagem jpeg, png, webp ou gif.';
+/** 1 preenche o card. Abaixo disso a imagem mostra mais, até caber inteira. */
+export const sheetImageScaleDefault = 1;
+export const sheetImageScaleMin = 0.05;
+export const sheetImageScaleMax = 4;
+export const sheetImageScaleStep = 1.25;
+/** Um notch típico da roda (deltaY 100) equivale a um passo de zoom. */
+export const sheetImageScaleWheelDivisor = 100;
+export const sheetImageFocusCenter = 50;
 export const sceneTitleMaxLength = 120;
 export const sceneImageUrlMaxLength = sheetImageUrlMaxLength;
 export const sceneImageMaxBytes = sheetImageMaxBytes;
@@ -108,6 +116,11 @@ export const sceneImageSourceRequired = 'Informe o link ou o arquivo.';
 export const sceneImageSourceConflict = sheetImageSourceConflict;
 export const sceneImageUrlInvalid = 'O link da imagem precisa ser http ou https.';
 export const sceneEmptyMessage = 'Nenhuma imagem nesta sessão.';
+export const sceneZoomMin = 1;
+export const sceneZoomMax = 4;
+export const sceneZoomStep = 1.25;
+/** Um notch típico da roda (deltaY 100) equivale a um passo de zoom. */
+export const sceneZoomWheelDivisor = 100;
 
 export function formatModifier(value: number) {
   return value >= 0 ? `+${value}` : String(value);

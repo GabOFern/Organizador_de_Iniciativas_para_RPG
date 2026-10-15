@@ -350,6 +350,11 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<double>("ImageFocusY")
                         .HasColumnType("REAL");
 
+                    b.Property<double>("ImageScale")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(1.0);
+
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");

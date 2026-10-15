@@ -1,4 +1,5 @@
-import { resolveApiUrl } from '../config';
+import { resolveApiUrl, sheetImageFocusCenter, sheetImageScaleDefault } from '../config';
+import { framedImageStyle, useSheetImageFrame } from '../sheetImageFrame';
 import { CardFrame } from './CardFrame';
 import { ModifierIcon } from './ModifierIcon';
 import { summarizeModifierEffect } from '../modifierIcons';
@@ -50,6 +51,11 @@ export function CombatantCard({
 }: CombatantCardProps) {
   const showKill = !readOnly && combatant.currentHp === 0 && !combatant.isDead;
   const modifiers = combatant.modifiers ?? [];
+  const portraitSrc = combatant.imageUrl ? resolveApiUrl(combatant.imageUrl) : '';
+  const { frameRef, natural, frame, setNatural } = useSheetImageFrame(portraitSrc);
+  const focusX = combatant.imageFocusX ?? sheetImageFocusCenter;
+  const focusY = combatant.imageFocusY ?? sheetImageFocusCenter;
+  const scale = combatant.imageScale || sheetImageScaleDefault;
 
   return (
     <article
@@ -62,15 +68,21 @@ export function CombatantCard({
         .join(' ')}
     >
       <CardFrame />
-      <div className="combatant-media">
+      <div className="combatant-media" ref={frameRef}>
         <div className="combatant-media-frame" aria-hidden />
-        {combatant.imageUrl ? (
+        {portraitSrc ? (
           <img
-            src={resolveApiUrl(combatant.imageUrl)}
+            src={portraitSrc}
             alt={combatant.name}
-            style={{
-              objectPosition: `${combatant.imageFocusX ?? 50}% ${combatant.imageFocusY ?? 50}%`,
-            }}
+            draggable={false}
+            className={natural && frame ? 'sheet-framed-image' : undefined}
+            style={framedImageStyle(frame, natural, focusX, focusY, scale)}
+            onLoad={(event) =>
+              setNatural({
+                width: event.currentTarget.naturalWidth,
+                height: event.currentTarget.naturalHeight,
+              })
+            }
           />
         ) : (
           <div className="combatant-placeholder" aria-hidden>

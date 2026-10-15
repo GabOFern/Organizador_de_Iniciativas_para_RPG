@@ -71,6 +71,7 @@ public class SheetService : ISheetService
             ImageUrl = NormalizeImageUrl(request.ImageUrl),
             ImageFocusX = ClampFocus(request.ImageFocusX),
             ImageFocusY = ClampFocus(request.ImageFocusY),
+            ImageScale = ClampScale(request.ImageScale),
             Type = request.Type,
             Class = request.Class,
             MaxHp = request.MaxHp,
@@ -136,6 +137,7 @@ public class SheetService : ISheetService
         }
         sheet.ImageFocusX = ClampFocus(request.ImageFocusX);
         sheet.ImageFocusY = ClampFocus(request.ImageFocusY);
+        sheet.ImageScale = ClampScale(request.ImageScale);
         sheet.Type = request.Type;
         sheet.Class = request.Class;
         sheet.MaxHp = request.MaxHp;
@@ -464,12 +466,16 @@ public class SheetService : ISheetService
 
     private static double ClampFocus(double value) => Math.Clamp(value, 0, 100);
 
+    private static double ClampScale(double value) =>
+        Math.Clamp(value, SheetRules.ImageScaleMin, SheetRules.ImageScaleMax);
+
     private static SheetDto Map(Sheet sheet, string publicToken, bool hasStoredImage) => new(
         sheet.Id,
         sheet.Name,
         hasStoredImage ? SheetImagePaths.Public(publicToken, sheet.Id) : sheet.ImageUrl,
         sheet.ImageFocusX,
         sheet.ImageFocusY,
+        sheet.ImageScale,
         sheet.Type.ToString(),
         sheet.Class.ToString(),
         sheet.MaxHp,

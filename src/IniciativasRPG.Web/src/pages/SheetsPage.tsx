@@ -14,6 +14,7 @@ import {
   sheetImageMaxBytes,
   sheetImageSourceConflict,
   sheetImageTooLarge,
+  sheetImageScaleDefault,
   sheetImageTypeInvalid,
   sheetImageUrlMaxLength,
   sheetFeatureKindLabels,
@@ -123,6 +124,7 @@ const emptyForm = {
   storedPreviewUrl: '',
   imageFocusX: 50,
   imageFocusY: 50,
+  imageScale: sheetImageScaleDefault,
   type: 'Player' as SheetType,
   class: 'None' as CharacterClass,
   maxHp: 10,
@@ -185,6 +187,7 @@ export function SheetsPage() {
       storedPreviewUrl: sheet.hasStoredImage ? (sheet.imageUrl ?? '') : '',
       imageFocusX: sheet.imageFocusX ?? 50,
       imageFocusY: sheet.imageFocusY ?? 50,
+      imageScale: sheet.imageScale || sheetImageScaleDefault,
       type: sheet.type,
       class: (sheet.class as CharacterClass) || 'None',
       maxHp: sheet.maxHp,
@@ -269,6 +272,7 @@ export function SheetsPage() {
       imageUrl: link || null,
       imageFocusX: form.imageFocusX,
       imageFocusY: form.imageFocusY,
+      imageScale: form.imageScale,
       type: form.type,
       class: form.class,
       maxHp: form.maxHp,
@@ -398,8 +402,9 @@ export function SheetsPage() {
             }
             focusX={form.imageFocusX}
             focusY={form.imageFocusY}
-            onChange={(imageFocusX, imageFocusY) =>
-              setForm((f) => ({ ...f, imageFocusX, imageFocusY }))
+            scale={form.imageScale}
+            onChange={(imageFocusX, imageFocusY, imageScale) =>
+              setForm((f) => ({ ...f, imageFocusX, imageFocusY, imageScale }))
             }
           />
           <div className="row">

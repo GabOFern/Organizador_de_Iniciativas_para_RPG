@@ -617,6 +617,7 @@ html[data-theme] .battle-lobby-card {
 
 .combatant-media {
   position: relative;
+  overflow: hidden;
   background: #0d0906;
   aspect-ratio: 16 / 10;
   width: 100%;
@@ -660,9 +661,13 @@ html[data-theme] .battle-lobby-card {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--silver-dim) 50%, transparent);
   background: #0d0906;
-  cursor: grab;
+  cursor: default;
   touch-action: none;
   user-select: none;
+}
+
+.image-focus-preview.can-pan {
+  cursor: grab;
 }
 
 .image-focus-preview.is-dragging {
@@ -679,6 +684,25 @@ html[data-theme] .battle-lobby-card {
   object-fit: cover;
   display: block;
   pointer-events: none;
+}
+
+.sheet-framed-image {
+  position: absolute;
+  display: block;
+  max-width: none;
+  max-height: none;
+  pointer-events: none;
+}
+
+.image-focus-zoom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.image-focus-zoom button {
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
 }
 
 .image-focus-placeholder {
@@ -2082,6 +2106,11 @@ html[data-theme='Warlock'] {
   border-radius: 8px 0 0 8px;
 }
 
+/* O :active global troca o transform e a aba desce no meio do clique. */
+.scene-launcher:active:not(:disabled) {
+  transform: translateY(-50%);
+}
+
 .scene-drawer {
   position: fixed;
   z-index: 46;
@@ -2168,29 +2197,66 @@ button.scene-open span {
   position: fixed;
   z-index: 60;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding: max(4.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
-    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: rgba(0, 0, 0, 0.9);
 }
 
-.scene-lightbox img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+.scene-lightbox-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
 }
 
-.scene-lightbox button {
+.scene-lightbox-stage.can-pan {
+  cursor: grab;
+}
+
+.scene-lightbox-stage.is-panning {
+  cursor: grabbing;
+}
+
+.scene-lightbox-stage img {
   position: absolute;
+  left: 50%;
+  top: 50%;
+  max-width: none;
+  max-height: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.scene-lightbox-close {
+  position: absolute;
+  z-index: 1;
   top: max(0.75rem, env(safe-area-inset-top));
   right: max(0.75rem, env(safe-area-inset-right));
   min-width: var(--touch-min);
   min-height: var(--touch-min);
 }
 
+.scene-lightbox-zoom {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom))
+    max(0.75rem, env(safe-area-inset-left));
+}
+
+.scene-lightbox-zoom button {
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+}
+
 @media (max-width: 767px) {
-  .scene-launcher {
+  .scene-launcher,
+  .scene-launcher:active:not(:disabled) {
     top: auto;
     right: max(0.75rem, env(safe-area-inset-right));
     bottom: max(0.75rem, env(safe-area-inset-bottom));
@@ -2210,7 +2276,8 @@ button.scene-open span {
 }
 
 @media (orientation: landscape) and (max-height: 500px) {
-  .scene-launcher {
+  .scene-launcher,
+  .scene-launcher:active:not(:disabled) {
     top: auto;
     right: auto;
     left: max(0.75rem, env(safe-area-inset-left));

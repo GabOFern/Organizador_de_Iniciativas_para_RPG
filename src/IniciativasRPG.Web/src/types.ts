@@ -79,6 +79,7 @@ export interface Sheet {
   imageUrl: string | null;
   imageFocusX: number;
   imageFocusY: number;
+  imageScale: number;
   type: SheetType;
   class: CharacterClass | string;
   maxHp: number;
@@ -111,6 +112,7 @@ export interface SheetPayload {
   imageUrl?: string | null;
   imageFocusX?: number;
   imageFocusY?: number;
+  imageScale?: number;
   type: SheetType;
   class: CharacterClass;
   maxHp: number;
@@ -228,6 +230,7 @@ export interface Combatant {
   imageUrl: string | null;
   imageFocusX: number;
   imageFocusY: number;
+  imageScale: number;
   sheetType: SheetType;
   initiative: number;
   currentHp: number;

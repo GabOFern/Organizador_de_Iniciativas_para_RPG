@@ -22,6 +22,7 @@ public record SheetDto(
     string? ImageUrl,
     double ImageFocusX,
     double ImageFocusY,
+    double ImageScale,
     string Type,
     string Class,
     int MaxHp,
@@ -129,6 +130,7 @@ public record CreateSheetRequest(
     IReadOnlyList<SheetWeaponInput>? Weapons = null,
     double ImageFocusX = 50,
     double ImageFocusY = 50,
+    double ImageScale = SheetRules.ImageScaleDefault,
     int InitiativeBonus = 0,
     int ProficiencyBonus = SheetRules.DefaultProficiencyBonus);
 
@@ -152,6 +154,7 @@ public record UpdateSheetRequest(
     IReadOnlyList<SheetWeaponInput>? Weapons = null,
     double ImageFocusX = 50,
     double ImageFocusY = 50,
+    double ImageScale = SheetRules.ImageScaleDefault,
     int InitiativeBonus = 0,
     int ProficiencyBonus = SheetRules.DefaultProficiencyBonus);
 
@@ -214,6 +217,7 @@ public record CombatantDto(
     string? ImageUrl,
     double ImageFocusX,
     double ImageFocusY,
+    double ImageScale,
     string SheetType,
     int Initiative,
     int CurrentHp,

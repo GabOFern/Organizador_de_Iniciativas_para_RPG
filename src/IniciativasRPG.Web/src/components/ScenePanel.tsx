@@ -1,6 +1,7 @@
 import * as signalR from '@microsoft/signalr';
 import { useEffect, useId, useState } from 'react';
 import { api, ApiError } from '../api';
+import { SceneLightbox } from './SceneLightbox';
 import { useAuth } from '../auth';
 import {
   config,
@@ -269,14 +270,7 @@ export function ScenePanel({
         </aside>
       )}
 
-      {focused && (
-        <div className="scene-lightbox" role="dialog" aria-modal="true" aria-label={focused.title}>
-          <button type="button" onClick={() => setFocused(null)}>
-            Fechar imagem
-          </button>
-          <img src={resolveApiUrl(focused.imageUrl)} alt={focused.title} />
-        </div>
-      )}
+      {focused && <SceneLightbox scene={focused} onClose={() => setFocused(null)} />}
     </>
   );
 }

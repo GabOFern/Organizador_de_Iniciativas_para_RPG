@@ -846,6 +846,7 @@ public class BattleService : IBattleService
                 imageUrl,
                 c.Sheet.ImageFocusX,
                 c.Sheet.ImageFocusY,
+                c.Sheet.ImageScale,
                 c.Sheet.Type.ToString(),
                 c.Initiative,
                 hideHp ? 0 : c.CurrentHp,

@@ -3,6 +3,12 @@ namespace IniciativasRPG.Api.Domain;
 public static class SheetRules
 {
     public const int DefaultProficiencyBonus = 2;
+
+    /// <summary>1 preenche o card. Abaixo disso a imagem mostra mais, até caber inteira.</summary>
+    public const double ImageScaleDefault = 1;
+
+    public const double ImageScaleMin = 0.05;
+    public const double ImageScaleMax = 4;
     public const int MaxImageUrlLength = 1000;
     public const int MaxImageBytes = 4 * 1024 * 1024;
     public const int MaxImageRequestBytes = MaxImageBytes + 64 * 1024;
