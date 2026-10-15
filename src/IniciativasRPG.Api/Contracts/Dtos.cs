@@ -28,6 +28,7 @@ public record SheetDto(
     int CurrentHp,
     int BaseAc,
     int DexModifier,
+    int InitiativeBonus,
     int Strength,
     int StrengthMod,
     int Dexterity,
@@ -40,10 +41,22 @@ public record SheetDto(
     int WisdomMod,
     int Charisma,
     int CharismaMod,
-    string? Resistances,
+    IReadOnlyList<SheetFeatureDto> Features,
     IReadOnlyList<SheetAttackDto> Attacks,
     IReadOnlyList<SheetSpellDto> Spells,
     IReadOnlyList<SheetWeaponDto> Weapons);
+
+public record SheetFeatureDto(
+    Guid? Id,
+    string Kind,
+    string Title,
+    string Text,
+    int SortOrder);
+
+public record SheetFeatureInput(
+    SheetFeatureKind Kind,
+    string Title,
+    string Text);
 
 public record SheetAttackDto(
     Guid? Id,
@@ -102,12 +115,13 @@ public record CreateSheetRequest(
     int Intelligence,
     int Wisdom,
     int Charisma,
-    string? Resistances = null,
+    IReadOnlyList<SheetFeatureInput>? Features = null,
     IReadOnlyList<SheetAttackInput>? Attacks = null,
     IReadOnlyList<SheetSpellInput>? Spells = null,
     IReadOnlyList<SheetWeaponInput>? Weapons = null,
     double ImageFocusX = 50,
-    double ImageFocusY = 50);
+    double ImageFocusY = 50,
+    int InitiativeBonus = 0);
 
 public record UpdateSheetRequest(
     string Name,
@@ -123,12 +137,13 @@ public record UpdateSheetRequest(
     int Intelligence,
     int Wisdom,
     int Charisma,
-    string? Resistances = null,
+    IReadOnlyList<SheetFeatureInput>? Features = null,
     IReadOnlyList<SheetAttackInput>? Attacks = null,
     IReadOnlyList<SheetSpellInput>? Spells = null,
     IReadOnlyList<SheetWeaponInput>? Weapons = null,
     double ImageFocusX = 50,
-    double ImageFocusY = 50);
+    double ImageFocusY = 50,
+    int InitiativeBonus = 0);
 
 public record CombatantTacticalDto(
     Guid CombatantId,
@@ -148,7 +163,7 @@ public record CombatantTacticalDto(
     int WisdomMod,
     int Charisma,
     int CharismaMod,
-    string? Resistances,
+    IReadOnlyList<SheetFeatureDto> Features,
     IReadOnlyList<SheetAttackDto> Attacks,
     IReadOnlyList<SheetSpellDto> Spells,
     IReadOnlyList<SheetWeaponDto> Weapons);

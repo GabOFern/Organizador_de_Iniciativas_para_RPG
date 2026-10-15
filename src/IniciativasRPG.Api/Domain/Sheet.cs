@@ -17,6 +17,7 @@ public class Sheet
     public int CurrentHp { get; set; }
     public int BaseAc { get; set; }
     public int DexModifier { get; set; }
+    public int InitiativeBonus { get; set; }
 
     public int Strength { get; set; } = AbilityScores.DefaultScore;
     public int Dexterity { get; set; } = AbilityScores.DefaultScore;
@@ -28,6 +29,7 @@ public class Sheet
     public string? Resistances { get; set; }
 
     public ICollection<Combatant> Combatants { get; set; } = new List<Combatant>();
+    public ICollection<SheetFeature> Features { get; set; } = new List<SheetFeature>();
     public ICollection<SheetAttack> Attacks { get; set; } = new List<SheetAttack>();
     public ICollection<SheetSpell> Spells { get; set; } = new List<SheetSpell>();
     public ICollection<SheetWeapon> Weapons { get; set; } = new List<SheetWeapon>();

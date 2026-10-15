@@ -27,6 +27,7 @@ public class SheetService : ISheetService
     {
         var sheets = await _db.Sheets
             .AsNoTracking()
+            .Include(s => s.Features)
             .Include(s => s.Attacks)
             .Include(s => s.Spells)
             .Include(s => s.Weapons)
@@ -40,6 +41,7 @@ public class SheetService : ISheetService
     public async Task<SheetDto> CreateAsync(Guid campaignId, CreateSheetRequest request, CancellationToken ct = default)
     {
         ValidateName(request.Name);
+        var features = ValidateFeatures(request.Features);
         var attacks = ValidateAttacks(request.Attacks);
         var spells = ValidateSpells(request.Spells);
         var weapons = ValidateWeapons(request.Weapons);
@@ -71,10 +73,10 @@ public class SheetService : ISheetService
             Wisdom = wisdom,
             Charisma = charisma,
             DexModifier = AbilityScores.Modifier(dexterity),
-            Resistances = NormalizeText(request.Resistances)
+            InitiativeBonus = request.InitiativeBonus
         };
 
-        ApplyCollections(sheet, attacks, spells, weapons);
+        ApplyCollections(sheet, features, attacks, spells, weapons);
         _db.Sheets.Add(sheet);
         await _db.SaveChangesAsync(ct);
         return Map(sheet);
@@ -83,11 +85,13 @@ public class SheetService : ISheetService
     public async Task<SheetDto> UpdateAsync(Guid campaignId, Guid id, UpdateSheetRequest request, CancellationToken ct = default)
     {
         ValidateName(request.Name);
+        var features = ValidateFeatures(request.Features);
         var attacks = ValidateAttacks(request.Attacks);
         var spells = ValidateSpells(request.Spells);
         var weapons = ValidateWeapons(request.Weapons);
 
         var sheet = await _db.Sheets
+                .Include(s => s.Features)
                 .Include(s => s.Attacks)
                 .Include(s => s.Spells)
                 .Include(s => s.Weapons)
@@ -129,18 +133,49 @@ public class SheetService : ISheetService
         sheet.Wisdom = wisdom;
         sheet.Charisma = charisma;
         sheet.DexModifier = AbilityScores.Modifier(dexterity);
-        sheet.Resistances = NormalizeText(request.Resistances);
+        sheet.InitiativeBonus = request.InitiativeBonus;
 
+        _db.SheetFeatures.RemoveRange(sheet.Features);
         _db.SheetAttacks.RemoveRange(sheet.Attacks);
         _db.SheetSpells.RemoveRange(sheet.Spells);
         _db.SheetWeapons.RemoveRange(sheet.Weapons);
+        sheet.Features.Clear();
         sheet.Attacks.Clear();
         sheet.Spells.Clear();
         sheet.Weapons.Clear();
-        ApplyCollections(sheet, attacks, spells, weapons);
+        ApplyCollections(sheet, features, attacks, spells, weapons);
 
         await _db.SaveChangesAsync(ct);
         return Map(sheet);
+    }
+
+    private List<SheetFeatureInput> ValidateFeatures(IReadOnlyList<SheetFeatureInput>? items)
+    {
+        var list = items?.ToList() ?? [];
+        foreach (var item in list)
+        {
+            if (string.IsNullOrWhiteSpace(item.Title))
+            {
+                throw new DomainException(DomainMessages.FeatureTitleRequired);
+            }
+
+            if (item.Title.Trim().Length > SheetFeatureRules.MaxTitleLength)
+            {
+                throw new DomainException(DomainMessages.FeatureTitleTooLong);
+            }
+
+            if (string.IsNullOrWhiteSpace(item.Text))
+            {
+                throw new DomainException(DomainMessages.FeatureTextRequired);
+            }
+
+            if (item.Text.Trim().Length > SheetFeatureRules.MaxTextLength)
+            {
+                throw new DomainException(DomainMessages.FeatureTextTooLong);
+            }
+        }
+
+        return list;
     }
 
     private List<SheetAttackInput> ValidateAttacks(IReadOnlyList<SheetAttackInput>? items)
@@ -212,10 +247,25 @@ public class SheetService : ISheetService
 
     private static void ApplyCollections(
         Sheet sheet,
+        IReadOnlyList<SheetFeatureInput> features,
         IReadOnlyList<SheetAttackInput> attacks,
         IReadOnlyList<SheetSpellInput> spells,
         IReadOnlyList<SheetWeaponInput> weapons)
     {
+        for (var i = 0; i < features.Count; i++)
+        {
+            var feature = features[i];
+            sheet.Features.Add(new SheetFeature
+            {
+                Id = Guid.NewGuid(),
+                SheetId = sheet.Id,
+                Kind = feature.Kind,
+                Title = feature.Title.Trim(),
+                Text = feature.Text.Trim(),
+                SortOrder = i
+            });
+        }
+
         for (var i = 0; i < attacks.Count; i++)
         {
             var a = attacks[i];
@@ -274,9 +324,6 @@ public class SheetService : ISheetService
     private static string? NormalizeUrl(string? url) =>
         string.IsNullOrWhiteSpace(url) ? null : url.Trim();
 
-    private static string? NormalizeText(string? text) =>
-        string.IsNullOrWhiteSpace(text) ? null : text.Trim();
-
     private static double ClampFocus(double value) => Math.Clamp(value, 0, 100);
 
     private static SheetDto Map(Sheet sheet) => new(
@@ -291,6 +338,7 @@ public class SheetService : ISheetService
         sheet.CurrentHp,
         sheet.BaseAc,
         sheet.DexModifier,
+        sheet.InitiativeBonus,
         sheet.Strength,
         AbilityScores.Modifier(sheet.Strength),
         sheet.Dexterity,
@@ -303,10 +351,13 @@ public class SheetService : ISheetService
         AbilityScores.Modifier(sheet.Wisdom),
         sheet.Charisma,
         AbilityScores.Modifier(sheet.Charisma),
-        sheet.Resistances,
+        sheet.Features.OrderBy(f => f.SortOrder).Select(MapFeature).ToList(),
         sheet.Attacks.OrderBy(a => a.SortOrder).Select(MapAttack).ToList(),
         sheet.Spells.OrderBy(s => s.SortOrder).Select(MapSpell).ToList(),
         sheet.Weapons.OrderBy(w => w.SortOrder).Select(MapWeapon).ToList());
+
+    internal static SheetFeatureDto MapFeature(SheetFeature feature) =>
+        new(feature.Id, feature.Kind.ToString(), feature.Title, feature.Text, feature.SortOrder);
 
     internal static SheetAttackDto MapAttack(SheetAttack a) =>
         new(a.Id, a.Description, a.DamageDice, a.AbilityBase.ToString(), a.StrikeType.ToString(), a.SortOrder);

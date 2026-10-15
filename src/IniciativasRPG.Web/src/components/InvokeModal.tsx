@@ -21,6 +21,11 @@ function isNonPlayer(type: SheetType) {
   return type === 'Creature' || type === 'Npc';
 }
 
+function initiativeNotation(bonus: number) {
+  if (!bonus) return '1d20';
+  return bonus > 0 ? `1d20+${bonus}` : `1d20${bonus}`;
+}
+
 export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProps) {
   const titleId = useId();
   const [type, setType] = useState<SheetType>('Player');
@@ -59,6 +64,13 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
     }
     setSheetId((current) => (filtered.some((s) => s.id === current) ? current : first.id));
   }, [type, open, sheets]);
+
+  useEffect(() => {
+    if (!open) return;
+    const sheet = sheets.find((s) => s.id === sheetId);
+    if (!sheet || !isNonPlayer(sheet.type)) return;
+    setDiceNotation(initiativeNotation(sheet.initiativeBonus ?? 0));
+  }, [open, sheetId, sheets]);
 
   useEffect(() => {
     if (!open) return;

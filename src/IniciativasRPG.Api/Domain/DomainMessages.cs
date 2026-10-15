@@ -43,5 +43,9 @@ public static class DomainMessages
     public const string WeaponDamageRequired = "Informe o dano da arma (ex.: 1d8).";
     public const string WeaponRangeRequired = "Informe o alcance da arma.";
     public const string DescriptionRequired = "A descrição é obrigatória.";
+    public const string FeatureTitleRequired = "O título da linha é obrigatório.";
+    public const string FeatureTextRequired = "O texto da linha é obrigatório.";
+    public const string FeatureTitleTooLong = "O título da linha é longo demais.";
+    public const string FeatureTextTooLong = "O texto da linha é longo demais.";
     public const string InvalidSpellSlot = "O nível do slot de magia deve estar entre 0 e 9.";
 }

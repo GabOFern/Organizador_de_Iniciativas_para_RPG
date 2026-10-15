@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<Sheet> Sheets => Set<Sheet>();
+    public DbSet<SheetFeature> SheetFeatures => Set<SheetFeature>();
     public DbSet<SheetAttack> SheetAttacks => Set<SheetAttack>();
     public DbSet<SheetSpell> SheetSpells => Set<SheetSpell>();
     public DbSet<SheetWeapon> SheetWeapons => Set<SheetWeapon>();
@@ -54,6 +55,19 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.CampaignId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.CampaignId);
+        });
+
+        modelBuilder.Entity<SheetFeature>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.Title).HasMaxLength(SheetFeatureRules.MaxTitleLength).IsRequired();
+            e.Property(x => x.Text).HasMaxLength(SheetFeatureRules.MaxTextLength).IsRequired();
+            e.HasOne(x => x.Sheet)
+                .WithMany(s => s.Features)
+                .HasForeignKey(x => x.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.SheetId);
         });
 
         modelBuilder.Entity<SheetAttack>(e =>

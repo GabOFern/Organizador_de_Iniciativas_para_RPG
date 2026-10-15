@@ -316,6 +316,9 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("InitiativeBonus")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Intelligence")
                         .HasColumnType("INTEGER");
 
@@ -386,6 +389,40 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.HasIndex("SheetId");
 
                     b.ToTable("SheetAttacks");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetFeature", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("SheetId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SheetId");
+
+                    b.ToTable("SheetFeatures");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetSpell", b =>
@@ -559,6 +596,17 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Sheet");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetFeature", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
+                        .WithMany("Features")
+                        .HasForeignKey("SheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sheet");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.SheetSpell", b =>
                 {
                     b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
@@ -608,6 +656,8 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Attacks");
 
                     b.Navigation("Combatants");
+
+                    b.Navigation("Features");
 
                     b.Navigation("Spells");
 

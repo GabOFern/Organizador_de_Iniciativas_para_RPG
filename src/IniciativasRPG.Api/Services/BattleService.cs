@@ -122,7 +122,7 @@ public class BattleService : IBattleService
         if (request.RollDice)
         {
             var notation = string.IsNullOrWhiteSpace(request.DiceNotation)
-                ? "1d20"
+                ? InitiativeNotation(sheet.InitiativeBonus)
                 : request.DiceNotation!;
             diceRoll = _diceService.Roll(notation);
             initiative = diceRoll.Value;
@@ -884,6 +884,16 @@ public class BattleService : IBattleService
             m.ResolvedHeal,
             m.LastTickHeal);
 
+    private static string InitiativeNotation(int bonus)
+    {
+        if (bonus == 0)
+        {
+            return "1d20";
+        }
+
+        return bonus > 0 ? $"1d20+{bonus}" : $"1d20{bonus}";
+    }
+
     private static BattleSnapshotDto EmptySnapshot(
         string message,
         string? token = null,
@@ -909,6 +919,8 @@ public class BattleService : IBattleService
 
         var combatant = await _db.Combatants
             .AsNoTracking()
+            .Include(c => c.Sheet)
+                .ThenInclude(s => s.Features)
             .Include(c => c.Sheet)
                 .ThenInclude(s => s.Attacks)
             .Include(c => c.Sheet)
@@ -937,7 +949,7 @@ public class BattleService : IBattleService
             AbilityScores.Modifier(sheet.Wisdom),
             sheet.Charisma,
             AbilityScores.Modifier(sheet.Charisma),
-            sheet.Resistances,
+            sheet.Features.OrderBy(f => f.SortOrder).Select(SheetService.MapFeature).ToList(),
             sheet.Attacks.OrderBy(a => a.SortOrder).Select(SheetService.MapAttack).ToList(),
             sheet.Spells.OrderBy(s => s.SortOrder).Select(SheetService.MapSpell).ToList(),
             sheet.Weapons.OrderBy(w => w.SortOrder).Select(SheetService.MapWeapon).ToList());

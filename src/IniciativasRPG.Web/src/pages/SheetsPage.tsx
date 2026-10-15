@@ -6,6 +6,8 @@ import {
   abilityNames,
   characterClassLabels,
   characterClasses,
+  sheetFeatureKindLabels,
+  sheetFeatureKinds,
   strikeTypeLabels,
   strikeTypes,
 } from '../config';
@@ -13,6 +15,7 @@ import type {
   AbilityName,
   CharacterClass,
   Sheet,
+  SheetFeatureKind,
   SheetType,
   StrikeType,
 } from '../types';
@@ -25,6 +28,12 @@ function formatMod(score: number) {
   const mod = abilityMod(score);
   return mod >= 0 ? `+${mod}` : String(mod);
 }
+
+type FeatureDraft = {
+  kind: SheetFeatureKind;
+  title: string;
+  text: string;
+};
 
 type AttackDraft = {
   description: string;
@@ -47,6 +56,12 @@ type WeaponDraft = {
   range: string;
   strikeType: StrikeType;
 };
+
+const emptyFeature = (): FeatureDraft => ({
+  kind: 'Trait',
+  title: '',
+  text: '',
+});
 
 const emptyAttack = (): AttackDraft => ({
   description: '',
@@ -86,7 +101,8 @@ const emptyForm = {
   intelligence: 10,
   wisdom: 10,
   charisma: 10,
-  resistances: '',
+  initiativeBonus: 0,
+  features: [] as FeatureDraft[],
   attacks: [] as AttackDraft[],
   spells: [] as SpellDraft[],
   weapons: [] as WeaponDraft[],
@@ -96,6 +112,7 @@ export function SheetsPage() {
   const [sheets, setSheets] = useState<Sheet[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [initiativeTouched, setInitiativeTouched] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -127,7 +144,12 @@ export function SheetsPage() {
       intelligence: sheet.intelligence,
       wisdom: sheet.wisdom,
       charisma: sheet.charisma,
-      resistances: sheet.resistances ?? '',
+      initiativeBonus: sheet.initiativeBonus ?? 0,
+      features: (sheet.features ?? []).map((feature) => ({
+        kind: (feature.kind as SheetFeatureKind) || 'Trait',
+        title: feature.title,
+        text: feature.text,
+      })),
       attacks: (sheet.attacks ?? []).map((a) => ({
         description: a.description,
         damageDice: a.damageDice,
@@ -150,16 +172,19 @@ export function SheetsPage() {
     });
     setError(null);
     setMessage(null);
+    setInitiativeTouched(true);
   }
 
   function resetForm() {
     setEditingId(null);
     setForm({
       ...emptyForm,
+      features: [],
       attacks: [],
       spells: [],
       weapons: [],
     });
+    setInitiativeTouched(false);
   }
 
   async function onSubmit(e: FormEvent) {
@@ -181,7 +206,12 @@ export function SheetsPage() {
       intelligence: form.intelligence,
       wisdom: form.wisdom,
       charisma: form.charisma,
-      resistances: form.resistances || null,
+      initiativeBonus: form.initiativeBonus,
+      features: form.features.map((feature) => ({
+        kind: feature.kind,
+        title: feature.title,
+        text: feature.text,
+      })),
       attacks: form.attacks.map((a) => ({
         description: a.description,
         damageDice: a.damageDice,
@@ -322,7 +352,16 @@ export function SheetsPage() {
                   min={1}
                   max={30}
                   value={form[key]}
-                  onChange={(e) => setForm((f) => ({ ...f, [key]: Number(e.target.value) }))}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setForm((f) => ({
+                      ...f,
+                      [key]: value,
+                      ...(key === 'dexterity' && !initiativeTouched
+                        ? { initiativeBonus: abilityMod(value) }
+                        : {}),
+                    }));
+                  }}
                   required
                 />
               </label>
@@ -330,14 +369,95 @@ export function SheetsPage() {
           </fieldset>
 
           <label>
-            Resistências
-            <textarea
-              rows={2}
-              value={form.resistances}
-              onChange={(e) => setForm((f) => ({ ...f, resistances: e.target.value }))}
-              placeholder="Ex.: resistência a fogo; imunidade a veneno"
+            Bônus de iniciativa
+            <input
+              type="number"
+              value={form.initiativeBonus}
+              onChange={(e) => {
+                setInitiativeTouched(true);
+                setForm((f) => ({ ...f, initiativeBonus: Number(e.target.value) }));
+              }}
+              required
             />
           </label>
+
+          <fieldset className="sheet-collection">
+            <legend>Linhas da ficha</legend>
+            {form.features.length === 0 && <p className="muted">Nenhuma linha.</p>}
+            {form.features.map((feature, index) => (
+              <div key={index} className="sheet-collection-row">
+                <label>
+                  Tipo
+                  <select
+                    value={feature.kind}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const features = [...f.features];
+                        features[index] = {
+                          ...features[index],
+                          kind: e.target.value as SheetFeatureKind,
+                        };
+                        return { ...f, features };
+                      })
+                    }
+                  >
+                    {sheetFeatureKinds.map((kind) => (
+                      <option key={kind} value={kind}>
+                        {sheetFeatureKindLabels[kind]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Título
+                  <input
+                    value={feature.title}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const features = [...f.features];
+                        features[index] = { ...features[index], title: e.target.value };
+                        return { ...f, features };
+                      })
+                    }
+                    required
+                  />
+                </label>
+                <label className="sheet-collection-span">
+                  <textarea
+                    rows={2}
+                    value={feature.text}
+                    onChange={(e) =>
+                      setForm((f) => {
+                        const features = [...f.features];
+                        features[index] = { ...features[index], text: e.target.value };
+                        return { ...f, features };
+                      })
+                    }
+                    required
+                  />
+                </label>
+                <button
+                  type="button"
+                  className="ghost"
+                  onClick={() =>
+                    setForm((f) => ({
+                      ...f,
+                      features: f.features.filter((_, i) => i !== index),
+                    }))
+                  }
+                >
+                  Remover
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="ghost"
+              onClick={() => setForm((f) => ({ ...f, features: [...f.features, emptyFeature()] }))}
+            >
+              + Linha
+            </button>
+          </fieldset>
 
           <fieldset className="sheet-collection">
             <legend>Ataques</legend>
@@ -674,8 +794,11 @@ export function SheetsPage() {
                     · {sheet.type} · {characterClassLabels[sheet.class as CharacterClass] ?? sheet.class} · HP{' '}
                     {sheet.currentHp}/{sheet.maxHp} · CA {sheet.baseAc} · DES {sheet.dexterityMod >= 0 ? '+' : ''}
                     {sheet.dexterityMod}
-                    {(sheet.attacks?.length || sheet.spells?.length || sheet.weapons?.length)
-                      ? ` · ${sheet.attacks?.length ?? 0} atq · ${sheet.spells?.length ?? 0} mag · ${sheet.weapons?.length ?? 0} arma`
+                    {' '}
+                    · INI {sheet.initiativeBonus >= 0 ? '+' : ''}
+                    {sheet.initiativeBonus}
+                    {(sheet.features?.length || sheet.attacks?.length || sheet.spells?.length || sheet.weapons?.length)
+                      ? ` · ${sheet.features?.length ?? 0} linhas · ${sheet.attacks?.length ?? 0} atq · ${sheet.spells?.length ?? 0} mag · ${sheet.weapons?.length ?? 0} arma`
                       : ''}
                   </span>
                 </div>

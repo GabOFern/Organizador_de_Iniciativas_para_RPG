@@ -88,3 +88,27 @@ export const strikeTypeLabels: Record<(typeof strikeTypes)[number], string> = {
   Melee: 'Corpo a corpo',
   Ranged: 'À distância',
 };
+
+export const sheetFeatureKinds = [
+  'Trait',
+  'Resistance',
+  'Immunity',
+  'Vulnerability',
+  'Sense',
+  'Speed',
+  'DifficultyClass',
+  'Legendary',
+  'Note',
+] as const;
+
+export const sheetFeatureKindLabels: Record<(typeof sheetFeatureKinds)[number], string> = {
+  Trait: 'Traço',
+  Resistance: 'Resistência',
+  Immunity: 'Imunidade',
+  Vulnerability: 'Vulnerabilidade',
+  Sense: 'Sentido',
+  Speed: 'Deslocamento',
+  DifficultyClass: 'CD',
+  Legendary: 'Lendário',
+  Note: 'Nota',
+};

@@ -1456,6 +1456,10 @@ a.button-link {
   padding-bottom: 0;
 }
 
+.sheet-collection-span {
+  grid-column: 1 / -1;
+}
+
 .checkbox-inline {
   display: flex;
   align-items: center;

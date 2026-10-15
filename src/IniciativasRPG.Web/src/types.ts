@@ -25,6 +25,25 @@ export type AbilityName =
 
 export type StrikeType = 'Melee' | 'Ranged';
 
+export type SheetFeatureKind =
+  | 'Trait'
+  | 'Resistance'
+  | 'Immunity'
+  | 'Vulnerability'
+  | 'Sense'
+  | 'Speed'
+  | 'DifficultyClass'
+  | 'Legendary'
+  | 'Note';
+
+export interface SheetFeature {
+  id?: string | null;
+  kind: SheetFeatureKind | string;
+  title: string;
+  text: string;
+  sortOrder: number;
+}
+
 export interface SheetAttack {
   id?: string | null;
   description: string;
@@ -65,6 +84,7 @@ export interface Sheet {
   currentHp: number;
   baseAc: number;
   dexModifier: number;
+  initiativeBonus: number;
   strength: number;
   strengthMod: number;
   dexterity: number;
@@ -77,7 +97,7 @@ export interface Sheet {
   wisdomMod: number;
   charisma: number;
   charismaMod: number;
-  resistances: string | null;
+  features: SheetFeature[];
   attacks: SheetAttack[];
   spells: SheetSpell[];
   weapons: SheetWeapon[];
@@ -99,7 +119,12 @@ export interface SheetPayload {
   intelligence: number;
   wisdom: number;
   charisma: number;
-  resistances?: string | null;
+  initiativeBonus?: number;
+  features?: Array<{
+    kind: SheetFeatureKind;
+    title: string;
+    text: string;
+  }>;
   attacks?: Array<{
     description: string;
     damageDice: string;
@@ -155,7 +180,7 @@ export interface CombatantTactical {
   wisdomMod: number;
   charisma: number;
   charismaMod: number;
-  resistances: string | null;
+  features: SheetFeature[];
   attacks: SheetAttack[];
   spells: SheetSpell[];
   weapons: SheetWeapon[];

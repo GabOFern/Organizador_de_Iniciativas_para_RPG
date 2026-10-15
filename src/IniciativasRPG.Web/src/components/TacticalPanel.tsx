@@ -1,9 +1,10 @@
-import { abilityLabels, characterClassLabels, strikeTypeLabels } from '../config';
+import { abilityLabels, characterClassLabels, sheetFeatureKindLabels, sheetFeatureKinds, strikeTypeLabels } from '../config';
 import type {
   AbilityName,
   CharacterClass,
   CombatantTactical,
   SheetAttack,
+  SheetFeature,
   SheetSpell,
   SheetWeapon,
   StrikeType,
@@ -24,6 +25,15 @@ function abilityLabel(value: string) {
 
 function strikeLabel(value: string) {
   return strikeTypeLabels[value as StrikeType] ?? value;
+}
+
+function FeatureItem({ item }: { item: SheetFeature }) {
+  return (
+    <li>
+      <strong>{item.title}</strong>
+      <span> {item.text}</span>
+    </li>
+  );
 }
 
 function AttackItem({ item }: { item: SheetAttack }) {
@@ -129,10 +139,20 @@ export function TacticalPanel({ data, onClose }: TacticalPanelProps) {
           </dl>
         </section>
 
-        <section>
-          <h3>Resistências</h3>
-          <p>{data.resistances?.trim() || '—'}</p>
-        </section>
+        {sheetFeatureKinds.map((kind) => {
+          const items = data.features.filter((feature) => feature.kind === kind);
+          if (items.length === 0) return null;
+          return (
+            <section key={kind}>
+              <h3>{sheetFeatureKindLabels[kind]}</h3>
+              <ul className="tactical-item-list">
+                {items.map((item, i) => (
+                  <FeatureItem key={item.id ?? i} item={item} />
+                ))}
+              </ul>
+            </section>
+          );
+        })}
 
         <section>
           <h3>Ataques</h3>
