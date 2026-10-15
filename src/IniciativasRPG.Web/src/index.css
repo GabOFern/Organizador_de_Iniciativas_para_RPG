@@ -39,6 +39,10 @@
   --font-display: 'Cinzel', 'Palatino Linotype', Palatino, serif;
   --font-body: 'Crimson Pro', 'Palatino Linotype', Palatino, serif;
   --touch-min: 44px;
+  --player-phone-max: 767px;
+  --player-phone-landscape-max: 500px;
+  --scene-sheet-portrait-max: 70dvh;
+  --scene-sheet-landscape-max: 50dvh;
 
   font-family: var(--font-body);
   line-height: 1.5;
@@ -2064,6 +2068,166 @@ html[data-theme='Warlock'] {
   --bg-top: #14101c;
   --bg-bottom: #06040a;
   --bg-glow: rgba(196, 160, 64, 0.12);
+}
+
+.scene-launcher {
+  position: fixed;
+  z-index: 45;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  border-radius: 8px 0 0 8px;
+}
+
+.scene-drawer {
+  position: fixed;
+  z-index: 46;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(22rem, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  overflow: auto;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) 1rem;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--wood-raised) 88%, #000), var(--wood-mid));
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.scene-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.scene-drawer-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+}
+
+.scene-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.scene-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+button.scene-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: left;
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--wood-deep) 55%, transparent);
+  box-shadow: none;
+}
+
+button.scene-open span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.scene-open img {
+  width: 3.25rem;
+  height: 3.25rem;
+  object-fit: cover;
+  flex: none;
+  border-radius: 4px;
+  background: #111;
+}
+
+.scene-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.scene-lightbox {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(4.5rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.scene-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.scene-lightbox button {
+  position: absolute;
+  top: max(0.75rem, env(safe-area-inset-top));
+  right: max(0.75rem, env(safe-area-inset-right));
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+}
+
+@media (max-width: 767px) {
+  .scene-launcher {
+    top: auto;
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    transform: none;
+    writing-mode: horizontal-tb;
+  }
+
+  .scene-drawer {
+    top: auto;
+    left: 0;
+    width: 100%;
+    height: var(--scene-sheet-portrait-max);
+    max-height: var(--scene-sheet-portrait-max);
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .scene-launcher {
+    top: auto;
+    right: auto;
+    left: max(0.75rem, env(safe-area-inset-left));
+    bottom: max(0.75rem, env(safe-area-inset-bottom));
+    transform: none;
+    writing-mode: horizontal-tb;
+  }
+
+  .scene-drawer {
+    top: auto;
+    left: 0;
+    width: 100%;
+    height: var(--scene-sheet-landscape-max);
+    max-height: var(--scene-sheet-landscape-max);
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
 }
 
 html[data-theme='Wizard'] {

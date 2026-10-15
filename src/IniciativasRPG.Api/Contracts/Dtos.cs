@@ -100,6 +100,10 @@ public record SheetSpellInput(
 
 public sealed record SheetImageFile(byte[] Content, string ContentType);
 
+public record CampaignSceneDto(Guid Id, string Title, string ImageUrl, int SortOrder);
+
+public sealed record SceneImageFile(byte[] Content, string ContentType);
+
 public record SheetWeaponInput(
     string Description,
     string DamageDice,

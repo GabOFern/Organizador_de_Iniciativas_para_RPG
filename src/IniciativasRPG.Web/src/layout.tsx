@@ -1,5 +1,6 @@
 import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from './auth';
+import { ScenePanel } from './components/ScenePanel';
 import { ThemePicker } from './components/ThemePicker';
 import { routes } from './config';
 
@@ -37,6 +38,7 @@ export function MestreLayout() {
         </nav>
       </header>
       <Outlet />
+      {campaignPublicToken && <ScenePanel publicToken={campaignPublicToken} canEdit />}
     </div>
   );
 }

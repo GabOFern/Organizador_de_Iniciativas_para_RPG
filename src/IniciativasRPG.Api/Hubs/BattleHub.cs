@@ -1,3 +1,4 @@
+using IniciativasRPG.Api.Contracts;
 using IniciativasRPG.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -7,10 +8,12 @@ namespace IniciativasRPG.Api.Hubs;
 public class BattleHub : Hub
 {
     private readonly IBattleService _battleService;
+    private readonly ISceneService _sceneService;
 
-    public BattleHub(IBattleService battleService)
+    public BattleHub(IBattleService battleService, ISceneService sceneService)
     {
         _battleService = battleService;
+        _sceneService = sceneService;
     }
 
     public static string PublicGroupName(string publicToken) => $"battle:{publicToken}:public";
@@ -30,6 +33,7 @@ public class BattleHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, PublicGroupName(publicToken));
         var snapshot = await _battleService.GetByPublicTokenAsync(publicToken, forPublic: true);
         await Clients.Caller.SendAsync(BattleNotifier.BattleUpdatedEvent, snapshot);
+        await SendScenesAsync(publicToken);
     }
 
     [Authorize]
@@ -43,5 +47,21 @@ public class BattleHub : Hub
         await Groups.AddToGroupAsync(Context.ConnectionId, MasterGroupName(publicToken));
         var snapshot = await _battleService.GetByPublicTokenAsync(publicToken, forPublic: false);
         await Clients.Caller.SendAsync(BattleNotifier.BattleUpdatedEvent, snapshot);
+        await SendScenesAsync(publicToken);
+    }
+
+    private async Task SendScenesAsync(string publicToken)
+    {
+        IReadOnlyList<CampaignSceneDto> scenes;
+        try
+        {
+            scenes = await _sceneService.ListByPublicTokenAsync(publicToken);
+        }
+        catch (DomainException)
+        {
+            scenes = Array.Empty<CampaignSceneDto>();
+        }
+
+        await Clients.Caller.SendAsync(BattleNotifier.ScenesUpdatedEvent, scenes);
     }
 }

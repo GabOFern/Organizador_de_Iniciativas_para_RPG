@@ -6,6 +6,7 @@ import type {
   CombatantTactical,
   ModifierType,
   ModifierTypePayload,
+  CampaignScene,
   Sheet,
   SheetPayload,
 } from './types';
@@ -106,6 +107,22 @@ export const api = {
 
   clearSheetImage: (id: string) =>
     request<Sheet>(`/api/sheets/${id}/image`, { method: 'DELETE' }),
+
+  listScenes: () => request<CampaignScene[]>('/api/scenes'),
+
+  listPublicScenes: (token: string) =>
+    request<CampaignScene[]>(`/api/public/campaigns/${token}/scenes`),
+
+  createScene: (body: { title: string; imageUrl?: string; file?: File }) => {
+    const form = new FormData();
+    form.append('title', body.title);
+    if (body.imageUrl) form.append('imageUrl', body.imageUrl);
+    if (body.file) form.append('file', body.file);
+    return request<CampaignScene[]>('/api/scenes', { method: 'POST', body: form });
+  },
+
+  deleteScene: (id: string) =>
+    request<CampaignScene[]>(`/api/scenes/${id}`, { method: 'DELETE' }),
 
   listModifierTypes: () => request<ModifierType[]>('/api/modifier-types'),
 

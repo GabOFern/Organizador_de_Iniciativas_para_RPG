@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { CombatantCard } from '../components/CombatantCard';
+import { ScenePanel } from '../components/ScenePanel';
 import { ThemePicker } from '../components/ThemePicker';
 import { routes } from '../config';
 import { useBattleHub } from '../hooks/useBattleHub';
@@ -76,6 +77,8 @@ export function PublicBattlePage() {
           </div>
         </section>
       )}
+
+      {token && <ScenePanel publicToken={token} canEdit={false} />}
     </main>
   );
 }

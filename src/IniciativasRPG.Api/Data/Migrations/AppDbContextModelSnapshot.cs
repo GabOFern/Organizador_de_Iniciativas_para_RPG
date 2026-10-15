@@ -168,6 +168,44 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.ToTable("Campaigns");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignScene", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("ImageContent")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("ImageContentType")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("CampaignScenes");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -577,6 +615,17 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Campaign");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignScene", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Campaign", "Campaign")
+                        .WithMany("Scenes")
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Campaign");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
                 {
                     b.HasOne("IniciativasRPG.Api.Domain.Battle", "Battle")
@@ -670,6 +719,8 @@ namespace IniciativasRPG.Api.Data.Migrations
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Campaign", b =>
                 {
                     b.Navigation("Battles");
+
+                    b.Navigation("Scenes");
 
                     b.Navigation("Sheets");
                 });

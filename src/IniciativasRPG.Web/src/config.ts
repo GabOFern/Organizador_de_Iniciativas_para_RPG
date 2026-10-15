@@ -98,6 +98,16 @@ export const sheetImageAccept = 'image/jpeg,image/png,image/webp,image/gif';
 export const sheetImageSourceConflict = 'Use o link ou o arquivo.';
 export const sheetImageTooLarge = 'A imagem passa de 4 MB.';
 export const sheetImageTypeInvalid = 'Use uma imagem jpeg, png, webp ou gif.';
+export const sceneTitleMaxLength = 120;
+export const sceneImageUrlMaxLength = sheetImageUrlMaxLength;
+export const sceneImageMaxBytes = sheetImageMaxBytes;
+export const sceneImageAccept = sheetImageAccept;
+export const sceneTitleRequired = 'O título da imagem é obrigatório.';
+export const sceneTitleTooLong = 'O título da imagem é longo demais.';
+export const sceneImageSourceRequired = 'Informe o link ou o arquivo.';
+export const sceneImageSourceConflict = sheetImageSourceConflict;
+export const sceneImageUrlInvalid = 'O link da imagem precisa ser http ou https.';
+export const sceneEmptyMessage = 'Nenhuma imagem nesta sessão.';
 
 export function formatModifier(value: number) {
   return value >= 0 ? `+${value}` : String(value);

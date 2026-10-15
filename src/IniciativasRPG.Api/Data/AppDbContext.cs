@@ -17,6 +17,7 @@ public class AppDbContext : DbContext
     public DbSet<SheetSpell> SheetSpells => Set<SheetSpell>();
     public DbSet<SheetWeapon> SheetWeapons => Set<SheetWeapon>();
     public DbSet<SheetImage> SheetImages => Set<SheetImage>();
+    public DbSet<CampaignScene> CampaignScenes => Set<CampaignScene>();
     public DbSet<Battle> Battles => Set<Battle>();
     public DbSet<Combatant> Combatants => Set<Combatant>();
     public DbSet<ModifierType> ModifierTypes => Set<ModifierType>();
@@ -41,6 +42,19 @@ public class AppDbContext : DbContext
             e.Property(x => x.Description).HasMaxLength(4000);
             e.Property(x => x.PasswordHash).IsRequired();
             e.Property(x => x.PublicToken).HasMaxLength(64).IsRequired();
+        });
+
+        modelBuilder.Entity<CampaignScene>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Title).HasMaxLength(SceneRules.MaxTitleLength).IsRequired();
+            e.Property(x => x.ImageUrl).HasMaxLength(SceneRules.MaxImageUrlLength);
+            e.Property(x => x.ImageContentType).HasMaxLength(SceneRules.MaxImageContentTypeLength);
+            e.HasOne(x => x.Campaign)
+                .WithMany(c => c.Scenes)
+                .HasForeignKey(x => x.CampaignId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.CampaignId);
         });
 
         modelBuilder.Entity<Sheet>(e =>

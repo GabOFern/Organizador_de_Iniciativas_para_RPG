@@ -1,0 +1,244 @@
+using IniciativasRPG.Api.Contracts;
+using IniciativasRPG.Api.Data;
+using IniciativasRPG.Api.Domain;
+using Microsoft.EntityFrameworkCore;
+
+namespace IniciativasRPG.Api.Services;
+
+public interface ISceneService
+{
+    Task<IReadOnlyList<CampaignSceneDto>> ListByCampaignAsync(Guid campaignId, CancellationToken ct = default);
+    Task<IReadOnlyList<CampaignSceneDto>> ListByPublicTokenAsync(string publicToken, CancellationToken ct = default);
+    Task<SceneImageFile> GetPublicImageAsync(string publicToken, Guid sceneId, CancellationToken ct = default);
+    Task<IReadOnlyList<CampaignSceneDto>> CreateAsync(
+        Guid campaignId,
+        string? title,
+        string? imageUrl,
+        IFormFile? file,
+        CancellationToken ct = default);
+    Task<IReadOnlyList<CampaignSceneDto>> DeleteAsync(Guid campaignId, Guid sceneId, CancellationToken ct = default);
+}
+
+public class SceneService : ISceneService
+{
+    private readonly AppDbContext _db;
+    private readonly IBattleNotifier _notifier;
+
+    public SceneService(AppDbContext db, IBattleNotifier notifier)
+    {
+        _db = db;
+        _notifier = notifier;
+    }
+
+    public async Task<IReadOnlyList<CampaignSceneDto>> ListByCampaignAsync(
+        Guid campaignId,
+        CancellationToken ct = default)
+    {
+        var token = await PublicTokenAsync(campaignId, ct);
+        return await ListAsync(campaignId, token, ct);
+    }
+
+    public async Task<IReadOnlyList<CampaignSceneDto>> ListByPublicTokenAsync(
+        string publicToken,
+        CancellationToken ct = default)
+    {
+        var campaignId = await _db.Campaigns
+            .AsNoTracking()
+            .Where(c => c.PublicToken == publicToken)
+            .Select(c => (Guid?)c.Id)
+            .FirstOrDefaultAsync(ct)
+            ?? throw new DomainException(DomainMessages.CampaignNotFound, StatusCodes.Status404NotFound);
+
+        return await ListAsync(campaignId, publicToken, ct);
+    }
+
+    public async Task<SceneImageFile> GetPublicImageAsync(
+        string publicToken,
+        Guid sceneId,
+        CancellationToken ct = default)
+    {
+        var image = await _db.CampaignScenes
+            .AsNoTracking()
+            .Where(s => s.Id == sceneId && s.Campaign.PublicToken == publicToken && s.ImageContent != null)
+            .Select(s => new SceneImageFile(s.ImageContent!, s.ImageContentType!))
+            .FirstOrDefaultAsync(ct);
+
+        if (image is null || string.IsNullOrWhiteSpace(image.ContentType))
+        {
+            throw new DomainException(DomainMessages.SceneNotFound, StatusCodes.Status404NotFound);
+        }
+
+        return image;
+    }
+
+    public async Task<IReadOnlyList<CampaignSceneDto>> CreateAsync(
+        Guid campaignId,
+        string? title,
+        string? imageUrl,
+        IFormFile? file,
+        CancellationToken ct = default)
+    {
+        var normalizedTitle = NormalizeTitle(title);
+        var hasFile = file is not null && file.Length > 0;
+        var trimmedUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+
+        if (hasFile && trimmedUrl is not null)
+        {
+            throw new DomainException(DomainMessages.SceneImageSourceConflict);
+        }
+
+        if (!hasFile && trimmedUrl is null)
+        {
+            throw new DomainException(DomainMessages.SceneImageSourceRequired);
+        }
+
+        var count = await _db.CampaignScenes.CountAsync(s => s.CampaignId == campaignId, ct);
+        if (count >= SceneRules.MaxScenesPerCampaign)
+        {
+            throw new DomainException(DomainMessages.SceneCampaignFull);
+        }
+
+        var nextOrder = await _db.CampaignScenes
+            .Where(s => s.CampaignId == campaignId)
+            .MaxAsync(s => (int?)s.SortOrder, ct) ?? -1;
+
+        var scene = new CampaignScene
+        {
+            Id = Guid.NewGuid(),
+            CampaignId = campaignId,
+            Title = normalizedTitle,
+            SortOrder = nextOrder + 1,
+            CreatedAtUtc = DateTime.UtcNow,
+        };
+
+        if (hasFile)
+        {
+            var content = await ReadImageAsync(file!, ct);
+            var contentType = SheetRules.DetectImageContentType(content)
+                ?? throw new DomainException(DomainMessages.SheetImageTypeInvalid);
+            scene.ImageContent = content;
+            scene.ImageContentType = contentType;
+        }
+        else
+        {
+            scene.ImageUrl = NormalizeImageUrl(trimmedUrl);
+        }
+
+        _db.CampaignScenes.Add(scene);
+        await _db.SaveChangesAsync(ct);
+
+        var token = await PublicTokenAsync(campaignId, ct);
+        var list = await ListAsync(campaignId, token, ct);
+        await _notifier.NotifyScenesUpdatedAsync(token, list, ct);
+        return list;
+    }
+
+    public async Task<IReadOnlyList<CampaignSceneDto>> DeleteAsync(
+        Guid campaignId,
+        Guid sceneId,
+        CancellationToken ct = default)
+    {
+        var deleted = await _db.CampaignScenes
+            .Where(s => s.Id == sceneId && s.CampaignId == campaignId)
+            .ExecuteDeleteAsync(ct);
+
+        if (deleted == 0)
+        {
+            throw new DomainException(DomainMessages.SceneNotFound, StatusCodes.Status404NotFound);
+        }
+
+        var token = await PublicTokenAsync(campaignId, ct);
+        var list = await ListAsync(campaignId, token, ct);
+        await _notifier.NotifyScenesUpdatedAsync(token, list, ct);
+        return list;
+    }
+
+    private async Task<IReadOnlyList<CampaignSceneDto>> ListAsync(
+        Guid campaignId,
+        string publicToken,
+        CancellationToken ct)
+    {
+        var rows = await _db.CampaignScenes
+            .AsNoTracking()
+            .Where(s => s.CampaignId == campaignId)
+            .OrderBy(s => s.SortOrder)
+            .ThenBy(s => s.CreatedAtUtc)
+            .Select(s => new { s.Id, s.Title, s.ImageUrl, s.SortOrder })
+            .ToListAsync(ct);
+
+        return rows
+            .Select(s => new CampaignSceneDto(
+                s.Id,
+                s.Title,
+                s.ImageUrl ?? SceneImagePaths.Public(publicToken, s.Id),
+                s.SortOrder))
+            .ToList();
+    }
+
+    private async Task<string> PublicTokenAsync(Guid campaignId, CancellationToken ct) =>
+        await _db.Campaigns
+            .Where(c => c.Id == campaignId)
+            .Select(c => c.PublicToken)
+            .FirstAsync(ct);
+
+    private static string NormalizeTitle(string? title)
+    {
+        var trimmed = title?.Trim() ?? string.Empty;
+        if (trimmed.Length == 0)
+        {
+            throw new DomainException(DomainMessages.SceneTitleRequired);
+        }
+
+        if (trimmed.Length > SceneRules.MaxTitleLength)
+        {
+            throw new DomainException(DomainMessages.SceneTitleTooLong);
+        }
+
+        return trimmed;
+    }
+
+    private static string NormalizeImageUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            throw new DomainException(DomainMessages.SceneImageSourceRequired);
+        }
+
+        var trimmed = url.Trim();
+        if (trimmed.Length > SceneRules.MaxImageUrlLength)
+        {
+            throw new DomainException(DomainMessages.SheetImageUrlTooLong);
+        }
+
+        if (!Uri.TryCreate(trimmed, UriKind.Absolute, out var uri)
+            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new DomainException(DomainMessages.SheetImageUrlInvalid);
+        }
+
+        return trimmed;
+    }
+
+    private static async Task<byte[]> ReadImageAsync(IFormFile file, CancellationToken ct)
+    {
+        if (file.Length == 0)
+        {
+            throw new DomainException(DomainMessages.SheetImageRequired);
+        }
+
+        if (file.Length > SceneRules.MaxImageBytes)
+        {
+            throw new DomainException(DomainMessages.SheetImageTooLarge);
+        }
+
+        await using var stream = file.OpenReadStream();
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, ct);
+        if (buffer.Length > SceneRules.MaxImageBytes)
+        {
+            throw new DomainException(DomainMessages.SheetImageTooLarge);
+        }
+
+        return buffer.ToArray();
+    }
+}

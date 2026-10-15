@@ -10,11 +10,17 @@ public interface IBattleNotifier
         string publicToken,
         BattleSnapshotDto? masterSnapshot = null,
         CancellationToken ct = default);
+
+    Task NotifyScenesUpdatedAsync(
+        string publicToken,
+        IReadOnlyList<CampaignSceneDto> scenes,
+        CancellationToken ct = default);
 }
 
 public class BattleNotifier : IBattleNotifier
 {
     public const string BattleUpdatedEvent = "BattleUpdated";
+    public const string ScenesUpdatedEvent = "ScenesUpdated";
 
     private readonly IHubContext<BattleHub> _hub;
     private readonly IServiceScopeFactory _scopeFactory;
@@ -49,5 +55,24 @@ public class BattleNotifier : IBattleNotifier
         await _hub.Clients
             .Group(BattleHub.PublicGroupName(publicToken))
             .SendAsync(BattleUpdatedEvent, publicSnapshot, ct);
+    }
+
+    public async Task NotifyScenesUpdatedAsync(
+        string publicToken,
+        IReadOnlyList<CampaignSceneDto> scenes,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(publicToken))
+        {
+            return;
+        }
+
+        await _hub.Clients
+            .Group(BattleHub.MasterGroupName(publicToken))
+            .SendAsync(ScenesUpdatedEvent, scenes, ct);
+
+        await _hub.Clients
+            .Group(BattleHub.PublicGroupName(publicToken))
+            .SendAsync(ScenesUpdatedEvent, scenes, ct);
     }
 }

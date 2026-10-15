@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -36,9 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.getItem(config.authCampaignTokenKey),
   );
 
-  useEffect(() => {
-    setTokenProvider(() => token);
-  }, [token]);
+  setTokenProvider(() => token);
 
   const loginCampaign = useCallback(async (id: string, password: string) => {
     const result = await api.masterLogin(id, password);

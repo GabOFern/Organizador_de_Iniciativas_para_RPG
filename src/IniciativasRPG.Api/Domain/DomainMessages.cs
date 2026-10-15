@@ -53,4 +53,11 @@ public static class DomainMessages
     public const string SheetImageRequired = "Escolha um arquivo de imagem.";
     public const string SheetImageTooLarge = "A imagem passa de 4 MB.";
     public const string SheetImageTypeInvalid = "Use uma imagem jpeg, png, webp ou gif.";
+    public const string SceneTitleRequired = "O título da imagem é obrigatório.";
+    public const string SceneTitleTooLong = "O título da imagem é longo demais.";
+    public const string SceneImageSourceRequired = "Informe o link ou o arquivo.";
+    public const string SceneImageSourceConflict = "Use o link ou o arquivo.";
+    public static readonly string SceneCampaignFull =
+        $"Esta campanha já tem {SceneRules.MaxScenesPerCampaign} imagens.";
+    public const string SceneNotFound = "Imagem não encontrada.";
 }

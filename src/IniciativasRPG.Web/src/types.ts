@@ -268,6 +268,13 @@ export interface ModifierType {
   healDice: string | null;
 }
 
+export interface CampaignScene {
+  id: string;
+  title: string;
+  imageUrl: string;
+  sortOrder: number;
+}
+
 export interface ModifierTypePayload {
   name: string;
   defaultDuration: number;

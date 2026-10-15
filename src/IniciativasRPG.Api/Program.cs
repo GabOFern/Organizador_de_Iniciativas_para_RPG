@@ -38,6 +38,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<ISheetService, SheetService>();
+builder.Services.AddScoped<ISceneService, SceneService>();
 builder.Services.AddScoped<IBattleService, BattleService>();
 builder.Services.AddScoped<IModifierTypeService, ModifierTypeService>();
 builder.Services.AddSingleton<IDiceService, DiceService>();

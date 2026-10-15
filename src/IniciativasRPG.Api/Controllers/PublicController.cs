@@ -13,15 +13,18 @@ public class PublicController : ControllerBase
     private readonly IBattleService _battleService;
     private readonly ICampaignService _campaignService;
     private readonly ISheetService _sheetService;
+    private readonly ISceneService _sceneService;
 
     public PublicController(
         IBattleService battleService,
         ICampaignService campaignService,
-        ISheetService sheetService)
+        ISheetService sheetService,
+        ISceneService sceneService)
     {
         _battleService = battleService;
         _campaignService = campaignService;
         _sheetService = sheetService;
+        _sceneService = sceneService;
     }
 
     [HttpGet("campaigns")]
@@ -36,6 +39,17 @@ public class PublicController : ControllerBase
     public async Task<IActionResult> GetSheetImage(string token, Guid sheetId, CancellationToken ct)
     {
         var image = await _sheetService.GetPublicImageAsync(token, sheetId, ct);
+        return File(image.Content, image.ContentType);
+    }
+
+    [HttpGet("campaigns/{token}/scenes")]
+    public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> ListScenes(string token, CancellationToken ct) =>
+        Ok(await _sceneService.ListByPublicTokenAsync(token, ct));
+
+    [HttpGet("campaigns/{token}/scenes/{sceneId:guid}/image")]
+    public async Task<IActionResult> GetSceneImage(string token, Guid sceneId, CancellationToken ct)
+    {
+        var image = await _sceneService.GetPublicImageAsync(token, sceneId, ct);
         return File(image.Content, image.ContentType);
     }
 }

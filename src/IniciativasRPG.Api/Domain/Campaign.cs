@@ -12,4 +12,5 @@ public class Campaign
 
     public ICollection<Battle> Battles { get; set; } = new List<Battle>();
     public ICollection<Sheet> Sheets { get; set; } = new List<Sheet>();
+    public ICollection<CampaignScene> Scenes { get; set; } = new List<CampaignScene>();
 }
