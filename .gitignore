@@ -19,3 +19,6 @@
 .idea/
 *.swp
 .DS_Store
+
+# Logs locais (front e back)
+/logs/

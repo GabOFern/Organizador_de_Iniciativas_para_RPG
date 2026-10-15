@@ -29,6 +29,12 @@ export const config = {
   themeSessionKey: 'iniciativasrpg.uiTheme',
 } as const;
 
+/** Falhas transitórias na home antes de mostrar erro vermelho. */
+export const campaignsLoadMaxConsecutiveFailures = 3;
+export const campaignsLoadingMessage = 'Carregando dados…';
+export const campaignsLoadFailedMessage = 'Falha ao carregar campanhas.';
+export const requestFailedMessage = 'Falha na requisição.';
+
 export const routes = {
   home: '/',
   login: '/login',

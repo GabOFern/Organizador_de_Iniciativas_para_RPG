@@ -1,0 +1,63 @@
+---
+description: Toda modificação, adição ou correção deve incluir testes unitários e/ou de regressão
+alwaysApply: true
+---
+
+# Testes obrigatórios
+
+## Regra
+
+Cada mudança no código (feature nova, correção de bug, refatoração com impacto externo) **deve** incluir pelo menos um teste automatizado que comprove o comportamento. Sem o teste a mudança não está pronta.
+
+## Backend (C# / xUnit)
+
+- Projeto de testes: `tests/IniciativasRPG.Tests`
+- Stack: **xUnit**, **FluentAssertions**, **EF Core SQLite in-memory**
+- Cada `*Service` tem um arquivo correspondente `*ServiceTests.cs`
+- Funções puras do domínio (`AbilityScores`, `SheetRules`, `DiceService`, etc.) têm testes unitários diretos
+- Testes de serviço usam `AppDbContext` com SQLite `DataSource=:memory:` — o banco é criado no setup e descartado ao final
+- Nunca depender do banco real; nunca deixar dados de teste persistidos
+
+```csharp
+// Padrão para teste de serviço
+await using var db = TestDb.Create(); // SQLite :memory:
+var service = new SheetService(db, new DiceService());
+var sheet = await service.CreateAsync(campaignId, request);
+sheet.Name.Should().Be("Esqueleto");
+```
+
+## Frontend (TypeScript / Vitest)
+
+- Config: `vitest.config.ts` na raiz do projeto Web
+- Funções puras de `config.ts`, `sheetImageFrame.ts`, utilitários → testes unitários em `src/__tests__/`
+- Componentes React quando necessário: `@testing-library/react` + `jsdom`
+- Testes ficam em `src/__tests__/<modulo>.test.ts(x)`
+
+```typescript
+// Padrão para teste de função pura
+import { describe, it, expect } from 'vitest';
+import { clampFocus } from '../sheetImageFrame';
+
+it('limita foco entre 0 e 100', () => {
+  expect(clampFocus(-10)).toBe(0);
+  expect(clampFocus(110)).toBe(100);
+});
+```
+
+## O que testar
+
+- **Caminhos felizes**: criação, leitura, atualização, deleção
+- **Validações de domínio**: nome vazio, URL inválida, limites numéricos, tamanho de imagem
+- **Regressões**: sempre que corrigir um bug, adicionar um teste que falha sem a correção
+- **Clamp e limites nomeados**: `AbilityScores.Clamp`, `ClampFocus`, `ClampScale`, `DetectImageContentType`
+
+## O que NÃO testar aqui
+
+- Testes E2E com browser (são feitos manualmente ou em outra camada)
+- Infraestrutura do framework (middleware, DI registration)
+
+## Convenção de nomes
+
+- Método: `NomeDoMetodo_Cenario_ResultadoEsperado`
+  - `Create_ValidRequest_ReturnsSheet`
+  - `Update_EmptyName_ThrowsDomainException`

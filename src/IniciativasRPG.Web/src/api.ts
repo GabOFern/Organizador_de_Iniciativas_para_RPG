@@ -1,4 +1,5 @@
-import { config } from './config';
+import { config, requestFailedMessage } from './config';
+import { logger } from './logger';
 import type {
   BattleSnapshot,
   CampaignMasterLoginResponse,
@@ -13,10 +14,12 @@ import type {
 
 export class ApiError extends Error {
   status: number;
+  detail?: string;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, detail?: string) {
     super(message);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -39,20 +42,36 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const response = await fetch(`${config.apiBaseUrl}${path}`, {
-    ...init,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${config.apiBaseUrl}${path}`, {
+      ...init,
+      headers,
+    });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    logger.error(`GET/POST ${path} rede: ${detail}`);
+    throw new ApiError(requestFailedMessage, 0, detail);
+  }
 
   if (!response.ok) {
-    let message = 'Falha na requisição.';
+    let message = requestFailedMessage;
+    let detail: string | undefined;
     try {
-      const data = (await response.json()) as { error?: string };
-      if (data.error) message = data.error;
+      const raw = await response.text();
+      detail = raw.slice(0, 500);
+      try {
+        const data = JSON.parse(raw) as { error?: string };
+        if (data.error) message = data.error;
+      } catch {
+        /* body não é JSON */
+      }
     } catch {
       /* ignore */
     }
-    throw new ApiError(message, response.status);
+
+    logger.error(`${init.method ?? 'GET'} ${path} HTTP ${response.status}: ${message}`);
+    throw new ApiError(message, response.status, detail);
   }
 
   if (response.status === 204) {

@@ -3,6 +3,7 @@ using IniciativasRPG.Api.Configuration;
 using IniciativasRPG.Api.Data;
 using IniciativasRPG.Api.Domain;
 using IniciativasRPG.Api.Hubs;
+using IniciativasRPG.Api.Logging;
 using IniciativasRPG.Api.Middleware;
 using IniciativasRPG.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -16,6 +17,10 @@ builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptio
 builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
 builder.Services.Configure<CampaignSeedOptions>(builder.Configuration.GetSection(CampaignSeedOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
+builder.Services.Configure<FileLoggingOptions>(builder.Configuration.GetSection(FileLoggingOptions.SectionName));
+
+builder.Logging.ClearProviders();
+builder.Logging.AddFileLogger();
 
 var jwtOptions = builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
     ?? throw new InvalidOperationException($"{DomainMessages.ConfigMissing} Seção Jwt.");

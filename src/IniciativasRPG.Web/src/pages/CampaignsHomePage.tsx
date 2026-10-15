@@ -2,9 +2,15 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { useAuth } from '../auth';
+import { resolveCampaignsLoadView } from '../campaignsLoadUi';
 import { CardFrame } from '../components/CardFrame';
 import { ThemePicker } from '../components/ThemePicker';
-import { routes } from '../config';
+import {
+  campaignsLoadFailedMessage,
+  campaignsLoadingMessage,
+  campaignsLoadMaxConsecutiveFailures,
+  routes,
+} from '../config';
 import type { CampaignSummary } from '../types';
 
 const POLL_MS = 5000;
@@ -13,23 +19,36 @@ export function CampaignsHomePage() {
   const navigate = useNavigate();
   const { loginCampaign, isAuthenticated } = useAuth();
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [consecutiveFailures, setConsecutiveFailures] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [masterCampaign, setMasterCampaign] = useState<CampaignSummary | null>(null);
   const [password, setPassword] = useState('');
   const [masterError, setMasterError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
 
+  const loadView = resolveCampaignsLoadView({
+    hasLoadedOnce,
+    consecutiveFailures,
+    lastError,
+    maxConsecutiveFailures: campaignsLoadMaxConsecutiveFailures,
+    loadingMessage: campaignsLoadingMessage,
+  });
+
   const load = useCallback(async () => {
     try {
       const list = await api.listCampaigns();
       setCampaigns(list);
-      setError(null);
+      setHasLoadedOnce(true);
+      setConsecutiveFailures(0);
+      setLastError(null);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Falha ao carregar campanhas.');
-    } finally {
-      setLoading(false);
+      const message =
+        err instanceof ApiError ? err.message : campaignsLoadFailedMessage;
+      setConsecutiveFailures((n) => n + 1);
+      setLastError(message);
     }
   }, []);
 
@@ -55,7 +74,7 @@ export function CampaignsHomePage() {
   async function onCreate(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setCreating(true);
-    setError(null);
+    setActionError(null);
     const data = new FormData(e.currentTarget);
     try {
       await api.createCampaign({
@@ -68,7 +87,7 @@ export function CampaignsHomePage() {
       e.currentTarget.reset();
       await load();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Falha ao criar campanha.');
+      setActionError(err instanceof ApiError ? err.message : 'Falha ao criar campanha.');
     } finally {
       setCreating(false);
     }
@@ -88,6 +107,9 @@ export function CampaignsHomePage() {
     }
   }
 
+  const showLoadError = loadView.kind === 'error';
+  const showLoading = loadView.kind === 'loading' && campaigns.length === 0;
+
   return (
     <main className="page public-page">
       <header className="public-header brand-mark">
@@ -103,7 +125,8 @@ export function CampaignsHomePage() {
         </div>
       </header>
 
-      {error && <p className="error">{error}</p>}
+      {showLoadError && <p className="error">{loadView.message}</p>}
+      {actionError && <p className="error">{actionError}</p>}
 
       {showCreate && (
         <section className="panel narrow">
@@ -132,15 +155,15 @@ export function CampaignsHomePage() {
         </section>
       )}
 
-      {loading && campaigns.length === 0 ? (
+      {showLoading ? (
         <section className="panel narrow">
-          <p className="muted">Carregando…</p>
+          <p className="muted">{campaignsLoadingMessage}</p>
         </section>
-      ) : campaigns.length === 0 ? (
+      ) : campaigns.length === 0 && !showLoadError ? (
         <section className="panel narrow">
           <p>Nenhuma campanha ainda. Crie a primeira para começar.</p>
         </section>
-      ) : (
+      ) : campaigns.length > 0 ? (
         <section className="battle-lobby" aria-label="Campanhas">
           {campaigns.map((c) => (
             <article key={c.id} className="battle-lobby-card campaign-card">
@@ -165,7 +188,7 @@ export function CampaignsHomePage() {
             </article>
           ))}
         </section>
-      )}
+      ) : null}
 
       {masterCampaign && (
         <div className="modal-backdrop" role="presentation" onClick={() => setMasterCampaign(null)}>
