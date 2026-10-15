@@ -1,32 +1,18 @@
-# React + TypeScript + Vite
+# IniciativasRPG.Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend React + TypeScript + Vite do monorepo **IniciativasRPG**.
 
-Currently, two official plugins are available:
+## Documentação
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Setup e uso: [README na raiz do repositório](../../README.md)
+- URLs, CORS, ngrok, Cloudflare e domínio: [docs/CONFIGURACAO-E-DEPLOY.md](../../docs/CONFIGURACAO-E-DEPLOY.md)
 
-## React Compiler
+## Dev local
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+copy .env.example .env
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Com `VITE_API_BASE_URL` vazio, o Vite faz proxy de `/api` e `/hubs` para a API em `http://localhost:5111` (veja `vite.config.ts`).

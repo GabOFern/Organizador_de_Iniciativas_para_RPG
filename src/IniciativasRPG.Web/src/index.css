@@ -31,6 +31,10 @@
   --ok: var(--ok-moss);
   --border: color-mix(in srgb, var(--silver-dim) 55%, var(--wood-mid));
   --shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  /* Aura do turno — deriva do accent (acompanha tema UI) */
+  --turn-aura-core: var(--accent-ember);
+  --turn-aura: color-mix(in srgb, var(--accent-ember) 65%, transparent);
+  --turn-aura-soft: color-mix(in srgb, var(--accent-ember) 35%, transparent);
 
   --font-display: 'Cinzel', 'Palatino Linotype', Palatino, serif;
   --font-body: 'Crimson Pro', 'Palatino Linotype', Palatino, serif;
@@ -510,7 +514,7 @@ textarea:focus {
 .combatant-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 1rem;
+  gap: 1.35rem;
   width: 100%;
   min-width: 0;
 }
@@ -569,13 +573,37 @@ html[data-theme] .battle-lobby-card {
 }
 
 .combatant-card.is-current {
-  border-color: var(--accent-ember);
+  z-index: 4;
+  overflow: visible;
+  border-color: var(--turn-aura-core);
+  border-width: 2px;
+  transform: translateY(-4px) scale(1.02);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--accent-ember) 70%, transparent),
-    0 0 24px rgba(196, 163, 90, 0.22),
+    0 0 0 1px var(--turn-aura-core),
+    0 0 0 4px var(--turn-aura-soft),
+    0 0 22px 4px var(--turn-aura),
+    0 0 48px 12px var(--turn-aura-soft),
     var(--shadow);
-  transform: translateY(-3px);
-  animation: turn-pulse 2.4s ease-in-out infinite;
+  animation: turn-aura-pulse 2s ease-in-out infinite;
+}
+
+.combatant-card.is-current::after {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse 75% 70% at 50% 50%,
+    var(--turn-aura-soft),
+    transparent 70%
+  );
+  box-shadow:
+    0 0 28px 8px var(--turn-aura),
+    inset 0 0 24px var(--turn-aura-soft);
+  animation: turn-aura-glow 2s ease-in-out infinite;
+  opacity: 0.9;
 }
 
 .combatant-card.is-dead {
@@ -749,18 +777,20 @@ html[data-theme] .battle-lobby-card {
 }
 
 .turn-badge {
-  background: linear-gradient(180deg, #d4b56a, var(--accent-ember-deep));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--turn-aura-core) 85%, #fff), var(--accent-ember-deep));
   color: #1a1208;
   border-radius: 2px;
-  padding: 0.2rem 0.55rem;
+  padding: 0.25rem 0.65rem;
   font-family: var(--font-display);
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   font-weight: 700;
   flex-shrink: 0;
-  border: 1px solid color-mix(in srgb, var(--silver) 40%, transparent);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+  border: 1px solid color-mix(in srgb, var(--turn-aura-core) 70%, var(--silver));
+  box-shadow:
+    0 0 12px var(--turn-aura),
+    0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .combatant-stats {
@@ -1550,19 +1580,35 @@ a.button-link {
   border: 0;
 }
 
-@keyframes turn-pulse {
+@keyframes turn-aura-pulse {
   0%,
   100% {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--accent-ember) 70%, transparent),
-      0 0 18px rgba(196, 163, 90, 0.18),
+      0 0 0 1px var(--turn-aura-core),
+      0 0 0 3px var(--turn-aura-soft),
+      0 0 18px 2px var(--turn-aura),
+      0 0 36px 8px var(--turn-aura-soft),
       var(--shadow);
   }
   50% {
     box-shadow:
-      0 0 0 1px color-mix(in srgb, var(--accent-ember) 90%, transparent),
-      0 0 28px rgba(196, 163, 90, 0.3),
+      0 0 0 2px var(--turn-aura-core),
+      0 0 0 6px var(--turn-aura),
+      0 0 32px 8px var(--turn-aura),
+      0 0 64px 18px var(--turn-aura-soft),
       var(--shadow);
+  }
+}
+
+@keyframes turn-aura-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.04);
   }
 }
 
@@ -1715,11 +1761,17 @@ a.button-link {
 
 @media (prefers-reduced-motion: reduce) {
   .combatant-card.is-current,
+  .combatant-card.is-current::after,
   .modal-backdrop,
   .modal-panel,
   button {
     animation: none;
     transition: none;
+  }
+
+  .combatant-card.is-current::after {
+    opacity: 0.85;
+    transform: none;
   }
 }
 
