@@ -169,7 +169,7 @@ public class SheetService : ISheetService
                 throw new DomainException(DomainMessages.FeatureTextRequired);
             }
 
-            if (item.Text.Trim().Length > SheetFeatureRules.MaxTextLength)
+            if (item.Text.Trim().Length > SheetFeatureRules.TextLimit(item.Kind))
             {
                 throw new DomainException(DomainMessages.FeatureTextTooLong);
             }

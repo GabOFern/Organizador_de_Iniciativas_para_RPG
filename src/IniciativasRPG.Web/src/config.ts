@@ -99,6 +99,7 @@ export const sheetFeatureKinds = [
   'DifficultyClass',
   'Legendary',
   'Note',
+  'Annotation',
 ] as const;
 
 export const sheetFeatureKindLabels: Record<(typeof sheetFeatureKinds)[number], string> = {
@@ -111,4 +112,15 @@ export const sheetFeatureKindLabels: Record<(typeof sheetFeatureKinds)[number], 
   DifficultyClass: 'CD',
   Legendary: 'Lendário',
   Note: 'Nota',
+  Annotation: 'Anotação',
 };
+
+export const sheetFeatureTextMaxLength = 1000;
+export const sheetAnnotationTextMaxLength = 8000;
+
+export function sheetFeatureTextLimit(kind: (typeof sheetFeatureKinds)[number]) {
+  return kind === 'Annotation' ? sheetAnnotationTextMaxLength : sheetFeatureTextMaxLength;
+}
+
+export const sheetAnnotationHint =
+  'Markdown: **negrito**, _itálico_, listas, títulos e links. É o espaço para dicas, combos e história.';

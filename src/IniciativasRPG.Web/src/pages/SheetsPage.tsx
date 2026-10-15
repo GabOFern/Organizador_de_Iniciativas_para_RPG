@@ -1,13 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { api, ApiError } from '../api';
 import { ImageFocusPreview } from '../components/ImageFocusPreview';
+import { MarkdownText } from '../components/MarkdownText';
 import {
   abilityLabels,
   abilityNames,
   characterClassLabels,
   characterClasses,
+  sheetAnnotationHint,
   sheetFeatureKindLabels,
   sheetFeatureKinds,
+  sheetFeatureTextLimit,
   strikeTypeLabels,
   strikeTypes,
 } from '../config';
@@ -57,8 +60,8 @@ type WeaponDraft = {
   strikeType: StrikeType;
 };
 
-const emptyFeature = (): FeatureDraft => ({
-  kind: 'Trait',
+const emptyFeature = (kind: SheetFeatureKind = 'Trait'): FeatureDraft => ({
+  kind,
   title: '',
   text: '',
 });
@@ -423,8 +426,10 @@ export function SheetsPage() {
                   />
                 </label>
                 <label className="sheet-collection-span">
+                  Texto
                   <textarea
-                    rows={2}
+                    rows={feature.kind === 'Annotation' ? 8 : 2}
+                    maxLength={sheetFeatureTextLimit(feature.kind)}
                     value={feature.text}
                     onChange={(e) =>
                       setForm((f) => {
@@ -435,6 +440,14 @@ export function SheetsPage() {
                     }
                     required
                   />
+                  {feature.kind === 'Annotation' && (
+                    <p className="sheet-annotation-hint">{sheetAnnotationHint}</p>
+                  )}
+                  {feature.kind === 'Annotation' && feature.text.trim() !== '' && (
+                    <div className="sheet-annotation-preview">
+                      <MarkdownText text={feature.text} />
+                    </div>
+                  )}
                 </label>
                 <button
                   type="button"
@@ -450,13 +463,24 @@ export function SheetsPage() {
                 </button>
               </div>
             ))}
-            <button
-              type="button"
-              className="ghost"
-              onClick={() => setForm((f) => ({ ...f, features: [...f.features, emptyFeature()] }))}
-            >
-              + Linha
-            </button>
+            <div className="row">
+              <button
+                type="button"
+                className="ghost"
+                onClick={() => setForm((f) => ({ ...f, features: [...f.features, emptyFeature()] }))}
+              >
+                + Linha
+              </button>
+              <button
+                type="button"
+                className="ghost"
+                onClick={() =>
+                  setForm((f) => ({ ...f, features: [...f.features, emptyFeature('Annotation')] }))
+                }
+              >
+                + Anotação
+              </button>
+            </div>
           </fieldset>
 
           <fieldset className="sheet-collection">

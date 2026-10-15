@@ -34,7 +34,8 @@ export type SheetFeatureKind =
   | 'Speed'
   | 'DifficultyClass'
   | 'Legendary'
-  | 'Note';
+  | 'Note'
+  | 'Annotation';
 
 export interface SheetFeature {
   id?: string | null;

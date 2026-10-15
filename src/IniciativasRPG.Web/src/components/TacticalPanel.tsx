@@ -1,3 +1,4 @@
+import { MarkdownText } from './MarkdownText';
 import { abilityLabels, characterClassLabels, sheetFeatureKindLabels, sheetFeatureKinds, strikeTypeLabels } from '../config';
 import type {
   AbilityName,
@@ -31,7 +32,7 @@ function FeatureItem({ item }: { item: SheetFeature }) {
   return (
     <li>
       <strong>{item.title}</strong>
-      <span> {item.text}</span>
+      {item.kind === 'Annotation' ? <MarkdownText text={item.text} /> : <span> {item.text}</span>}
     </li>
   );
 }

@@ -62,7 +62,7 @@ public class AppDbContext : DbContext
             e.HasKey(x => x.Id);
             e.Property(x => x.Kind).HasConversion<string>().HasMaxLength(20);
             e.Property(x => x.Title).HasMaxLength(SheetFeatureRules.MaxTitleLength).IsRequired();
-            e.Property(x => x.Text).HasMaxLength(SheetFeatureRules.MaxTextLength).IsRequired();
+            e.Property(x => x.Text).HasMaxLength(SheetFeatureRules.MaxAnnotationTextLength).IsRequired();
             e.HasOne(x => x.Sheet)
                 .WithMany(s => s.Features)
                 .HasForeignKey(x => x.SheetId)

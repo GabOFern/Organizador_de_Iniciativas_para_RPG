@@ -1460,6 +1460,72 @@ a.button-link {
   grid-column: 1 / -1;
 }
 
+.sheet-annotation-hint {
+  margin: 0.2rem 0 0;
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+}
+
+.markdown-note > :first-child {
+  margin-top: 0;
+}
+
+.markdown-note > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-note p,
+.markdown-note ul,
+.markdown-note ol,
+.markdown-note pre,
+.markdown-note blockquote {
+  margin: 0.35rem 0;
+}
+
+.markdown-note h1,
+.markdown-note h2,
+.markdown-note h3,
+.markdown-note h4 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  margin: 0.55rem 0 0.2rem;
+  letter-spacing: 0.03em;
+}
+
+.markdown-note ul,
+.markdown-note ol {
+  padding-left: 1.2rem;
+}
+
+.markdown-note code {
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.markdown-note pre {
+  overflow: auto;
+  padding: 0.5rem 0.65rem;
+  background: color-mix(in srgb, var(--wood-deep) 65%, transparent);
+}
+
+.markdown-note blockquote {
+  margin-left: 0;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--accent-ember);
+  color: var(--ink-muted);
+}
+
+.markdown-note a {
+  color: var(--accent-ember);
+}
+
+.sheet-annotation-preview {
+  margin-top: 0.35rem;
+  padding: 0.45rem 0.55rem;
+  border-left: 2px solid color-mix(in srgb, var(--accent-ember) 55%, transparent);
+  background: color-mix(in srgb, var(--wood-raised) 35%, transparent);
+}
+
 .checkbox-inline {
   display: flex;
   align-items: center;
