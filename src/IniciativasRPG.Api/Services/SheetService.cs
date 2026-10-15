@@ -11,6 +11,7 @@ public interface ISheetService
     Task<IReadOnlyList<SheetDto>> ListAsync(Guid campaignId, CancellationToken ct = default);
     Task<SheetDto> CreateAsync(Guid campaignId, CreateSheetRequest request, CancellationToken ct = default);
     Task<SheetDto> UpdateAsync(Guid campaignId, Guid id, UpdateSheetRequest request, CancellationToken ct = default);
+    Task DeleteAsync(Guid campaignId, Guid id, CancellationToken ct = default);
     Task<SheetDto> SetImageAsync(Guid campaignId, Guid id, IFormFile file, CancellationToken ct = default);
     Task<SheetDto> ClearImageAsync(Guid campaignId, Guid id, CancellationToken ct = default);
     Task<SheetImageFile> GetPublicImageAsync(string publicToken, Guid sheetId, CancellationToken ct = default);
@@ -162,6 +163,24 @@ public class SheetService : ISheetService
         await _db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
         return await MapAsync(sheet, ct);
+    }
+
+    public async Task DeleteAsync(Guid campaignId, Guid id, CancellationToken ct = default)
+    {
+        var sheet = await FindSheetAsync(campaignId, id, ct);
+        await EnsureNotInOpenBattleAsync(campaignId, id, ct);
+
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
+        // Combatant → Sheet é Restrict; remove histórico de batalhas finalizadas.
+        await _db.ActiveModifiers
+            .Where(m => m.Combatant.SheetId == id)
+            .ExecuteDeleteAsync(ct);
+        await _db.Combatants
+            .Where(c => c.SheetId == id)
+            .ExecuteDeleteAsync(ct);
+        _db.Sheets.Remove(sheet);
+        await _db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task<SheetDto> SetImageAsync(Guid campaignId, Guid id, IFormFile file, CancellationToken ct = default)

@@ -9,6 +9,8 @@ rem   iniciar.bat /skiptests - pula os testes e inicia direto
 
 set "FORCE_START=0"
 set "SKIP_TESTS=0"
+set "API_PORT=5111"
+set "WEB_PORT=5173"
 if /I "%~1"=="/force" set "FORCE_START=1"
 if /I "%~1"=="/skiptests" set "SKIP_TESTS=1"
 if /I "%~1"=="/skiptest" set "SKIP_TESTS=1"
@@ -49,14 +51,16 @@ if not exist "src\IniciativasRPG.Web\node_modules\" (
   popd
 )
 
+rem Sempre encerra instancias anteriores (API + Vite + janelas cmd do iniciador)
+rem antes de testes ou de subir de novo — evita processos duplicados.
+echo.
+echo Encerrando processos anteriores ^(API :%API_PORT%, Vite :%WEB_PORT%^)...
+call :stop_dev_servers
+
 if "%SKIP_TESTS%"=="1" (
   echo Pulando testes ^(/skiptests^).
   goto :start_services
 )
-
-rem A DLL da API fica bloqueada se o processo ja estiver rodando.
-rem Para os testes compilarem, paramos a API na porta 5111 antes.
-call :stop_port 5111
 
 echo.
 echo ========================================
@@ -107,43 +111,46 @@ pause
 exit /b 1
 
 :start_services
-netstat -ano | findstr ":5111" | findstr "LISTENING" >nul
-if errorlevel 1 (
-  echo Iniciando a API em http://localhost:5111
-  start "IniciativasRPG API" /D "%~dp0src\IniciativasRPG.Api" cmd /k "set ASPNETCORE_ENVIRONMENT=Development&& set ASPNETCORE_URLS=http://localhost:5111&& dotnet build --nologo -v q && dotnet bin\Debug\net10.0\IniciativasRPG.Api.dll"
-) else (
-  echo A API ja esta em http://localhost:5111
-)
+rem Garante que nada voltou a subir durante os testes.
+call :stop_dev_servers
 
-netstat -ano | findstr ":5173" | findstr "LISTENING" >nul
-if errorlevel 1 (
-  echo Iniciando o site em http://localhost:5173
-  start "IniciativasRPG Web" /D "%~dp0src\IniciativasRPG.Web" cmd /k "npm run dev"
-) else (
-  echo O site ja esta em http://localhost:5173
-)
+echo Iniciando a API em http://localhost:%API_PORT%
+start "IniciativasRPG API" /D "%~dp0src\IniciativasRPG.Api" cmd /k "set ASPNETCORE_ENVIRONMENT=Development&& set ASPNETCORE_URLS=http://localhost:%API_PORT%&& dotnet build --nologo -v q && dotnet bin\Debug\net10.0\IniciativasRPG.Api.dll"
+
+echo Iniciando o site em http://localhost:%WEB_PORT%
+start "IniciativasRPG Web" /D "%~dp0src\IniciativasRPG.Web" cmd /k "npm run dev"
 
 echo Aguardando o site responder...
-powershell -NoProfile -Command "for ($i=0; $i -lt 60; $i++) { try { $r = Invoke-WebRequest -UseBasicParsing 'http://localhost:5173/' -TimeoutSec 2; if ($r.StatusCode -ge 200) { exit 0 } } catch {} ; Start-Sleep -Seconds 1 }; exit 1"
+powershell -NoProfile -Command "for ($i=0; $i -lt 60; $i++) { try { $r = Invoke-WebRequest -UseBasicParsing 'http://localhost:%WEB_PORT%/' -TimeoutSec 2; if ($r.StatusCode -ge 200) { exit 0 } } catch {} ; Start-Sleep -Seconds 1 }; exit 1"
 if errorlevel 1 (
   echo O site nao respondeu a tempo. Veja a janela IniciativasRPG Web.
   pause
   exit /b 1
 )
 
-start "" "http://localhost:5173"
+start "" "http://localhost:%WEB_PORT%"
 echo.
-echo Pronto. O navegador abriu em http://localhost:5173
+echo Pronto. O navegador abriu em http://localhost:%WEB_PORT%
 echo Logs: logs\back  e  logs\front
 echo Para encerrar, feche as janelas IniciativasRPG API e IniciativasRPG Web.
 ping -n 4 127.0.0.1 >nul
 endlocal
 exit /b 0
 
+:stop_dev_servers
+call :stop_port %API_PORT%
+call :stop_port %WEB_PORT%
+rem Janelas abertas pelo proprio iniciador (cmd /k), mesmo se a porta ja tiver sido liberada.
+taskkill /FI "WINDOWTITLE eq IniciativasRPG API*" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq IniciativasRPG Web*" /T /F >nul 2>&1
+rem Pequena espera para a porta ser liberada pelo SO.
+ping -n 2 127.0.0.1 >nul
+exit /b 0
+
 :stop_port
 set "PORT=%~1"
 for /f "tokens=5" %%P in ('netstat -ano ^| findstr ":%PORT%" ^| findstr "LISTENING"') do (
-  echo Parando processo na porta %PORT% ^(PID %%P^) para liberar a compilacao dos testes...
-  taskkill /PID %%P /F >nul 2>&1
+  echo   Porta %PORT%: encerrando PID %%P
+  taskkill /PID %%P /T /F >nul 2>&1
 )
 exit /b 0

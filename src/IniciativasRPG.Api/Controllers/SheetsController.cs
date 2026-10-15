@@ -35,6 +35,13 @@ public class SheetsController : ControllerBase
     public async Task<ActionResult<SheetDto>> Update(Guid id, [FromBody] UpdateSheetRequest request, CancellationToken ct) =>
         Ok(await _sheetService.UpdateAsync(CampaignId, id, request, ct));
 
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _sheetService.DeleteAsync(CampaignId, id, ct);
+        return NoContent();
+    }
+
     [HttpPost("{id:guid}/image")]
     [RequestSizeLimit(SheetRules.MaxImageRequestBytes)]
     public async Task<ActionResult<SheetDto>> SetImage(Guid id, IFormFile file, CancellationToken ct)

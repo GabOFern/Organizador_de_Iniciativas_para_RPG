@@ -35,6 +35,10 @@ export const campaignsLoadingMessage = 'Carregando dados…';
 export const campaignsLoadFailedMessage = 'Falha ao carregar campanhas.';
 export const requestFailedMessage = 'Falha na requisição.';
 
+export const sheetDeleteConfirmMessage = 'Excluir esta ficha? Esta ação não pode ser desfeita.';
+export const sheetDeletedMessage = 'Ficha excluída.';
+export const sheetDeleteFailedMessage = 'Falha ao excluir ficha.';
+
 export const routes = {
   home: '/',
   login: '/login',
@@ -127,6 +131,40 @@ export const sceneZoomMax = 4;
 export const sceneZoomStep = 1.25;
 /** Um notch típico da roda (deltaY 100) equivale a um passo de zoom. */
 export const sceneZoomWheelDivisor = 100;
+export const sceneSeenStorageKeyPrefix = 'iniciativasrpg.sceneSeen.';
+export const sceneVisibilityShowLabel = 'Mostrar aos jogadores';
+export const sceneVisibilityHideLabel = 'Ocultar dos jogadores';
+export const sceneLauncherLabel = 'Imagens';
+export function sceneLauncherAriaLabel(unseenCount: number) {
+  if (unseenCount <= 0) return sceneLauncherLabel;
+  return `${sceneLauncherLabel}, ${unseenCount} nova${unseenCount === 1 ? '' : 's'}`;
+}
+export const sceneKindRequired = 'Escolha o tipo da imagem.';
+export const sceneKindLabel = 'Tipo';
+export const sceneFilterNameLabel = 'Filtrar por nome';
+export const sceneFilterKindLabel = 'Filtrar por tipo';
+export const sceneFilterAllLabel = 'Todos';
+export const sceneKindUncategorizedLabel = 'Sem tipo';
+export const sceneEditLabel = 'Editar';
+export const sceneSaveLabel = 'Salvar';
+export const sceneCancelEditLabel = 'Cancelar';
+export const sceneIncludeLabel = 'Incluir';
+export const sceneKindOptions = [
+  { value: 'Item' as const, label: 'Item' },
+  { value: 'Npc' as const, label: 'NPC' },
+  { value: 'Card' as const, label: 'Carta' },
+  { value: 'Map' as const, label: 'Mapa/Construção' },
+];
+export const sceneKindLabels: Record<string, string> = {
+  Uncategorized: sceneKindUncategorizedLabel,
+  Item: 'Item',
+  Npc: 'NPC',
+  Card: 'Carta',
+  Map: 'Mapa/Construção',
+};
+export function sceneKindDisplayLabel(kind: string) {
+  return sceneKindLabels[kind] ?? sceneKindUncategorizedLabel;
+}
 
 export function formatModifier(value: number) {
   return value >= 0 ? `+${value}` : String(value);

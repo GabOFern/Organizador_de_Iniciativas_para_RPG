@@ -20,6 +20,8 @@ public static class DbSeeder
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DbSeeder");
 
         await db.Database.MigrateAsync();
+        await SongFocusSheetUnifier.ApplyAsync(db);
+        logger.LogInformation("Unificação Foco da Canção aplicada (idempotente).");
 
         if (!string.IsNullOrWhiteSpace(adminOptions.Username) && !string.IsNullOrWhiteSpace(adminOptions.Password))
         {
@@ -81,5 +83,10 @@ public static class DbSeeder
 
             logger.LogInformation("Campanha seed criada: {Name}", campaign.Name);
         }
+
+        await SampleNpcSheetSeeder.ApplyAsync(db);
+        logger.LogInformation("Fichas NPC/criatura de exemplo aplicadas (idempotente).");
+        await SampleSheetImageSeeder.ApplyAsync(db);
+        logger.LogInformation("Imagens ilustradas de fichas aplicadas (idempotente).");
     }
 }

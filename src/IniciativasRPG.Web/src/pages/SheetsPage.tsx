@@ -17,12 +17,15 @@ import {
   sheetImageScaleDefault,
   sheetImageTypeInvalid,
   sheetImageUrlMaxLength,
+  sheetDeletedMessage,
+  sheetDeleteFailedMessage,
   sheetFeatureKindLabels,
   sheetFeatureKinds,
   sheetFeatureTextLimit,
   strikeTypeLabels,
   strikeTypes,
 } from '../config';
+import { confirmSheetDeletePrompt, shouldProceedSheetDelete } from '../sheetDelete';
 import type {
   AbilityName,
   CharacterClass,
@@ -243,6 +246,24 @@ export function SheetsPage() {
     });
     setInitiativeTouched(false);
     setFileInputKey((key) => key + 1);
+  }
+
+  async function onDelete() {
+    if (!editingId) return;
+    if (!shouldProceedSheetDelete(window.confirm(confirmSheetDeletePrompt()))) {
+      return;
+    }
+
+    setError(null);
+    setMessage(null);
+    try {
+      await api.deleteSheet(editingId);
+      resetForm();
+      setMessage(sheetDeletedMessage);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : sheetDeleteFailedMessage);
+    }
   }
 
   async function onSubmit(e: FormEvent) {
@@ -942,6 +963,11 @@ export function SheetsPage() {
             {editingId && (
               <button type="button" className="ghost" onClick={resetForm}>
                 Cancelar
+              </button>
+            )}
+            {editingId && (
+              <button type="button" className="danger" onClick={() => void onDelete()}>
+                Excluir
               </button>
             )}
           </div>

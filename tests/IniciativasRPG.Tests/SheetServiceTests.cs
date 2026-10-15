@@ -299,6 +299,95 @@ public class SheetServiceTests : IAsyncDisposable
         list.Should().BeEmpty();
     }
 
+    // ───────────── Delete ─────────────
+
+    [Fact]
+    public async Task Delete_ExistingSheet_RemovesFromList()
+    {
+        var created = await _sut.CreateAsync(_campaignId, ValidCreateRequest());
+        _testDb.Context.ChangeTracker.Clear();
+
+        await _sut.DeleteAsync(_campaignId, created.Id);
+
+        var list = await _sut.ListAsync(_campaignId);
+        list.Should().BeEmpty();
+        _testDb.Context.Sheets.Any(s => s.Id == created.Id).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task Delete_NonExistentSheet_ThrowsNotFound()
+    {
+        var act = () => _sut.DeleteAsync(_campaignId, Guid.NewGuid());
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SheetNotFound);
+    }
+
+    [Fact]
+    public async Task Delete_SheetInActiveBattle_ThrowsDomainException()
+    {
+        var created = await _sut.CreateAsync(_campaignId, ValidCreateRequest());
+        var battle = new Battle
+        {
+            Id = Guid.NewGuid(),
+            CampaignId = _campaignId,
+            Status = BattleStatus.Active,
+            CreatedAtUtc = DateTime.UtcNow,
+        };
+        _testDb.Context.Battles.Add(battle);
+        _testDb.Context.Combatants.Add(new Combatant
+        {
+            Id = Guid.NewGuid(),
+            BattleId = battle.Id,
+            SheetId = created.Id,
+            Initiative = 10,
+            CurrentHp = created.CurrentHp,
+            MaxHp = created.MaxHp,
+            BaseAc = created.BaseAc,
+            CurrentAc = created.BaseAc,
+        });
+        await _testDb.Context.SaveChangesAsync();
+        _testDb.Context.ChangeTracker.Clear();
+
+        var act = () => _sut.DeleteAsync(_campaignId, created.Id);
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SheetInActiveBattle);
+    }
+
+    [Fact]
+    public async Task Delete_SheetWithFinishedBattleHistory_RemovesSheetAndCombatants()
+    {
+        var created = await _sut.CreateAsync(_campaignId, ValidCreateRequest());
+        var battle = new Battle
+        {
+            Id = Guid.NewGuid(),
+            CampaignId = _campaignId,
+            Status = BattleStatus.Finished,
+            CreatedAtUtc = DateTime.UtcNow,
+        };
+        var combatantId = Guid.NewGuid();
+        _testDb.Context.Battles.Add(battle);
+        _testDb.Context.Combatants.Add(new Combatant
+        {
+            Id = combatantId,
+            BattleId = battle.Id,
+            SheetId = created.Id,
+            Initiative = 10,
+            CurrentHp = created.CurrentHp,
+            MaxHp = created.MaxHp,
+            BaseAc = created.BaseAc,
+            CurrentAc = created.BaseAc,
+        });
+        await _testDb.Context.SaveChangesAsync();
+        _testDb.Context.ChangeTracker.Clear();
+
+        await _sut.DeleteAsync(_campaignId, created.Id);
+
+        _testDb.Context.Sheets.Any(s => s.Id == created.Id).Should().BeFalse();
+        _testDb.Context.Combatants.Any(c => c.Id == combatantId).Should().BeFalse();
+    }
+
     // ───────────── Spell Validation ─────────────
 
     [Fact]
