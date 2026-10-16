@@ -17,7 +17,13 @@ import {
   sheetImageScaleDefault,
   sheetImageTypeInvalid,
   sheetImageUrlMaxLength,
+  sheetFilterAllCategoriesLabel,
+  sheetFilterCategoryLabel,
+  sheetFilterEmptyMessage,
+  sheetFilterNameLabel,
   sheetPlayerNameLabel,
+  sheetRepositoryEmptyMessage,
+  sheetTypeLabels,
   sheetPlayerNameMaxLength,
   sheetPlayerNameTooLong,
   sheetDeletedMessage,
@@ -29,6 +35,7 @@ import {
   strikeTypes,
 } from '../config';
 import { confirmSheetDeletePrompt, shouldProceedSheetDelete } from '../sheetDelete';
+import { filterSheets, type SheetCategoryFilter } from '../sheetFilters';
 import type {
   AbilityName,
   CharacterClass,
@@ -159,6 +166,7 @@ export function SheetsPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [nameQuery, setNameQuery] = useState('');
+  const [category, setCategory] = useState<SheetCategoryFilter>('all');
   const [fileInputKey, setFileInputKey] = useState(0);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
 
@@ -366,13 +374,7 @@ export function SheetsPage() {
     }
   }
 
-  const nameNeedle = nameQuery.trim().toLocaleLowerCase();
-  const visibleSheets = nameNeedle
-    ? sheets.filter((sheet) =>
-        sheet.name.toLocaleLowerCase().includes(nameNeedle)
-        || (sheet.playerName ?? '').toLocaleLowerCase().includes(nameNeedle),
-      )
-    : sheets;
+  const visibleSheets = filterSheets(sheets, { nameQuery, category });
 
   return (
     <div className="page-grid">
@@ -460,9 +462,9 @@ export function SheetsPage() {
                 value={form.type}
                 onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as SheetType }))}
               >
-                <option value="Player">Player</option>
-                <option value="Creature">Criatura</option>
-                <option value="Npc">NPC</option>
+                <option value="Player">{sheetTypeLabels.Player}</option>
+                <option value="Creature">{sheetTypeLabels.Creature}</option>
+                <option value="Npc">{sheetTypeLabels.Npc}</option>
               </select>
             </label>
             <label>
@@ -1001,17 +1003,31 @@ export function SheetsPage() {
 
       <section className="panel">
         <h2>Repositório de fichas</h2>
-        <label>
-          Filtrar por nome
-          <input
-            value={nameQuery}
-            onChange={(e) => setNameQuery(e.target.value)}
-          />
-        </label>
+        <div className="sheet-filters">
+          <label>
+            {sheetFilterNameLabel}
+            <input
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+            />
+          </label>
+          <label>
+            {sheetFilterCategoryLabel}
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as SheetCategoryFilter)}
+            >
+              <option value="all">{sheetFilterAllCategoriesLabel}</option>
+              <option value="Player">{sheetTypeLabels.Player}</option>
+              <option value="Creature">{sheetTypeLabels.Creature}</option>
+              <option value="Npc">{sheetTypeLabels.Npc}</option>
+            </select>
+          </label>
+        </div>
         {sheets.length === 0 ? (
-          <p className="muted">Nenhuma ficha cadastrada.</p>
+          <p className="muted">{sheetRepositoryEmptyMessage}</p>
         ) : visibleSheets.length === 0 ? (
-          <p className="muted">Nenhuma ficha com esse nome.</p>
+          <p className="muted">{sheetFilterEmptyMessage}</p>
         ) : (
           <ul className="sheet-list">
             {visibleSheets.map((sheet) => (
@@ -1023,7 +1039,7 @@ export function SheetsPage() {
                   ) : null}
                   <span className="muted">
                     {' '}
-                    · {sheet.type} · {characterClassLabels[sheet.class as CharacterClass] ?? sheet.class} · HP{' '}
+                    · {sheetTypeLabels[sheet.type] ?? sheet.type} · {characterClassLabels[sheet.class as CharacterClass] ?? sheet.class} · HP{' '}
                     {sheet.currentHp}/{sheet.maxHp} · CA {sheet.baseAc} · DES {sheet.dexterityMod >= 0 ? '+' : ''}
                     {sheet.dexterityMod}
                     {' '}
