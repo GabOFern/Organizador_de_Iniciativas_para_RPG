@@ -8,6 +8,9 @@ import type {
   ModifierType,
   ModifierTypePayload,
   CampaignScene,
+  InvokeLineupPayload,
+  Lineup,
+  SaveLineupPayload,
   Sheet,
   SheetPayload,
 } from './types';
@@ -240,6 +243,29 @@ export const api = {
     request<BattleSnapshot>('/api/battle/invoke-player', {
       method: 'POST',
       body: JSON.stringify({ sheetId, initiative, confirmDuplicate }),
+    }),
+
+  listLineups: () => request<Lineup[]>('/api/lineups'),
+
+  createLineup: (body: SaveLineupPayload) =>
+    request<Lineup>('/api/lineups', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  updateLineup: (id: string, body: SaveLineupPayload) =>
+    request<Lineup>(`/api/lineups/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+
+  deleteLineup: (id: string) =>
+    request<void>(`/api/lineups/${id}`, { method: 'DELETE' }),
+
+  invokeLineup: (body: InvokeLineupPayload) =>
+    request<BattleSnapshot>('/api/battle/invoke-lineup', {
+      method: 'POST',
+      body: JSON.stringify(body),
     }),
 
   invokeCreature: (body: {

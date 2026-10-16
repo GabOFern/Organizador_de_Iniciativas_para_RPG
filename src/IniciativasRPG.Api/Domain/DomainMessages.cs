@@ -69,4 +69,14 @@ public static class DomainMessages
         "Não foi possível iniciar a batalha teste: faltam as fichas Guarda Veterano, Goblin e Lobo nesta campanha.";
     public const string DemoBattleNotActive = "Não há batalha teste ativa para avançar.";
     public const string DemoBattleActorHasNoAttack = "O combatente do turno não possui ataques para simular.";
+    public const string LineupNameRequired = "O nome da cena é obrigatório.";
+    public const string LineupNameTooLong = "O nome da cena é longo demais.";
+    public const string LineupNeedsMembers = "A cena precisa de ao menos uma ficha.";
+    public const string LineupDuplicateSheet = "A mesma ficha não pode entrar duas vezes na cena.";
+    public const string LineupQuantityInvalid = "A quantidade desta ficha não é válida.";
+    public const string LineupSheetNotInCampaign = "A ficha não pertence a esta campanha.";
+    public const string LineupNotFound = "Cena não encontrada.";
+    public const string LineupEmpty = "A cena não tem fichas.";
+    public const string LineupMembersMismatch = "A cena mudou. Abra de novo e confirme.";
+    public const string LineupInitiativeRequired = "Informe a iniciativa ou escolha rolar o dado.";
 }

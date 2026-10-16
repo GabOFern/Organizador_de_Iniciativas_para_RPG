@@ -18,6 +18,8 @@ public class AppDbContext : DbContext
     public DbSet<SheetWeapon> SheetWeapons => Set<SheetWeapon>();
     public DbSet<SheetImage> SheetImages => Set<SheetImage>();
     public DbSet<CampaignScene> CampaignScenes => Set<CampaignScene>();
+    public DbSet<Lineup> Lineups => Set<Lineup>();
+    public DbSet<LineupMember> LineupMembers => Set<LineupMember>();
     public DbSet<Battle> Battles => Set<Battle>();
     public DbSet<Combatant> Combatants => Set<Combatant>();
     public DbSet<ModifierType> ModifierTypes => Set<ModifierType>();
@@ -140,6 +142,32 @@ public class AppDbContext : DbContext
                 .HasForeignKey(x => x.SheetId)
                 .OnDelete(DeleteBehavior.Cascade);
             e.HasIndex(x => x.SheetId);
+        });
+
+        modelBuilder.Entity<Lineup>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(LineupRules.MaxNameLength).IsRequired();
+            e.HasOne(x => x.Campaign)
+                .WithMany(c => c.Lineups)
+                .HasForeignKey(x => x.CampaignId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.CampaignId);
+        });
+
+        modelBuilder.Entity<LineupMember>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Quantity).HasDefaultValue(LineupRules.MinQuantity);
+            e.HasIndex(x => new { x.LineupId, x.SheetId }).IsUnique();
+            e.HasOne(x => x.Lineup)
+                .WithMany(l => l.Members)
+                .HasForeignKey(x => x.LineupId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Sheet)
+                .WithMany()
+                .HasForeignKey(x => x.SheetId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Battle>(e =>

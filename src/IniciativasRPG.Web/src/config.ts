@@ -35,6 +35,16 @@ export const campaignsLoadingMessage = 'Carregando dados…';
 export const campaignsLoadFailedMessage = 'Falha ao carregar campanhas.';
 export const requestFailedMessage = 'Falha na requisição.';
 
+export const sheetFilterNameLabel = 'Filtrar por nome';
+export const sheetFilterCategoryLabel = 'Filtrar por categoria';
+export const sheetFilterAllCategoriesLabel = 'Todas';
+export const sheetFilterEmptyMessage = 'Nenhuma ficha com esse filtro.';
+export const sheetRepositoryEmptyMessage = 'Nenhuma ficha cadastrada.';
+export const sheetTypeLabels: Record<string, string> = {
+  Player: 'Jogador',
+  Creature: 'Criatura',
+  Npc: 'NPC',
+};
 export const sheetPlayerNameLabel = 'Nome do jogador';
 export const sheetPlayerNameMaxLength = 80;
 export const sheetPlayerNameTooLong = 'O nome do jogador é longo demais.';
@@ -47,6 +57,7 @@ export const routes = {
   login: '/login',
   mestre: '/mestre',
   mestreSheets: '/mestre/fichas',
+  mestreLineups: '/mestre/cenas',
   mestreBattle: '/mestre/batalha',
   mestreModifiers: '/mestre/modificadores',
   publicLobby: '/',
@@ -161,6 +172,41 @@ export const sceneSaveLabel = 'Salvar';
 export const sceneCancelEditLabel = 'Cancelar';
 export const sceneIncludeLabel = 'Incluir';
 export const sceneEditorCloseLabel = 'Fechar formulário';
+
+export const lineupsNavLabel = 'Cenas';
+export const invokeOptionsLabel = 'Opções de invocar';
+export const invokeSheetLabel = 'Invocar ficha';
+export const invokeLineupLabel = 'Invocar cena';
+export const lineupNameLabel = 'Nome da cena';
+export const lineupSheetsLabel = 'Fichas';
+export const lineupMinQuantity = 1;
+export const lineupMaxPlayerQuantity = 1;
+export const lineupMaxQuantity = 20;
+export function lineupQuantityDecreaseLabel(name: string) {
+  return `Diminuir quantidade de ${name}`;
+}
+export function lineupQuantityIncreaseLabel(name: string) {
+  return `Aumentar quantidade de ${name}`;
+}
+export function lineupQuantityFieldLabel(name: string) {
+  return `Quantidade de ${name}`;
+}
+export const lineupIncludeLabel = 'Incluir';
+export const lineupSaveLabel = 'Salvar';
+export const lineupCancelLabel = 'Cancelar';
+export const lineupEditLabel = 'Editar';
+export const lineupDeleteLabel = 'Excluir';
+export const lineupNewHeading = 'Nova cena';
+export const lineupEditHeading = 'Editar cena';
+export const lineupEmptyMessage = 'Nenhuma cena nesta campanha.';
+export const lineupDeleteConfirm = 'Excluir esta cena? As fichas não serão apagadas.';
+export const lineupNeedsMembers = 'A cena precisa de ao menos uma ficha.';
+export const lineupNameRequired = 'O nome da cena é obrigatório.';
+export const lineupNoScenesInvoke = 'Nenhuma cena. Cadastre em Cenas.';
+export const lineupConfirmLabel = 'Confirmar';
+export const lineupRollLabel = 'Rolar';
+export const lineupBackLabel = 'Voltar';
+export const lineupInitiativeLabel = 'Iniciativa';
 
 export function sceneEditorHeading(isEdit: boolean) {
   return isEdit ? sceneEditDialogLabel : sceneNewLabel;

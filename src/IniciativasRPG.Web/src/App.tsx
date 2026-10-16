@@ -6,6 +6,7 @@ import { BattlePage } from './pages/BattlePage';
 import { CampaignsHomePage } from './pages/CampaignsHomePage';
 import { ModifiersPage } from './pages/ModifiersPage';
 import { PublicBattlePage } from './pages/PublicBattlePage';
+import { ScenesPage } from './pages/ScenesPage';
 import { SheetsPage } from './pages/SheetsPage';
 import { ThemeProvider } from './theme';
 
@@ -29,6 +30,7 @@ export default function App() {
               <Route index element={<Navigate to={routes.mestreBattle} replace />} />
               <Route path="batalha" element={<BattlePage />} />
               <Route path="fichas" element={<SheetsPage />} />
+              <Route path="cenas" element={<ScenesPage />} />
               <Route path="modificadores" element={<ModifiersPage />} />
             </Route>
             <Route path="*" element={<Navigate to={routes.home} replace />} />

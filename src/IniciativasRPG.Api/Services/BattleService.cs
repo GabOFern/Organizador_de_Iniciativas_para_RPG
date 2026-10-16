@@ -11,6 +11,7 @@ public interface IBattleService
     Task<BattleSnapshotDto> GetByPublicTokenAsync(string token, bool forPublic = false, CancellationToken ct = default);
     Task<BattleSnapshotDto> InvokePlayerAsync(Guid campaignId, InvokePlayerRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> InvokeCreatureAsync(Guid campaignId, InvokeCreatureRequest request, CancellationToken ct = default);
+    Task<BattleSnapshotDto> InvokeLineupAsync(Guid campaignId, InvokeLineupRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> StartAsync(Guid campaignId, CancellationToken ct = default);
     Task<BattleSnapshotDto> NextAsync(Guid campaignId, CancellationToken ct = default);
     Task<BattleSnapshotDto> FinishAsync(Guid campaignId, string? message = null, CancellationToken ct = default);
@@ -131,7 +132,7 @@ public class BattleService : IBattleService
         {
             if (!request.Initiative.HasValue)
             {
-                throw new DomainException("Informe a iniciativa ou escolha rolar o dado.");
+                throw new DomainException(DomainMessages.LineupInitiativeRequired);
             }
 
             initiative = request.Initiative.Value;
@@ -142,6 +143,96 @@ public class BattleService : IBattleService
         await ReorderAsync(battleId, ct);
 
         return await BuildAndNotifyAsync(battleId, lastDiceRoll: diceRoll, ct: ct);
+    }
+
+    public async Task<BattleSnapshotDto> InvokeLineupAsync(
+        Guid campaignId,
+        InvokeLineupRequest request,
+        CancellationToken ct = default)
+    {
+        var lineup = await _db.Lineups
+                .Include(l => l.Members)
+                .ThenInclude(m => m.Sheet)
+                .FirstOrDefaultAsync(l => l.Id == request.LineupId && l.CampaignId == campaignId, ct)
+            ?? throw new DomainException(DomainMessages.LineupNotFound, StatusCodes.Status404NotFound);
+
+        if (lineup.Members.Count == 0)
+        {
+            throw new DomainException(DomainMessages.LineupEmpty);
+        }
+
+        var given = request.Members ?? [];
+        var expected = lineup.Members.ToDictionary(member => member.SheetId, member => member.Quantity);
+        var counts = given.GroupBy(member => member.SheetId).ToDictionary(group => group.Key, group => group.Count());
+        if (counts.Count != expected.Count
+            || expected.Any(pair => !counts.TryGetValue(pair.Key, out var count) || count != pair.Value))
+        {
+            throw new DomainException(DomainMessages.LineupMembersMismatch);
+        }
+
+        var pending = given
+            .GroupBy(member => member.SheetId)
+            .ToDictionary(group => group.Key, group => new Queue<InvokeLineupMemberRequest>(group));
+        var battleId = await EnsureOpenBattleIdAsync(campaignId, ct);
+        var playersAlreadyIn = await _db.Combatants
+            .Where(c => c.BattleId == battleId && c.Sheet.Type == SheetType.Player)
+            .Select(c => c.SheetId)
+            .ToListAsync(ct);
+        var already = playersAlreadyIn.ToHashSet();
+
+        var added = new List<LineupInvokeAdded>();
+        var skipped = new List<string>();
+        int? lastRoll = null;
+
+        await using var tx = await _db.Database.BeginTransactionAsync(ct);
+        foreach (var member in lineup.Members.OrderBy(m => m.SortOrder))
+        {
+            var sheet = member.Sheet;
+            foreach (var entry in pending[member.SheetId])
+            {
+                if (sheet.Type == SheetType.Player && already.Contains(sheet.Id))
+                {
+                    skipped.Add(sheet.Name);
+                    continue;
+                }
+
+                int initiative;
+                if (entry.RollDice)
+                {
+                    initiative = _diceService.Roll(InitiativeNotation(sheet.InitiativeBonus));
+                    lastRoll = initiative;
+                }
+                else if (!entry.Initiative.HasValue)
+                {
+                    throw new DomainException(DomainMessages.LineupInitiativeRequired);
+                }
+                else
+                {
+                    initiative = entry.Initiative.Value;
+                }
+
+                await InsertCombatantAsync(
+                    battleId,
+                    sheet,
+                    initiative,
+                    hideHpFromPublic: sheet.Type != SheetType.Player,
+                    ct);
+                added.Add(new LineupInvokeAdded(sheet.Name, initiative));
+                if (sheet.Type == SheetType.Player)
+                {
+                    already.Add(sheet.Id);
+                }
+            }
+        }
+
+        await ReorderAsync(battleId, ct);
+        await tx.CommitAsync(ct);
+
+        return await BuildAndNotifyAsync(
+            battleId,
+            lastDiceRoll: lastRoll,
+            message: LineupInvokeMessage.Format(lineup.Name, added, skipped),
+            ct: ct);
     }
 
     public async Task<BattleSnapshotDto> StartAsync(Guid campaignId, CancellationToken ct = default)
@@ -798,6 +889,7 @@ public class BattleService : IBattleService
         Guid battleId,
         int? lastDiceRoll = null,
         IReadOnlyList<ModifierTickEventDto>? lastTickEvents = null,
+        string? message = null,
         CancellationToken ct = default)
     {
         var snapshot = await BuildSnapshotAsync(
@@ -805,6 +897,7 @@ public class BattleService : IBattleService
             lastDiceRoll,
             lastTickEvents,
             forPublic: false,
+            message: message,
             ct: ct);
 
         var battle = await _db.Battles
@@ -820,6 +913,7 @@ public class BattleService : IBattleService
         int? lastDiceRoll = null,
         IReadOnlyList<ModifierTickEventDto>? lastTickEvents = null,
         bool forPublic = false,
+        string? message = null,
         CancellationToken ct = default)
     {
         var battle = await _db.Battles
@@ -876,7 +970,7 @@ public class BattleService : IBattleService
             battle.Status.ToString(),
             battle.CurrentTurnIndex,
             combatants,
-            battle.LastActionMessage,
+            message ?? battle.LastActionMessage,
             lastDiceRoll ?? battle.LastActionDiceRoll,
             lastTickEvents,
             CanSavePlayerStats: false,

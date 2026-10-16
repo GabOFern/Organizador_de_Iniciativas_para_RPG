@@ -318,3 +318,21 @@ public record ApplyModifierRequest(
     Guid CombatantId,
     Guid ModifierTypeId,
     int? Duration);
+
+public record LineupMemberDto(
+    Guid SheetId,
+    string SheetName,
+    string SheetType,
+    int InitiativeBonus,
+    int Quantity,
+    int SortOrder);
+
+public record LineupDto(Guid Id, string Name, IReadOnlyList<LineupMemberDto> Members);
+
+public record SaveLineupMemberRequest(Guid SheetId, int Quantity);
+
+public record SaveLineupRequest(string Name, IReadOnlyList<SaveLineupMemberRequest>? Members);
+
+public record InvokeLineupMemberRequest(Guid SheetId, int? Initiative, bool RollDice);
+
+public record InvokeLineupRequest(Guid LineupId, IReadOnlyList<InvokeLineupMemberRequest> Members);

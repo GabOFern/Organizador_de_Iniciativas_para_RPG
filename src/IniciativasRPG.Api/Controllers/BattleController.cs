@@ -33,6 +33,10 @@ public class BattleController : ControllerBase
     public async Task<ActionResult<BattleSnapshotDto>> InvokeCreature([FromBody] InvokeCreatureRequest request, CancellationToken ct) =>
         Ok(await _battleService.InvokeCreatureAsync(CampaignId, request, ct));
 
+    [HttpPost("invoke-lineup")]
+    public async Task<ActionResult<BattleSnapshotDto>> InvokeLineup([FromBody] InvokeLineupRequest request, CancellationToken ct) =>
+        Ok(await _battleService.InvokeLineupAsync(CampaignId, request, ct));
+
     [HttpPost("start")]
     public async Task<ActionResult<BattleSnapshotDto>> Start(CancellationToken ct) =>
         Ok(await _battleService.StartAsync(CampaignId, ct));

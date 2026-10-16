@@ -276,6 +276,60 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.ToTable("Combatants");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.Lineup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId");
+
+                    b.ToTable("Lineups");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.LineupMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("LineupId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Quantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(1);
+
+                    b.Property<Guid>("SheetId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SheetId");
+
+                    b.HasIndex("LineupId", "SheetId")
+                        .IsUnique();
+
+                    b.ToTable("LineupMembers");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.ModifierType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -676,6 +730,36 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Sheet");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.Lineup", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Campaign", "Campaign")
+                        .WithMany("Lineups")
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Campaign");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.LineupMember", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Lineup", "Lineup")
+                        .WithMany("Members")
+                        .HasForeignKey("LineupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
+                        .WithMany()
+                        .HasForeignKey("SheetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lineup");
+
+                    b.Navigation("Sheet");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Sheet", b =>
                 {
                     b.HasOne("IniciativasRPG.Api.Domain.Campaign", "Campaign")
@@ -751,6 +835,8 @@ namespace IniciativasRPG.Api.Data.Migrations
                 {
                     b.Navigation("Battles");
 
+                    b.Navigation("Lineups");
+
                     b.Navigation("Scenes");
 
                     b.Navigation("Sheets");
@@ -759,6 +845,11 @@ namespace IniciativasRPG.Api.Data.Migrations
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
                 {
                     b.Navigation("ActiveModifiers");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.Lineup", b =>
+                {
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.ModifierType", b =>

@@ -73,6 +73,42 @@ export interface SheetWeapon {
   sortOrder: number;
 }
 
+export interface LineupMember {
+  sheetId: string;
+  sheetName: string;
+  sheetType: SheetType | string;
+  initiativeBonus: number;
+  quantity: number;
+  sortOrder: number;
+}
+
+export interface Lineup {
+  id: string;
+  name: string;
+  members: LineupMember[];
+}
+
+export interface SaveLineupMemberPayload {
+  sheetId: string;
+  quantity: number;
+}
+
+export interface SaveLineupPayload {
+  name: string;
+  members: SaveLineupMemberPayload[];
+}
+
+export interface InvokeLineupMemberPayload {
+  sheetId: string;
+  initiative: number | null;
+  rollDice: boolean;
+}
+
+export interface InvokeLineupPayload {
+  lineupId: string;
+  members: InvokeLineupMemberPayload[];
+}
+
 export interface Sheet {
   id: string;
   name: string;

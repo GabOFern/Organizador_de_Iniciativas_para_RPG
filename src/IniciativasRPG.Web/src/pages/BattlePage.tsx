@@ -3,11 +3,13 @@ import { api, ApiError } from '../api';
 import { useAuth } from '../auth';
 import { CombatantCard } from '../components/CombatantCard';
 import { InvokeModal, type InvokePayload } from '../components/InvokeModal';
+import { InvokeSceneModal } from '../components/InvokeSceneModal';
+import { InvokeSplit } from '../components/InvokeSplit';
 import { TacticalPanel } from '../components/TacticalPanel';
 import { shouldRunTestBattleTicks, TEST_BATTLE_TICK_MS } from '../demoBattle';
 import { useBattleHub } from '../hooks/useBattleHub';
 import { fetchShareOrigin, resolvePublicBattleUrl } from '../shareOrigin';
-import type { BattleSnapshot, CombatantTactical, ModifierType, Sheet } from '../types';
+import type { BattleSnapshot, CombatantTactical, InvokeLineupPayload, ModifierType, Sheet } from '../types';
 
 const emptyBattle: BattleSnapshot = {
   id: null,
@@ -30,6 +32,7 @@ export function BattlePage() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [invokeOpen, setInvokeOpen] = useState(false);
+  const [sceneOpen, setSceneOpen] = useState(false);
   const [tactical, setTactical] = useState<CombatantTactical | null>(null);
   const [shareOrigin, setShareOrigin] = useState<string | null>(null);
 
@@ -166,6 +169,13 @@ export function BattlePage() {
     await handleBattleAction(() => api.startTestBattle());
   }
 
+  async function handleInvokeLineup(payload: InvokeLineupPayload) {
+    setError(null);
+    setCanSavePlayerStats(false);
+    const snapshot = await run(() => api.invokeLineup(payload));
+    if (snapshot.message) setInfo(snapshot.message);
+  }
+
   async function handleInvoke(payload: InvokePayload) {
     setError(null);
     setCanSavePlayerStats(false);
@@ -284,9 +294,11 @@ export function BattlePage() {
       <section className="panel battle-queue">
         <header className="queue-header">
           <h2>Fila de iniciativa</h2>
-          <button type="button" disabled={isTestBattle} onClick={() => setInvokeOpen(true)}>
-            Invocar
-          </button>
+          <InvokeSplit
+            disabled={isTestBattle}
+            onInvokeSheet={() => setInvokeOpen(true)}
+            onInvokeScene={() => setSceneOpen(true)}
+          />
         </header>
 
         {battle.combatants.length === 0 ? (
@@ -326,6 +338,12 @@ export function BattlePage() {
         sheets={sheets}
         onClose={() => setInvokeOpen(false)}
         onInvoke={handleInvoke}
+      />
+
+      <InvokeSceneModal
+        open={sceneOpen}
+        onClose={() => setSceneOpen(false)}
+        onInvoke={handleInvokeLineup}
       />
 
       {tactical && <TacticalPanel data={tactical} onClose={() => setTactical(null)} />}
