@@ -1,4 +1,6 @@
 using FluentAssertions;
+using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using IniciativasRPG.Api.Contracts;
 using IniciativasRPG.Api.Domain;
 using IniciativasRPG.Api.Services;
@@ -15,7 +17,7 @@ public class SheetServiceTests : IAsyncDisposable
     public SheetServiceTests()
     {
         _campaignId = _testDb.SeedCampaign();
-        _sut = new SheetService(_testDb.Context, new DiceService());
+        _sut = new SheetService(_testDb.Context, new DiceService(), new ImageStoreOptimizer(ImageStoreLimits.Production));
     }
 
     public ValueTask DisposeAsync() => _testDb.DisposeAsync();
@@ -505,5 +507,33 @@ public class SheetServiceTests : IAsyncDisposable
 
         (await act.Should().ThrowAsync<DomainException>())
             .WithMessage(DomainMessages.InvalidDiceNotation);
+    }
+
+    [Fact]
+    public async Task SetImage_SourceLargerThanStoredLimit_PersistsBytesWithinLimit()
+    {
+        var limits = new ImageStoreLimits(800, 2_000_000, 32, SheetRules.WebpQualityHigh, SheetRules.WebpQualityFloor);
+        var sut = new SheetService(_testDb.Context, new DiceService(), new ImageStoreOptimizer(limits));
+        var created = await sut.CreateAsync(_campaignId, ValidCreateRequest("Retrato"));
+        var png = PngImages.Noise(160, 100);
+        png.Length.Should().BeGreaterThan(limits.MaxStoredBytes);
+
+        await sut.SetImageAsync(_campaignId, created.Id, ImageFile(png));
+
+        var stored = await _testDb.Context.SheetImages.AsNoTracking()
+            .SingleAsync(i => i.SheetId == created.Id);
+        stored.Content.LongLength.Should().BeLessThanOrEqualTo(limits.MaxStoredBytes);
+        stored.Content.LongLength.Should().BeLessThan(png.Length);
+        stored.ContentType.Should().Be(SheetRules.WebpContentType);
+    }
+
+    private static IFormFile ImageFile(byte[] png)
+    {
+        var stream = new MemoryStream(png);
+        return new FormFile(stream, 0, png.Length, "file", "retrato.png")
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "image/png",
+        };
     }
 }

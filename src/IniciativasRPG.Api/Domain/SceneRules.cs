@@ -5,8 +5,9 @@ public static class SceneRules
     public const int MaxScenesPerCampaign = 30;
     public const int MaxTitleLength = 120;
     public const int MaxImageUrlLength = 1000;
-    public const int MaxImageBytes = 4 * 1024 * 1024;
-    public const int MaxImageRequestBytes = MaxImageBytes + 64 * 1024;
+    public const int MaxImageBytes = SheetRules.MaxImageBytes;
+    public const int MaxImageUploadBytes = SheetRules.MaxImageUploadBytes;
+    public const int MaxImageRequestBytes = SheetRules.MaxImageRequestBytes;
     public const int MaxImageContentTypeLength = 32;
     public const int ImageFetchTimeoutSeconds = 15;
     public const int MaxKindLength = 20;

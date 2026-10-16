@@ -20,7 +20,11 @@ public class SceneServiceTests : IAsyncDisposable
     public SceneServiceTests()
     {
         _campaignId = _testDb.SeedCampaign(publicToken: _publicToken);
-        _sut = new SceneService(_testDb.Context, _notifier, _fetcher);
+        _sut = new SceneService(
+            _testDb.Context,
+            _notifier,
+            _fetcher,
+            new ImageStoreOptimizer(ImageStoreLimits.Production));
     }
 
     public ValueTask DisposeAsync() => _testDb.DisposeAsync();
@@ -297,6 +301,38 @@ public class SceneServiceTests : IAsyncDisposable
         (await act.Should().ThrowAsync<DomainException>())
             .WithMessage(DomainMessages.SceneImageLinkFailed);
         (await _testDb.Context.CampaignScenes.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Create_FileLargerThanStoredLimit_PersistsBytesWithinLimit()
+    {
+        var limits = new ImageStoreLimits(800, 2_000_000, 32, SheetRules.WebpQualityHigh, SheetRules.WebpQualityFloor);
+        var sut = new SceneService(
+            _testDb.Context,
+            _notifier,
+            _fetcher,
+            new ImageStoreOptimizer(limits));
+        var png = PngImages.Noise(160, 100, seed: 4);
+        png.Length.Should().BeGreaterThan(limits.MaxStoredBytes);
+
+        var list = await sut.CreateAsync(
+            _campaignId, "Mapa", nameof(SceneKind.Map), null, ImageFile(png, "mapa.png"));
+
+        var stored = await _testDb.Context.CampaignScenes.AsNoTracking()
+            .SingleAsync(s => s.Id == list[0].Id);
+        stored.ImageContent!.LongLength.Should().BeLessThanOrEqualTo(limits.MaxStoredBytes);
+        stored.ImageContent.LongLength.Should().BeLessThan(png.Length);
+        stored.ImageContentType.Should().Be(SheetRules.WebpContentType);
+    }
+
+    private static IFormFile ImageFile(byte[] png, string name)
+    {
+        var stream = new MemoryStream(png);
+        return new FormFile(stream, 0, png.Length, "file", name)
+        {
+            Headers = new HeaderDictionary(),
+            ContentType = "image/png",
+        };
     }
 
     private static byte[] PngBytes() =>

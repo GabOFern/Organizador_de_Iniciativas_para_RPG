@@ -13,7 +13,7 @@ import {
   sceneFilterKindLabel,
   sceneFilterNameLabel,
   sceneImageAccept,
-  sceneImageMaxBytes,
+  imageExceedsUploadLimit,
   sceneImageSourceConflict,
   sceneImageSourceRequired,
   sceneImageUrlInvalid,
@@ -263,7 +263,7 @@ export function ScenePanel({
       setError(sceneImageUrlInvalid);
       return null;
     }
-    if (file && file.size > sceneImageMaxBytes) {
+    if (file && imageExceedsUploadLimit(file.size)) {
       setError(sheetImageTooLarge);
       return null;
     }

@@ -18,11 +18,13 @@ public sealed class SceneImageFetcher : ISceneImageFetcher
 {
     private readonly HttpClient _http;
     private readonly ILogger<SceneImageFetcher> _logger;
+    private readonly IImageStoreOptimizer _images;
 
-    public SceneImageFetcher(HttpClient http, ILogger<SceneImageFetcher> logger)
+    public SceneImageFetcher(HttpClient http, ILogger<SceneImageFetcher> logger, IImageStoreOptimizer images)
     {
         _http = http;
         _logger = logger;
+        _images = images;
     }
 
     public async Task<SceneImageFile> FetchAsync(string url, CancellationToken ct = default)
@@ -42,22 +44,24 @@ public sealed class SceneImageFetcher : ISceneImageFetcher
                 throw new DomainException(DomainMessages.SceneImageLinkFailed);
             }
 
-            if (response.Content.Headers.ContentLength is long length && length > SceneRules.MaxImageBytes)
+            if (response.Content.Headers.ContentLength is long length && length > SceneRules.MaxImageUploadBytes)
             {
-                LogRemote(uri, reason: DomainMessages.SheetImageTooLarge);
-                throw new DomainException(DomainMessages.SheetImageTooLarge);
+                LogRemote(uri, reason: DomainMessages.SheetImageUploadTooLarge);
+                throw new DomainException(DomainMessages.SheetImageUploadTooLarge);
             }
 
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             var content = await ReadLimitedAsync(stream, uri, ct);
-            var contentType = SheetRules.DetectImageContentType(content);
-            if (contentType is null)
+            try
             {
-                LogRemote(uri, reason: DomainMessages.SheetImageTypeInvalid);
-                throw new DomainException(DomainMessages.SheetImageTypeInvalid);
+                var stored = _images.Prepare(content);
+                return new SceneImageFile(stored.Content, stored.ContentType);
             }
-
-            return new SceneImageFile(content, contentType);
+            catch (DomainException ex)
+            {
+                LogRemote(uri, reason: ex.Message);
+                throw;
+            }
         }
         catch (DomainException)
         {
@@ -110,10 +114,10 @@ public sealed class SceneImageFetcher : ISceneImageFetcher
                 break;
             }
 
-            if (buffer.Length + read > SceneRules.MaxImageBytes)
+            if (buffer.Length + read > SceneRules.MaxImageUploadBytes)
             {
-                LogRemote(uri, reason: DomainMessages.SheetImageTooLarge);
-                throw new DomainException(DomainMessages.SheetImageTooLarge);
+                LogRemote(uri, reason: DomainMessages.SheetImageUploadTooLarge);
+                throw new DomainException(DomainMessages.SheetImageUploadTooLarge);
             }
 
             buffer.Write(chunk, 0, read);

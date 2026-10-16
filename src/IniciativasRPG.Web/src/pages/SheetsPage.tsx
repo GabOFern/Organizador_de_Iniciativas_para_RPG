@@ -11,7 +11,7 @@ import {
   formatAttackHit,
   sheetAnnotationHint,
   sheetImageAccept,
-  sheetImageMaxBytes,
+  imageExceedsUploadLimit,
   sheetImageSourceConflict,
   sheetImageTooLarge,
   sheetImageScaleDefault,
@@ -282,7 +282,7 @@ export function SheetsPage() {
     }
 
     if (form.imageFile) {
-      if (form.imageFile.size > sheetImageMaxBytes) {
+      if (imageExceedsUploadLimit(form.imageFile.size)) {
         setError(sheetImageTooLarge);
         return;
       }

@@ -51,7 +51,7 @@ public class SceneImageFetcherTests
     private SceneImageFetcher Create(HttpMessageHandler handler)
     {
         var http = new HttpClient(handler);
-        return new SceneImageFetcher(http, _logger);
+        return new SceneImageFetcher(http, _logger, new ImageStoreOptimizer(ImageStoreLimits.Production));
     }
 
     private sealed class StubHandler : HttpMessageHandler

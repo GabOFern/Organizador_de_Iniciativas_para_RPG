@@ -53,6 +53,7 @@ public static class DomainMessages
     public const string SheetImageUrlTooLong = "O link da imagem é longo demais.";
     public const string SheetImageRequired = "Escolha um arquivo de imagem.";
     public const string SheetImageTooLarge = "A imagem passa de 4 MB.";
+    public const string SheetImageUploadTooLarge = "A imagem passa de 20 MB.";
     public const string SheetImageTypeInvalid = "Use uma imagem jpeg, png, webp ou gif.";
     public const string SceneTitleRequired = "O título da imagem é obrigatório.";
     public const string SceneTitleTooLong = "O título da imagem é longo demais.";

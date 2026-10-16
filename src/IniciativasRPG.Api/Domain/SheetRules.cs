@@ -12,7 +12,11 @@ public static class SheetRules
     public const int MaxImageUrlLength = 1000;
     public const int MaxPlayerNameLength = 80;
     public const int MaxImageBytes = 4 * 1024 * 1024;
-    public const int MaxImageRequestBytes = MaxImageBytes + 64 * 1024;
+    public const int MaxImageUploadBytes = 20 * 1024 * 1024;
+    public const int MaxImageEdgePixels = 2560;
+    public const int WebpQualityHigh = 90;
+    public const int WebpQualityFloor = 80;
+    public const int MaxImageRequestBytes = MaxImageUploadBytes;
     public const int MaxImageContentTypeLength = 32;
 
     public const string JpegContentType = "image/jpeg";

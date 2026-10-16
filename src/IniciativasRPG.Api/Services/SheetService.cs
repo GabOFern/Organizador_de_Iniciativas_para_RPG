@@ -21,11 +21,13 @@ public class SheetService : ISheetService
 {
     private readonly AppDbContext _db;
     private readonly IDiceService _diceService;
+    private readonly IImageStoreOptimizer _images;
 
-    public SheetService(AppDbContext db, IDiceService diceService)
+    public SheetService(AppDbContext db, IDiceService diceService, IImageStoreOptimizer images)
     {
         _db = db;
         _diceService = diceService;
+        _images = images;
     }
 
     public async Task<IReadOnlyList<SheetDto>> ListAsync(Guid campaignId, CancellationToken ct = default)
@@ -189,9 +191,7 @@ public class SheetService : ISheetService
     {
         var sheet = await FindSheetAsync(campaignId, id, ct);
         await EnsureNotInOpenBattleAsync(campaignId, id, ct);
-        var content = await ReadImageAsync(file, ct);
-        var contentType = SheetRules.DetectImageContentType(content)
-            ?? throw new DomainException(DomainMessages.SheetImageTypeInvalid);
+        var image = await ReadImageAsync(file, ct);
 
         sheet.ImageUrl = null;
         var stored = await _db.SheetImages.FirstOrDefaultAsync(i => i.SheetId == sheet.Id, ct);
@@ -201,8 +201,8 @@ public class SheetService : ISheetService
             _db.SheetImages.Add(stored);
         }
 
-        stored.Content = content;
-        stored.ContentType = contentType;
+        stored.Content = image.Content;
+        stored.ContentType = image.ContentType;
         await _db.SaveChangesAsync(ct);
         return await MapAsync(sheet, ct);
     }
@@ -427,27 +427,27 @@ public class SheetService : ISheetService
         }
     }
 
-    private static async Task<byte[]> ReadImageAsync(IFormFile file, CancellationToken ct)
+    private async Task<ImageStoreResult> ReadImageAsync(IFormFile file, CancellationToken ct)
     {
         if (file.Length == 0)
         {
             throw new DomainException(DomainMessages.SheetImageRequired);
         }
 
-        if (file.Length > SheetRules.MaxImageBytes)
+        if (file.Length > SheetRules.MaxImageUploadBytes)
         {
-            throw new DomainException(DomainMessages.SheetImageTooLarge);
+            throw new DomainException(DomainMessages.SheetImageUploadTooLarge);
         }
 
         await using var stream = file.OpenReadStream();
         using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer, ct);
-        if (buffer.Length > SheetRules.MaxImageBytes)
+        if (buffer.Length > SheetRules.MaxImageUploadBytes)
         {
-            throw new DomainException(DomainMessages.SheetImageTooLarge);
+            throw new DomainException(DomainMessages.SheetImageUploadTooLarge);
         }
 
-        return buffer.ToArray();
+        return _images.Prepare(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
     }
 
     private async Task<string> PublicTokenAsync(Guid campaignId, CancellationToken ct) =>

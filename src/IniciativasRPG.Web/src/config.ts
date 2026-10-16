@@ -106,10 +106,16 @@ export const abilityLabels: Record<(typeof abilityNames)[number], string> = {
 export const defaultProficiencyBonus = 2;
 
 export const sheetImageUrlMaxLength = 1000;
-export const sheetImageMaxBytes = 4 * 1024 * 1024;
+export const sheetImageStoredMaxBytes = 4 * 1024 * 1024;
+export const sheetImageUploadMaxBytes = 20 * 1024 * 1024;
+export const sheetImageMaxBytes = sheetImageUploadMaxBytes;
+
+export function imageExceedsUploadLimit(size: number) {
+  return size > sheetImageUploadMaxBytes;
+}
 export const sheetImageAccept = 'image/jpeg,image/png,image/webp,image/gif';
 export const sheetImageSourceConflict = 'Use o link ou o arquivo.';
-export const sheetImageTooLarge = 'A imagem passa de 4 MB.';
+export const sheetImageTooLarge = 'A imagem passa de 20 MB.';
 export const sheetImageTypeInvalid = 'Use uma imagem jpeg, png, webp ou gif.';
 /** 1 preenche o card. Abaixo disso a imagem mostra mais, até caber inteira. */
 export const sheetImageScaleDefault = 1;

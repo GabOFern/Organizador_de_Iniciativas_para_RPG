@@ -43,6 +43,7 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<ISheetService, SheetService>();
+builder.Services.AddSingleton<IImageStoreOptimizer>(_ => new ImageStoreOptimizer(ImageStoreLimits.Production));
 builder.Services.AddHttpClient<ISceneImageFetcher, SceneImageFetcher>(client =>
 {
     client.Timeout = TimeSpan.FromSeconds(SceneRules.ImageFetchTimeoutSeconds);

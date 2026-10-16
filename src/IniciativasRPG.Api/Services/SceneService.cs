@@ -40,12 +40,14 @@ public class SceneService : ISceneService
     private readonly AppDbContext _db;
     private readonly IBattleNotifier _notifier;
     private readonly ISceneImageFetcher _imageFetcher;
+    private readonly IImageStoreOptimizer _images;
 
-    public SceneService(AppDbContext db, IBattleNotifier notifier, ISceneImageFetcher imageFetcher)
+    public SceneService(AppDbContext db, IBattleNotifier notifier, ISceneImageFetcher imageFetcher, IImageStoreOptimizer images)
     {
         _db = db;
         _notifier = notifier;
         _imageFetcher = imageFetcher;
+        _images = images;
     }
 
     public async Task<IReadOnlyList<CampaignSceneDto>> ListByCampaignAsync(
@@ -326,11 +328,9 @@ public class SceneService : ISceneService
     {
         if (hasFile)
         {
-            var content = await ReadImageAsync(file!, ct);
-            var contentType = SheetRules.DetectImageContentType(content)
-                ?? throw new DomainException(DomainMessages.SheetImageTypeInvalid);
-            scene.ImageContent = content;
-            scene.ImageContentType = contentType;
+            var image = await ReadImageAsync(file!, ct);
+            scene.ImageContent = image.Content;
+            scene.ImageContentType = image.ContentType;
             scene.ImageUrl = null;
             return;
         }
@@ -379,26 +379,26 @@ public class SceneService : ISceneService
         return trimmed;
     }
 
-    private static async Task<byte[]> ReadImageAsync(IFormFile file, CancellationToken ct)
+    private async Task<ImageStoreResult> ReadImageAsync(IFormFile file, CancellationToken ct)
     {
         if (file.Length == 0)
         {
             throw new DomainException(DomainMessages.SheetImageRequired);
         }
 
-        if (file.Length > SceneRules.MaxImageBytes)
+        if (file.Length > SceneRules.MaxImageUploadBytes)
         {
-            throw new DomainException(DomainMessages.SheetImageTooLarge);
+            throw new DomainException(DomainMessages.SheetImageUploadTooLarge);
         }
 
         await using var stream = file.OpenReadStream();
         using var buffer = new MemoryStream();
         await stream.CopyToAsync(buffer, ct);
-        if (buffer.Length > SceneRules.MaxImageBytes)
+        if (buffer.Length > SceneRules.MaxImageUploadBytes)
         {
-            throw new DomainException(DomainMessages.SheetImageTooLarge);
+            throw new DomainException(DomainMessages.SheetImageUploadTooLarge);
         }
 
-        return buffer.ToArray();
+        return _images.Prepare(buffer.GetBuffer().AsSpan(0, (int)buffer.Length));
     }
 }

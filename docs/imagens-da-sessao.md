@@ -58,7 +58,7 @@ Nova entidade `CampaignScene`, ligada à campanha com exclusão em cascata:
 | `SortOrder` | ordem de inclusão, começando em 0 |
 | `CreatedAtUtc` | criação |
 
-Cada linha tem uma origem só. URL e arquivo ao mesmo tempo, ou nenhum dos dois, são inválidos. O arquivo aceito tem no máximo `SceneRules.MaxImageBytes` (4 MB) e o tipo é conferido pelos bytes iniciais, não só pela extensão.
+Cada linha tem uma origem só. URL e arquivo ao mesmo tempo, ou nenhum dos dois, são inválidos. O envio aceita até `SheetRules.MaxImageUploadBytes` (20 MB). O que fica gravado tem no máximo `SheetRules.MaxImageBytes` (4 MB); acima disso a API reduz a imagem como em [compressao-de-imagem.md](compressao-de-imagem.md). O tipo é conferido pelos bytes iniciais, não só pela extensão.
 
 No máximo `SceneRules.MaxScenesPerCampaign` (30) imagens por campanha. Título vazio, origem ausente ou dupla, URL fora de `http`/`https`, tipo não aceito, arquivo grande demais e campanha cheia geram mensagem de domínio nomeada, no mesmo estilo de `DomainMessages`.
 
