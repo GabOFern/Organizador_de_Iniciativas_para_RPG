@@ -13,7 +13,7 @@ public interface IBattleService
     Task<BattleSnapshotDto> InvokeCreatureAsync(Guid campaignId, InvokeCreatureRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> StartAsync(Guid campaignId, CancellationToken ct = default);
     Task<BattleSnapshotDto> NextAsync(Guid campaignId, CancellationToken ct = default);
-    Task<BattleSnapshotDto> FinishAsync(Guid campaignId, CancellationToken ct = default);
+    Task<BattleSnapshotDto> FinishAsync(Guid campaignId, string? message = null, CancellationToken ct = default);
     Task<BattleSnapshotDto> SavePlayerStatsAsync(Guid campaignId, CancellationToken ct = default);
     Task<BattleSnapshotDto> ApplyDamageAsync(Guid campaignId, DamageRequest request, CancellationToken ct = default);
     Task<BattleSnapshotDto> ApplyHealAsync(Guid campaignId, HealRequest request, CancellationToken ct = default);
@@ -219,7 +219,10 @@ public class BattleService : IBattleService
         return await BuildAndNotifyAsync(battle.Id, lastTickEvents: tickEvents, ct: ct);
     }
 
-    public async Task<BattleSnapshotDto> FinishAsync(Guid campaignId, CancellationToken ct = default)
+    public async Task<BattleSnapshotDto> FinishAsync(
+        Guid campaignId,
+        string? message = null,
+        CancellationToken ct = default)
     {
         var battle = await LoadTrackedBattleAsync(campaignId, ct)
             ?? throw new DomainException(DomainMessages.BattleNotFound);
@@ -231,10 +234,15 @@ public class BattleService : IBattleService
 
         var token = await GetCampaignPublicTokenAsync(battle.CampaignId, ct);
         battle.Status = BattleStatus.Finished;
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            battle.LastActionMessage = message;
+        }
+
         await _db.SaveChangesAsync(ct);
 
         var canSave = await CanSavePlayerStatsForBattleAsync(battle.Id, ct);
-        var snapshot = EmptySnapshot(DomainMessages.NoPublicBattle, token, canSave);
+        var snapshot = EmptySnapshot(message ?? DomainMessages.NoPublicBattle, token, canSave);
         await _notifier.NotifyBattleUpdatedAsync(token, masterSnapshot: snapshot, ct);
         return snapshot;
     }
@@ -868,10 +876,11 @@ public class BattleService : IBattleService
             battle.Status.ToString(),
             battle.CurrentTurnIndex,
             combatants,
-            null,
-            lastDiceRoll,
+            battle.LastActionMessage,
+            lastDiceRoll ?? battle.LastActionDiceRoll,
             lastTickEvents,
-            CanSavePlayerStats: false);
+            CanSavePlayerStats: false,
+            IsTestBattle: battle.IsTestBattle);
     }
 
     private static ActiveModifierDto MapActiveModifier(ActiveModifier m) =>

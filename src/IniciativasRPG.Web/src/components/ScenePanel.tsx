@@ -1,11 +1,11 @@
 import * as signalR from '@microsoft/signalr';
 import { useEffect, useId, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
+import { useSceneImageSrc } from '../sceneImage';
 import { SceneLightbox } from './SceneLightbox';
 import { useAuth } from '../auth';
 import {
   config,
-  resolveApiUrl,
   sceneCancelEditLabel,
   sceneEditLabel,
   sceneEmptyMessage,
@@ -84,6 +84,12 @@ function EyeClosedIcon() {
 }
 
 type AssignableKind = (typeof sceneKindOptions)[number]['value'];
+
+function SceneThumb({ url }: { url: string }) {
+  const src = useSceneImageSrc(url);
+  if (!src) return null;
+  return <img src={src} alt="" />;
+}
 
 export function ScenePanel({
   publicToken,
@@ -422,7 +428,7 @@ export function ScenePanel({
                 return (
                   <li key={scene.id} className={rowClass}>
                     <button type="button" className="scene-open" onClick={() => openScene(scene)}>
-                      <img src={resolveApiUrl(scene.imageUrl)} alt="" />
+                      <SceneThumb url={scene.imageUrl} />
                       <span className="scene-open-text">
                         {canEdit && (
                           <span className="scene-kind">{sceneKindDisplayLabel(scene.kind)}</span>

@@ -16,6 +16,7 @@ const empty: BattleSnapshot = {
   combatants: [],
   message: 'Não há combate em andamento.',
   lastDiceRoll: null,
+  isTestBattle: false,
 };
 
 export function PublicBattlePage() {
@@ -69,7 +70,14 @@ export function PublicBattlePage() {
         <section className="panel">
           <p className="muted">
             Status: <strong>{battle.status}</strong>
+            {battle.isTestBattle && (
+              <>
+                {' '}
+                · <strong>Simulação</strong>
+              </>
+            )}
           </p>
+          {battle.message && <p className="success battle-sim-message">{battle.message}</p>}
           <div className="combatant-grid">
             {battle.combatants.map((c) => (
               <CombatantCard key={c.id} combatant={c} readOnly />

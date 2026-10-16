@@ -5,9 +5,11 @@ import { logger } from '../logger';
 
 describe('api request', () => {
   const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
+  const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {});
 
   beforeEach(() => {
     errorSpy.mockClear();
+    warnSpy.mockClear();
   });
 
   afterEach(() => {
@@ -73,5 +75,42 @@ describe('api request', () => {
 
     await expect(api.listCampaigns()).rejects.toBeInstanceOf(ApiError);
     expect(errorSpy).toHaveBeenCalled();
+  });
+
+  it('imagem HTTP 400 loga aviso com a mensagem do link', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        text: async () => JSON.stringify({ error: 'Não foi possível usar a imagem desse link.' }),
+      }),
+    );
+
+    await expect(api.fetchAuthorizedBlob('/api/scenes/s1/image')).rejects.toMatchObject({
+      message: 'Não foi possível usar a imagem desse link.',
+      status: 400,
+    });
+    expect(warnSpy).toHaveBeenCalled();
+    expect(String(warnSpy.mock.calls[0]?.[0])).toContain('400');
+    expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('imagem HTTP 500 loga erro interno', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => 'boom',
+      }),
+    );
+
+    await expect(api.fetchAuthorizedBlob('/api/scenes/s1/image')).rejects.toMatchObject({
+      status: 500,
+    });
+    expect(errorSpy).toHaveBeenCalled();
+    expect(String(errorSpy.mock.calls[0]?.[0])).toContain('500');
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 });

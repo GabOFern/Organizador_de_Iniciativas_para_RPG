@@ -112,6 +112,16 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<int>("CurrentTurnIndex")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsTestBattle")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("LastActionDiceRoll")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("LastActionMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("PlayerStatsSavedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -383,6 +393,10 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PlayerName")
+                        .HasMaxLength(80)
                         .HasColumnType("TEXT");
 
                     b.Property<int>("ProficiencyBonus")

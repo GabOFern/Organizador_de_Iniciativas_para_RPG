@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSceneImageSrc } from '../sceneImage';
 import {
-  resolveApiUrl,
   sceneZoomMax,
   sceneZoomMin,
   sceneZoomStep,
@@ -254,6 +254,7 @@ export function SceneLightbox({
     commit(next, zoomOffset({ x: 0, y: 0 }, offsetRef.current, scaleRef.current, next));
   }
 
+  const imageSrc = useSceneImageSrc(scene.imageUrl);
   const canPan = !atZoomMin(scale);
   const adjusted =
     atZoomMin(scale) && Math.abs(offset.x) < 0.5 && Math.abs(offset.y) < 0.5;
@@ -274,7 +275,7 @@ export function SceneLightbox({
         <img
           ref={imgRef}
           key={scene.id}
-          src={resolveApiUrl(scene.imageUrl)}
+          src={imageSrc || undefined}
           alt={scene.title}
           draggable={false}
           onLoad={measure}

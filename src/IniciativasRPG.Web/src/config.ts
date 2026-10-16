@@ -35,6 +35,9 @@ export const campaignsLoadingMessage = 'Carregando dados…';
 export const campaignsLoadFailedMessage = 'Falha ao carregar campanhas.';
 export const requestFailedMessage = 'Falha na requisição.';
 
+export const sheetPlayerNameLabel = 'Nome do jogador';
+export const sheetPlayerNameMaxLength = 80;
+export const sheetPlayerNameTooLong = 'O nome do jogador é longo demais.';
 export const sheetDeleteConfirmMessage = 'Excluir esta ficha? Esta ação não pode ser desfeita.';
 export const sheetDeletedMessage = 'Ficha excluída.';
 export const sheetDeleteFailedMessage = 'Falha ao excluir ficha.';

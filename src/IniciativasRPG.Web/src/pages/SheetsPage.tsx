@@ -17,6 +17,9 @@ import {
   sheetImageScaleDefault,
   sheetImageTypeInvalid,
   sheetImageUrlMaxLength,
+  sheetPlayerNameLabel,
+  sheetPlayerNameMaxLength,
+  sheetPlayerNameTooLong,
   sheetDeletedMessage,
   sheetDeleteFailedMessage,
   sheetFeatureKindLabels,
@@ -120,6 +123,7 @@ const emptyWeapon = (): WeaponDraft => ({
 
 const emptyForm = {
   name: '',
+  playerName: '',
   imageUrl: '',
   imageFile: null as File | null,
   hasStoredImage: false,
@@ -183,6 +187,7 @@ export function SheetsPage() {
     setEditingId(sheet.id);
     setForm({
       name: sheet.name,
+      playerName: sheet.playerName ?? '',
       imageUrl: sheet.hasStoredImage ? '' : (sheet.imageUrl ?? ''),
       imageFile: null,
       hasStoredImage: sheet.hasStoredImage,
@@ -288,8 +293,15 @@ export function SheetsPage() {
       }
     }
 
+    const playerName = form.type === 'Player' ? form.playerName.trim() : '';
+    if (playerName.length > sheetPlayerNameMaxLength) {
+      setError(sheetPlayerNameTooLong);
+      return;
+    }
+
     const payload = {
       name: form.name,
+      playerName: playerName || null,
       imageUrl: link || null,
       imageFocusX: form.imageFocusX,
       imageFocusY: form.imageFocusY,
@@ -356,7 +368,10 @@ export function SheetsPage() {
 
   const nameNeedle = nameQuery.trim().toLocaleLowerCase();
   const visibleSheets = nameNeedle
-    ? sheets.filter((sheet) => sheet.name.toLocaleLowerCase().includes(nameNeedle))
+    ? sheets.filter((sheet) =>
+        sheet.name.toLocaleLowerCase().includes(nameNeedle)
+        || (sheet.playerName ?? '').toLocaleLowerCase().includes(nameNeedle),
+      )
     : sheets;
 
   return (
@@ -372,6 +387,16 @@ export function SheetsPage() {
               required
             />
           </label>
+          {form.type === 'Player' && (
+            <label>
+              {sheetPlayerNameLabel}
+              <input
+                value={form.playerName}
+                maxLength={sheetPlayerNameMaxLength}
+                onChange={(e) => setForm((f) => ({ ...f, playerName: e.target.value }))}
+              />
+            </label>
+          )}
           <label>
             Link da imagem
             <input
@@ -993,6 +1018,9 @@ export function SheetsPage() {
               <li key={sheet.id}>
                 <div>
                   <strong>{sheet.name}</strong>
+                  {sheet.type === 'Player' && sheet.playerName ? (
+                    <span className="muted"> · {sheetPlayerNameLabel}: {sheet.playerName}</span>
+                  ) : null}
                   <span className="muted">
                     {' '}
                     · {sheet.type} · {characterClassLabels[sheet.class as CharacterClass] ?? sheet.class} · HP{' '}

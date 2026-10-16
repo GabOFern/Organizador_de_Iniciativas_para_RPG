@@ -76,9 +76,44 @@ VITE_HUB_URL=/hubs/battle
 
 O browser fala só com `:5173`; o Vite encaminha `/api` e `/hubs` (WebSocket incluso) para `http://localhost:5111`.
 
-### 2. ngrok — um túnel só no Vite (simples)
+### 2. Cloudflare Quick Tunnel — recomendado para sessão de jogo (`iniciar.bat /publico`)
 
-Útil para jogadores na internet testarem a visão pública.
+**Preferir ao ngrok free:** não há tela “Visit Site” / interstitial; o link abre direto. Não exige conta Cloudflare.
+
+Pré-requisito: [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) no PATH:
+
+```bat
+winget install -e --id Cloudflare.cloudflared
+```
+
+#### Via iniciador (Windows)
+
+```bat
+iniciar.bat /publico
+iniciar.bat /skiptests /publico
+```
+
+O script sobe API + Vite, inicia `cloudflared tunnel --url http://localhost:5173`, captura a URL `https://….trycloudflare.com`, grava em `public/share-origin.txt`, copia para o clipboard e abre o **mestre em localhost**.
+
+- **Mestre:** `http://localhost:5173` (sessão própria no `sessionStorage` local).
+- **Jogadores:** URL `trycloudflare.com` (ou o “Link público” na batalha, montado a partir de `share-origin.txt`).
+- Assim mestre e jogador **não compartilham** a mesma sessão do browser (problema típico de abrir o túnel nos dois papéis).
+- A URL do Quick Tunnel **muda a cada execução**. Log: `logs/cloudflared.log` / `logs/public-url.txt`.
+- Vite já libera o host em [`vite.config.ts`](../src/IniciativasRPG.Web/vite.config.ts) (`allowedHosts: ['.trycloudflare.com']`).
+- Com `VITE_API_BASE_URL` vazio, as chamadas são same-origin pelo proxy — **não é necessário** alterar CORS para o Quick Tunnel.
+- Rotas `/publico/...` nunca enviam JWT, mesmo se houver token de mestre no storage.
+
+#### Manual (qualquer SO)
+
+1. API e `npm run dev` como no cenário 1.
+2. `cloudflared tunnel --url http://localhost:5173`
+3. Abrir a URL impressa e compartilhar com os jogadores.
+
+Para hostname **fixo**, use a seção 4 (túnel nomeado + domínio).
+
+### 2b. ngrok — um túnel só no Vite (alternativa)
+
+O plano free do ngrok costuma mostrar uma página “Visit Site” antes do app — evite se os jogadores forem abrir o link no celular.
 
 1. API e `npm run dev` rodando localmente (como no cenário 1).
 2. Túnel na porta do front:
@@ -250,13 +285,13 @@ Reinicie o Vite (ou rode `npm run build` de novo) — `VITE_*` são lidas na sub
 
 #### Túnel rápido sem domínio (`*.trycloudflare.com`)
 
-Sem domínio próprio:
+Sem domínio próprio — o caminho mais simples é `iniciar.bat /publico` (seção 2). Manualmente:
 
 ```bash
 cloudflared tunnel --url http://localhost:5173
 ```
 
-Gera uma URL `https://….trycloudflare.com`. É prático para teste, mas a URL **costuma mudar a cada execução** — não é o “link fixo”. Para hostname estável, use a **Opção A/B com domínio** na Cloudflare (gratuito).
+Gera uma URL `https://….trycloudflare.com`. É prático para a mesa, mas a URL **muda a cada execução**. Para hostname estável, use a **Opção A/B com domínio** na Cloudflare (gratuito).
 
 #### Checklist Cloudflare + este projeto
 

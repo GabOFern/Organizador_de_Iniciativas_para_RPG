@@ -47,7 +47,8 @@ public record SheetDto(
     IReadOnlyList<SheetAttackDto> Attacks,
     IReadOnlyList<SheetSpellDto> Spells,
     IReadOnlyList<SheetWeaponDto> Weapons,
-    bool HasStoredImage);
+    bool HasStoredImage,
+    string? PlayerName);
 
 public record SheetFeatureDto(
     Guid? Id,
@@ -140,7 +141,8 @@ public record CreateSheetRequest(
     double ImageFocusY = 50,
     double ImageScale = SheetRules.ImageScaleDefault,
     int InitiativeBonus = 0,
-    int ProficiencyBonus = SheetRules.DefaultProficiencyBonus);
+    int ProficiencyBonus = SheetRules.DefaultProficiencyBonus,
+    string? PlayerName = null);
 
 public record UpdateSheetRequest(
     string Name,
@@ -164,7 +166,8 @@ public record UpdateSheetRequest(
     double ImageFocusY = 50,
     double ImageScale = SheetRules.ImageScaleDefault,
     int InitiativeBonus = 0,
-    int ProficiencyBonus = SheetRules.DefaultProficiencyBonus);
+    int ProficiencyBonus = SheetRules.DefaultProficiencyBonus,
+    string? PlayerName = null);
 
 public record CombatantTacticalDto(
     Guid CombatantId,
@@ -246,7 +249,8 @@ public record BattleSnapshotDto(
     string? Message,
     int? LastDiceRoll,
     IReadOnlyList<ModifierTickEventDto>? LastTickEvents = null,
-    bool CanSavePlayerStats = false);
+    bool CanSavePlayerStats = false,
+    bool IsTestBattle = false);
 
 public record PublicBattleSummaryDto(
     string PublicToken,

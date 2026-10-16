@@ -10,6 +10,7 @@ public static class SheetRules
     public const double ImageScaleMin = 0.05;
     public const double ImageScaleMax = 4;
     public const int MaxImageUrlLength = 1000;
+    public const int MaxPlayerNameLength = 80;
     public const int MaxImageBytes = 4 * 1024 * 1024;
     public const int MaxImageRequestBytes = MaxImageBytes + 64 * 1024;
     public const int MaxImageContentTypeLength = 32;

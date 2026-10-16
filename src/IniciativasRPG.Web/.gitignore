@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Escrito pelo iniciar.bat /publico (origem do link para jogadores)
+public/share-origin.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

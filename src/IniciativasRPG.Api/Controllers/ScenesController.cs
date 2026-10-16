@@ -24,6 +24,13 @@ public class ScenesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> List(CancellationToken ct) =>
         Ok(await _sceneService.ListByCampaignAsync(CampaignId, ct));
 
+    [HttpGet("{id:guid}/image")]
+    public async Task<IActionResult> Image(Guid id, CancellationToken ct)
+    {
+        var image = await _sceneService.GetMasterImageAsync(CampaignId, id, ct);
+        return File(image.Content, image.ContentType);
+    }
+
     [HttpPost]
     [RequestSizeLimit(SceneRules.MaxImageRequestBytes)]
     public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> Create(

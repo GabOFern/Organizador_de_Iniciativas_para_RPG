@@ -30,6 +30,7 @@ vi.mock('../api', async () => {
       createScene: (...args: unknown[]) => createScene(...args),
       updateScene: (...args: unknown[]) => updateScene(...args),
       deleteScene: (...args: unknown[]) => deleteScene(...args),
+      fetchAuthorizedBlob: vi.fn().mockResolvedValue(new Blob(['png'], { type: 'image/png' })),
     },
   };
 });

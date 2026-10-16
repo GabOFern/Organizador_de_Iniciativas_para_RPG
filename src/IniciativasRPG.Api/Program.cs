@@ -43,10 +43,16 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<ISheetService, SheetService>();
+builder.Services.AddHttpClient<ISceneImageFetcher, SceneImageFetcher>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(SceneRules.ImageFetchTimeoutSeconds);
+});
 builder.Services.AddScoped<ISceneService, SceneService>();
 builder.Services.AddScoped<IBattleService, BattleService>();
+builder.Services.AddScoped<IDemoBattleService, DemoBattleService>();
 builder.Services.AddScoped<IModifierTypeService, ModifierTypeService>();
 builder.Services.AddSingleton<IDiceService, DiceService>();
+builder.Services.AddSingleton<IDemoBattleRandom, DemoBattleRandom>();
 builder.Services.AddScoped<IBattleNotifier, BattleNotifier>();
 
 builder.Services.AddControllers()

@@ -11,10 +11,12 @@ namespace IniciativasRPG.Api.Controllers;
 public class BattleController : ControllerBase
 {
     private readonly IBattleService _battleService;
+    private readonly IDemoBattleService _demoBattleService;
 
-    public BattleController(IBattleService battleService)
+    public BattleController(IBattleService battleService, IDemoBattleService demoBattleService)
     {
         _battleService = battleService;
+        _demoBattleService = demoBattleService;
     }
 
     private Guid CampaignId => User.GetRequiredCampaignId();
@@ -41,7 +43,7 @@ public class BattleController : ControllerBase
 
     [HttpPost("finish")]
     public async Task<ActionResult<BattleSnapshotDto>> Finish(CancellationToken ct) =>
-        Ok(await _battleService.FinishAsync(CampaignId, ct));
+        Ok(await _battleService.FinishAsync(CampaignId, ct: ct));
 
     [HttpPost("save-player-stats")]
     public async Task<ActionResult<BattleSnapshotDto>> SavePlayerStats(CancellationToken ct) =>
@@ -74,4 +76,12 @@ public class BattleController : ControllerBase
     [HttpGet("combatants/{id:guid}/tactical")]
     public async Task<ActionResult<CombatantTacticalDto>> Tactical(Guid id, CancellationToken ct) =>
         Ok(await _battleService.GetCombatantTacticalAsync(CampaignId, id, ct));
+
+    [HttpPost("test/start")]
+    public async Task<ActionResult<BattleSnapshotDto>> StartTestBattle(CancellationToken ct) =>
+        Ok(await _demoBattleService.StartTestBattleAsync(CampaignId, ct));
+
+    [HttpPost("test/tick")]
+    public async Task<ActionResult<BattleSnapshotDto>> TickTestBattle(CancellationToken ct) =>
+        Ok(await _demoBattleService.TickTestBattleAsync(CampaignId, ct));
 }

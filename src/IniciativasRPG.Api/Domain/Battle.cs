@@ -9,6 +9,9 @@ public class Battle
     public int CurrentTurnIndex { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? PlayerStatsSavedAtUtc { get; set; }
+    public bool IsTestBattle { get; set; }
+    public string? LastActionMessage { get; set; }
+    public int? LastActionDiceRoll { get; set; }
 
     public ICollection<Combatant> Combatants { get; set; } = new List<Combatant>();
 }

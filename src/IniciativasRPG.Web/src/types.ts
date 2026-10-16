@@ -76,6 +76,7 @@ export interface SheetWeapon {
 export interface Sheet {
   id: string;
   name: string;
+  playerName?: string | null;
   imageUrl: string | null;
   imageFocusX: number;
   imageFocusY: number;
@@ -109,6 +110,7 @@ export interface Sheet {
 
 export interface SheetPayload {
   name: string;
+  playerName?: string | null;
   imageUrl?: string | null;
   imageFocusX?: number;
   imageFocusY?: number;
@@ -253,6 +255,7 @@ export interface BattleSnapshot {
   lastDiceRoll: number | null;
   lastTickEvents?: ModifierTickEvent[] | null;
   canSavePlayerStats?: boolean;
+  isTestBattle?: boolean;
 }
 
 export interface ModifierType {

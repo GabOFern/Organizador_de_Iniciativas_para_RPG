@@ -64,6 +64,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.PlayerName).HasMaxLength(SheetRules.MaxPlayerNameLength);
             e.Property(x => x.ImageUrl).HasMaxLength(SheetRules.MaxImageUrlLength);
             e.Property(x => x.ImageScale).HasDefaultValue(SheetRules.ImageScaleDefault);
             e.Property(x => x.Type).HasConversion<string>().HasMaxLength(20);
@@ -145,6 +146,7 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(x => x.LastActionMessage).HasMaxLength(500);
             e.HasOne(x => x.Campaign)
                 .WithMany(c => c.Battles)
                 .HasForeignKey(x => x.CampaignId)

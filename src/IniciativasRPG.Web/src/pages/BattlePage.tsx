@@ -4,8 +4,9 @@ import { useAuth } from '../auth';
 import { CombatantCard } from '../components/CombatantCard';
 import { InvokeModal, type InvokePayload } from '../components/InvokeModal';
 import { TacticalPanel } from '../components/TacticalPanel';
-import { routes } from '../config';
+import { shouldRunTestBattleTicks, TEST_BATTLE_TICK_MS } from '../demoBattle';
 import { useBattleHub } from '../hooks/useBattleHub';
+import { fetchShareOrigin, resolvePublicBattleUrl } from '../shareOrigin';
 import type { BattleSnapshot, CombatantTactical, ModifierType, Sheet } from '../types';
 
 const emptyBattle: BattleSnapshot = {
@@ -17,6 +18,7 @@ const emptyBattle: BattleSnapshot = {
   message: null,
   lastDiceRoll: null,
   canSavePlayerStats: false,
+  isTestBattle: false,
 };
 
 export function BattlePage() {
@@ -29,13 +31,16 @@ export function BattlePage() {
   const [info, setInfo] = useState<string | null>(null);
   const [invokeOpen, setInvokeOpen] = useState(false);
   const [tactical, setTactical] = useState<CombatantTactical | null>(null);
+  const [shareOrigin, setShareOrigin] = useState<string | null>(null);
 
   const applySnapshot = useCallback((snapshot: BattleSnapshot) => {
     setBattle(snapshot);
     if (typeof snapshot.canSavePlayerStats === 'boolean') {
       setCanSavePlayerStats(snapshot.canSavePlayerStats);
     }
-    if (snapshot.lastTickEvents && snapshot.lastTickEvents.length > 0) {
+    if (snapshot.message && (snapshot.isTestBattle || snapshot.status === 'Finished')) {
+      setInfo(snapshot.message);
+    } else if (snapshot.lastTickEvents && snapshot.lastTickEvents.length > 0) {
       const parts = snapshot.lastTickEvents.map((e) => {
         const sign = e.kind === 'Heal' ? '+' : '−';
         return (
@@ -46,8 +51,6 @@ export function BattlePage() {
       setInfo(`Efeitos: ${parts.join(' · ')}`);
     } else if (snapshot.lastDiceRoll != null) {
       setInfo(`Rolagem: ${snapshot.lastDiceRoll}`);
-    } else if (snapshot.message && snapshot.status === 'Finished') {
-      setInfo(snapshot.message);
     }
   }, []);
 
@@ -56,20 +59,53 @@ export function BattlePage() {
   useEffect(() => {
     void (async () => {
       try {
-        const [sheetList, current, types] = await Promise.all([
+        const [sheetList, current, types, origin] = await Promise.all([
           api.listSheets(),
           api.getCurrentBattle(),
           api.listModifierTypes(),
+          fetchShareOrigin(),
         ]);
         setSheets(sheetList);
         setBattle(current);
         setCanSavePlayerStats(Boolean(current.canSavePlayerStats));
         setModifierTypes(types);
+        setShareOrigin(origin);
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'Falha ao carregar batalha.');
       }
     })();
   }, []);
+
+  useEffect(() => {
+    if (!shouldRunTestBattleTicks(battle.status, battle.isTestBattle)) {
+      return;
+    }
+
+    let cancelled = false;
+    let inFlight = false;
+    const id = window.setInterval(() => {
+      if (cancelled || inFlight) return;
+      inFlight = true;
+      void api
+        .tickTestBattle()
+        .then((snapshot) => {
+          if (!cancelled) applySnapshot(snapshot);
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setError(err instanceof ApiError ? err.message : 'Falha na ação de combate.');
+          }
+        })
+        .finally(() => {
+          inFlight = false;
+        });
+    }, TEST_BATTLE_TICK_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [battle.status, battle.isTestBattle, applySnapshot]);
 
   async function run(action: () => Promise<BattleSnapshot>) {
     setError(null);
@@ -113,6 +149,23 @@ export function BattlePage() {
     }
   }
 
+  async function handleStartTestBattle() {
+    const hasOpen =
+      (battle.status === 'Preparing' || battle.status === 'Active') &&
+      battle.combatants.length > 0;
+    if (
+      hasOpen &&
+      !window.confirm(
+        'Há um combate em andamento. Finalizar e iniciar a batalha teste (Guarda Veterano, Goblin e Lobo)?',
+      )
+    ) {
+      return;
+    }
+
+    setCanSavePlayerStats(false);
+    await handleBattleAction(() => api.startTestBattle());
+  }
+
   async function handleInvoke(payload: InvokePayload) {
     setError(null);
     setCanSavePlayerStats(false);
@@ -154,10 +207,12 @@ export function BattlePage() {
 
   const isPreparing = battle.status === 'Preparing';
   const isActive = battle.status === 'Active';
-  const publicUrl =
-    battle.publicToken != null
-      ? `${window.location.origin}${routes.publicBattle(battle.publicToken)}`
-      : null;
+  const isTestBattle = Boolean(battle.isTestBattle);
+  const publicUrl = resolvePublicBattleUrl(
+    battle.publicToken,
+    shareOrigin,
+    window.location.origin,
+  );
 
   return (
     <div className="battle-layout">
@@ -167,23 +222,27 @@ export function BattlePage() {
             <h2>Combate</h2>
             <p className="muted toolbar-status">
               Status: <strong>{battle.status}</strong>
+              {isTestBattle && ' · Simulação'}
               {battle.combatants.length > 0 && ` · ${battle.combatants.length} na fila`}
             </p>
           </div>
           <div className="row battle-toolbar-actions">
             <button
               type="button"
-              disabled={!isPreparing}
+              disabled={!isPreparing || isTestBattle}
               onClick={() => void handleBattleAction(() => api.startBattle())}
             >
               Iniciar batalha
             </button>
             <button
               type="button"
-              disabled={!isActive}
+              disabled={!isActive || isTestBattle}
               onClick={() => void handleBattleAction(() => api.nextTurn())}
             >
               Próximo
+            </button>
+            <button type="button" className="ghost" onClick={() => void handleStartTestBattle()}>
+              Batalha teste
             </button>
             <button
               type="button"
@@ -225,7 +284,7 @@ export function BattlePage() {
       <section className="panel battle-queue">
         <header className="queue-header">
           <h2>Fila de iniciativa</h2>
-          <button type="button" onClick={() => setInvokeOpen(true)}>
+          <button type="button" disabled={isTestBattle} onClick={() => setInvokeOpen(true)}>
             Invocar
           </button>
         </header>

@@ -81,6 +81,45 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function fetchAuthorizedBlob(path: string): Promise<Blob> {
+  const headers = new Headers();
+  const token = tokenProvider();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${config.apiBaseUrl}${path}`, { headers });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    logger.error(`GET ${path} rede: ${detail}`);
+    throw new ApiError(requestFailedMessage, 0, detail);
+  }
+
+  if (!response.ok) {
+    const message = await readErrorMessage(response);
+    const line = `GET ${path} HTTP ${response.status}: ${message}`;
+    if (response.status >= 500) logger.error(line);
+    else logger.warn(line);
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
+async function readErrorMessage(response: Response) {
+  try {
+    const raw = await response.text();
+    const data = JSON.parse(raw) as { error?: string };
+    if (data.error) return data.error;
+  } catch {
+    /* body não é JSON */
+  }
+
+  return requestFailedMessage;
+}
+
 export const api = {
   listCampaigns: () => request<CampaignSummary[]>('/api/campaigns'),
 
@@ -131,6 +170,8 @@ export const api = {
     request<Sheet>(`/api/sheets/${id}/image`, { method: 'DELETE' }),
 
   listScenes: () => request<CampaignScene[]>('/api/scenes'),
+
+  fetchAuthorizedBlob: (path: string) => fetchAuthorizedBlob(path),
 
   listPublicScenes: (token: string) =>
     request<CampaignScene[]>(`/api/public/campaigns/${token}/scenes`),
@@ -215,6 +256,12 @@ export const api = {
 
   startBattle: () =>
     request<BattleSnapshot>('/api/battle/start', { method: 'POST' }),
+
+  startTestBattle: () =>
+    request<BattleSnapshot>('/api/battle/test/start', { method: 'POST' }),
+
+  tickTestBattle: () =>
+    request<BattleSnapshot>('/api/battle/test/tick', { method: 'POST' }),
 
   nextTurn: () =>
     request<BattleSnapshot>('/api/battle/next', { method: 'POST' }),

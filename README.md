@@ -47,7 +47,20 @@ npm install
 npm run dev
 ```
 
-O `.env.example` deixa `VITE_API_BASE_URL` vazio e usa o **proxy do Vite** (`/api` e `/hubs` → API na porta 5111). Isso é o modo recomendado em desenvolvimento e com **um único túnel ngrok** na porta 5173.
+O `.env.example` deixa `VITE_API_BASE_URL` vazio e usa o **proxy do Vite** (`/api` e `/hubs` → API na porta 5111). Isso é o modo recomendado em desenvolvimento e com **um único túnel** na porta 5173.
+
+### Atalho Windows — `iniciar.bat`
+
+```bat
+iniciar.bat                 rem testes + sobe API e site
+iniciar.bat /skiptests      rem sobe sem rodar testes
+iniciar.bat /publico        rem sobe + Cloudflare Quick Tunnel (link público sem tela Visit)
+iniciar.bat /skiptests /publico
+```
+
+Com `/publico` é preciso ter o [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) no PATH (`winget install -e --id Cloudflare.cloudflared`). O iniciador abre o **mestre em localhost** e copia a URL `https://….trycloudflare.com` para os **jogadores**. O “Link público” na batalha também usa essa origem (arquivo `share-origin.txt`).
+
+Detalhes (túnel nomeado, CORS, ngrok): [docs/CONFIGURACAO-E-DEPLOY.md](docs/CONFIGURACAO-E-DEPLOY.md).
 
 ## Uso rápido
 
@@ -62,7 +75,7 @@ O `.env.example` deixa `VITE_API_BASE_URL` vazio e usa o **proxy do Vite** (`/ap
 
 | Documento | Conteúdo |
 |-----------|----------|
-| [docs/CONFIGURACAO-E-DEPLOY.md](docs/CONFIGURACAO-E-DEPLOY.md) | URLs, CORS, ngrok, Cloudflare Tunnel (link fixo no PC), domínio |
+| [docs/CONFIGURACAO-E-DEPLOY.md](docs/CONFIGURACAO-E-DEPLOY.md) | URLs, CORS, Cloudflare Tunnel (`iniciar.bat /publico` e link fixo), ngrok |
 | [docs/BACKLOG.md](docs/BACKLOG.md) | Stories e fases do produto |
 
 ## Segurança

@@ -122,6 +122,95 @@ public class SheetServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task Create_Player_StoresOptionalPlayerName()
+    {
+        var request = ValidCreateRequest("Lyra") with
+        {
+            Type = SheetType.Player,
+            PlayerName = "  Ana  ",
+        };
+
+        var result = await _sut.CreateAsync(_campaignId, request);
+
+        result.Type.Should().Be("Player");
+        result.PlayerName.Should().Be("Ana");
+    }
+
+    [Fact]
+    public async Task Create_Player_BlankPlayerName_StoresNull()
+    {
+        var request = ValidCreateRequest("Lyra") with
+        {
+            Type = SheetType.Player,
+            PlayerName = "   ",
+        };
+
+        var result = await _sut.CreateAsync(_campaignId, request);
+
+        result.PlayerName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Create_Player_PlayerNameTooLong_Throws()
+    {
+        var request = ValidCreateRequest("Lyra") with
+        {
+            Type = SheetType.Player,
+            PlayerName = new string('a', SheetRules.MaxPlayerNameLength + 1),
+        };
+
+        var act = () => _sut.CreateAsync(_campaignId, request);
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SheetPlayerNameTooLong);
+    }
+
+    [Fact]
+    public async Task Create_Creature_IgnoresPlayerName()
+    {
+        var request = ValidCreateRequest() with { PlayerName = "Ana" };
+
+        var result = await _sut.CreateAsync(_campaignId, request);
+
+        result.PlayerName.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Update_PlayerName_PersistsAndClearsWhenNotPlayer()
+    {
+        var created = await _sut.CreateAsync(
+            _campaignId,
+            ValidCreateRequest("Lyra") with { Type = SheetType.Player, PlayerName = "Ana" });
+        _testDb.Context.ChangeTracker.Clear();
+
+        var renamed = await _sut.UpdateAsync(_campaignId, created.Id, PlayerUpdate(created, "Bruno"));
+        renamed.PlayerName.Should().Be("Bruno");
+
+        _testDb.Context.ChangeTracker.Clear();
+        var creature = await _sut.UpdateAsync(
+            _campaignId,
+            created.Id,
+            PlayerUpdate(created, "Bruno") with { Type = SheetType.Creature, Name = "Lyra" });
+        creature.PlayerName.Should().BeNull();
+    }
+
+    private static UpdateSheetRequest PlayerUpdate(SheetDto sheet, string playerName) => new(
+        Name: sheet.Name,
+        ImageUrl: null,
+        Type: SheetType.Player,
+        Class: CharacterClass.None,
+        MaxHp: sheet.MaxHp,
+        CurrentHp: sheet.CurrentHp,
+        BaseAc: sheet.BaseAc,
+        Strength: sheet.Strength,
+        Dexterity: sheet.Dexterity,
+        Constitution: sheet.Constitution,
+        Intelligence: sheet.Intelligence,
+        Wisdom: sheet.Wisdom,
+        Charisma: sheet.Charisma,
+        PlayerName: playerName);
+
+    [Fact]
     public async Task Create_FeatureWithEmptyTitle_ThrowsDomainException()
     {
         var request = ValidCreateRequest() with

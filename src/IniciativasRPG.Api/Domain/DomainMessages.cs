@@ -8,6 +8,7 @@ public static class DomainMessages
     public const string CampaignNotFound = "Campanha não encontrada.";
     public const string CampaignAlreadyHasOpenBattle = "Já existe uma batalha em andamento nesta campanha. Finalize-a antes de criar outra.";
     public const string SheetNotFound = "Ficha não encontrada.";
+    public const string SheetPlayerNameTooLong = "O nome do jogador é longo demais.";
     public const string SheetInActiveBattle = "Esta ficha está em uma batalha ativa. Use as ações de combate (dano/cura/modificador).";
     public const string BattleNotFound = "Não há batalha em andamento.";
     public const string NotEnoughCombatants = "É necessário ao menos 2 combatentes na fila para iniciar a batalha.";
@@ -55,6 +56,7 @@ public static class DomainMessages
     public const string SheetImageTypeInvalid = "Use uma imagem jpeg, png, webp ou gif.";
     public const string SceneTitleRequired = "O título da imagem é obrigatório.";
     public const string SceneTitleTooLong = "O título da imagem é longo demais.";
+    public const string SceneImageLinkFailed = "Não foi possível usar a imagem desse link.";
     public const string SceneImageSourceRequired = "Informe o link ou o arquivo.";
     public const string SceneImageSourceConflict = "Use o link ou o arquivo.";
     public const string SceneKindRequired = "Escolha o tipo da imagem.";
@@ -62,4 +64,8 @@ public static class DomainMessages
     public static readonly string SceneCampaignFull =
         $"Esta campanha já tem {SceneRules.MaxScenesPerCampaign} imagens.";
     public const string SceneNotFound = "Imagem não encontrada.";
+    public const string DemoBattleSheetsMissing =
+        "Não foi possível iniciar a batalha teste: faltam as fichas Guarda Veterano, Goblin e Lobo nesta campanha.";
+    public const string DemoBattleNotActive = "Não há batalha teste ativa para avançar.";
+    public const string DemoBattleActorHasNoAttack = "O combatente do turno não possui ataques para simular.";
 }

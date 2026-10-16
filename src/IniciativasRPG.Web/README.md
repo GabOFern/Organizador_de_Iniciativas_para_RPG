@@ -5,7 +5,7 @@ Frontend React + TypeScript + Vite do monorepo **IniciativasRPG**.
 ## Documentação
 
 - Setup e uso: [README na raiz do repositório](../../README.md)
-- URLs, CORS, ngrok, Cloudflare e domínio: [docs/CONFIGURACAO-E-DEPLOY.md](../../docs/CONFIGURACAO-E-DEPLOY.md)
+- URLs, CORS, Cloudflare (`iniciar.bat /publico`), ngrok e domínio: [docs/CONFIGURACAO-E-DEPLOY.md](../../docs/CONFIGURACAO-E-DEPLOY.md)
 
 ## Dev local
 

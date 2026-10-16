@@ -1,4 +1,5 @@
 using FluentAssertions;
+using IniciativasRPG.Api.Contracts;
 using IniciativasRPG.Api.Domain;
 using IniciativasRPG.Api.Services;
 using IniciativasRPG.Tests.Helpers;
@@ -11,6 +12,7 @@ public class SceneServiceTests : IAsyncDisposable
 {
     private readonly TestDb _testDb = TestDb.Create();
     private readonly FakeBattleNotifier _notifier = new();
+    private readonly FakeSceneImageFetcher _fetcher = new();
     private readonly SceneService _sut;
     private readonly Guid _campaignId;
     private readonly string _publicToken = "scene-token-12345678";
@@ -18,7 +20,7 @@ public class SceneServiceTests : IAsyncDisposable
     public SceneServiceTests()
     {
         _campaignId = _testDb.SeedCampaign(publicToken: _publicToken);
-        _sut = new SceneService(_testDb.Context, _notifier);
+        _sut = new SceneService(_testDb.Context, _notifier, _fetcher);
     }
 
     public ValueTask DisposeAsync() => _testDb.DisposeAsync();
@@ -149,6 +151,20 @@ public class SceneServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetMasterImage_HiddenUpload_ReturnsContent()
+    {
+        var created = await CreateItem("Cena");
+
+        created[0].IsVisibleToPlayers.Should().BeFalse();
+        created[0].ImageUrl.Should().Be(SceneImagePaths.Master(created[0].Id));
+
+        var image = await _sut.GetMasterImageAsync(_campaignId, created[0].Id);
+
+        image.Content.Should().NotBeEmpty();
+        image.ContentType.Should().Be(SheetRules.PngContentType);
+    }
+
+    [Fact]
     public async Task GetPublicImage_Hidden_ThrowsNotFound()
     {
         var created = await CreateItem("Cena");
@@ -222,5 +238,89 @@ public class SceneServiceTests : IAsyncDisposable
 
         (await act.Should().ThrowAsync<DomainException>())
             .WithMessage(DomainMessages.SceneNotFound);
+    }
+
+    [Fact]
+    public async Task Create_FromUrl_StoresBytes_ListUsesLocalPath()
+    {
+        const string remote = "https://cdn.example/map.png";
+        _fetcher.Content = PngBytes();
+
+        var list = await _sut.CreateAsync(
+            _campaignId, "Mapa", nameof(SceneKind.Map), remote, null);
+
+        list.Should().ContainSingle();
+        list[0].ImageUrl.Should().Be(SceneImagePaths.Master(list[0].Id));
+        list[0].ImageUrl.Should().NotContain("cdn.example");
+
+        var stored = await _testDb.Context.CampaignScenes.AsNoTracking()
+            .SingleAsync(s => s.Id == list[0].Id);
+        stored.ImageUrl.Should().BeNull();
+        stored.ImageContent.Should().BeEquivalentTo(_fetcher.Content);
+        stored.ImageContentType.Should().Be(SheetRules.PngContentType);
+    }
+
+    [Fact]
+    public async Task GetImage_LegacyUrlOnly_FetchesAndPersists()
+    {
+        var created = await CreateItem("Velha");
+        var scene = await _testDb.Context.CampaignScenes.SingleAsync(s => s.Id == created[0].Id);
+        scene.ImageContent = null;
+        scene.ImageContentType = null;
+        scene.ImageUrl = "https://cdn.example/legacy.png";
+        await _testDb.Context.SaveChangesAsync();
+        _testDb.Context.ChangeTracker.Clear();
+        _fetcher.Content = PngBytes();
+
+        var image = await _sut.GetMasterImageAsync(_campaignId, created[0].Id);
+
+        image.Content.Should().BeEquivalentTo(_fetcher.Content);
+        _fetcher.Calls.Should().Be(1);
+
+        var stored = await _testDb.Context.CampaignScenes.AsNoTracking()
+            .SingleAsync(s => s.Id == created[0].Id);
+        stored.ImageUrl.Should().BeNull();
+        stored.ImageContent.Should().BeEquivalentTo(_fetcher.Content);
+
+        await _sut.GetMasterImageAsync(_campaignId, created[0].Id);
+        _fetcher.Calls.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Create_FromUrl_FetcherFails_Throws()
+    {
+        _fetcher.Error = new DomainException(DomainMessages.SceneImageLinkFailed);
+
+        var act = () => _sut.CreateAsync(
+            _campaignId, "Quebrada", nameof(SceneKind.Item), "https://cdn.example/gone.png", null);
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SceneImageLinkFailed);
+        (await _testDb.Context.CampaignScenes.CountAsync()).Should().Be(0);
+    }
+
+    private static byte[] PngBytes() =>
+    [
+        0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
+        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
+    ];
+
+    private sealed class FakeSceneImageFetcher : ISceneImageFetcher
+    {
+        public byte[]? Content { get; set; }
+        public Exception? Error { get; set; }
+        public int Calls { get; private set; }
+
+        public Task<SceneImageFile> FetchAsync(string url, CancellationToken ct = default)
+        {
+            Calls++;
+            if (Error is not null)
+            {
+                throw Error;
+            }
+
+            var content = Content ?? PngBytes();
+            return Task.FromResult(new SceneImageFile(content, SheetRules.PngContentType));
+        }
     }
 }

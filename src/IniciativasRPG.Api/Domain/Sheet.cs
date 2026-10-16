@@ -6,6 +6,8 @@ public class Sheet
     public Guid CampaignId { get; set; }
     public Campaign Campaign { get; set; } = null!;
     public string Name { get; set; } = string.Empty;
+    /// <summary>Quem joga este personagem. Só em fichas do tipo player; vazio é permitido.</summary>
+    public string? PlayerName { get; set; }
     public string? ImageUrl { get; set; }
     /// <summary>Ponto de foco horizontal da imagem (0–100). Default 50 = centro.</summary>
     public double ImageFocusX { get; set; } = 50;

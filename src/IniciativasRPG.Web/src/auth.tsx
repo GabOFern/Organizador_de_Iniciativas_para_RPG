@@ -35,7 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.getItem(config.authCampaignTokenKey),
   );
 
-  setTokenProvider(() => token);
+  // Visão pública nunca envia JWT — mesmo com sessão de mestre no sessionStorage
+  // (ex.: mesmo browser / mesma origem do túnel).
+  setTokenProvider(() =>
+    typeof window !== 'undefined' && window.location.pathname.startsWith('/publico/')
+      ? null
+      : token,
+  );
 
   const loginCampaign = useCallback(async (id: string, password: string) => {
     const result = await api.masterLogin(id, password);

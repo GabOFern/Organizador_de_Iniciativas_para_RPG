@@ -69,6 +69,7 @@ public class SheetService : ISheetService
             Id = Guid.NewGuid(),
             CampaignId = campaignId,
             Name = request.Name.Trim(),
+            PlayerName = NormalizePlayerName(request.Type, request.PlayerName),
             ImageUrl = NormalizeImageUrl(request.ImageUrl),
             ImageFocusX = ClampFocus(request.ImageFocusX),
             ImageFocusY = ClampFocus(request.ImageFocusY),
@@ -127,6 +128,7 @@ public class SheetService : ISheetService
         var charisma = AbilityScores.Clamp(request.Charisma);
 
         sheet.Name = request.Name.Trim();
+        sheet.PlayerName = NormalizePlayerName(request.Type, request.PlayerName);
         sheet.ImageUrl = NormalizeImageUrl(request.ImageUrl);
         if (sheet.ImageUrl is not null)
         {
@@ -519,7 +521,29 @@ public class SheetService : ISheetService
         sheet.Attacks.OrderBy(a => a.SortOrder).Select(MapAttack).ToList(),
         sheet.Spells.OrderBy(s => s.SortOrder).Select(MapSpell).ToList(),
         sheet.Weapons.OrderBy(w => w.SortOrder).Select(MapWeapon).ToList(),
-        hasStoredImage);
+        hasStoredImage,
+        sheet.PlayerName);
+
+    private static string? NormalizePlayerName(SheetType type, string? playerName)
+    {
+        if (type != SheetType.Player)
+        {
+            return null;
+        }
+
+        var trimmed = playerName?.Trim() ?? string.Empty;
+        if (trimmed.Length == 0)
+        {
+            return null;
+        }
+
+        if (trimmed.Length > SheetRules.MaxPlayerNameLength)
+        {
+            throw new DomainException(DomainMessages.SheetPlayerNameTooLong);
+        }
+
+        return trimmed;
+    }
 
     internal static SheetFeatureDto MapFeature(SheetFeature feature) =>
         new(feature.Id, feature.Kind.ToString(), feature.Title, feature.Text, feature.SortOrder);
