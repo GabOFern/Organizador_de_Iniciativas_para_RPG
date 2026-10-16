@@ -1591,6 +1591,10 @@ a.button-link {
   }
 }
 
+.scene-editor-backdrop {
+  z-index: 55;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;

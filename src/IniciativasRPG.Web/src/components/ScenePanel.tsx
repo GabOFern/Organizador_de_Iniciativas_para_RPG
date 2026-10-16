@@ -8,6 +8,9 @@ import {
   config,
   sceneCancelEditLabel,
   sceneEditLabel,
+  sceneEditorCloseLabel,
+  sceneEditorHeading,
+  sceneEditorSubmitLabel,
   sceneEmptyMessage,
   sceneFilterAllLabel,
   sceneFilterKindLabel,
@@ -18,15 +21,14 @@ import {
   sceneImageSourceRequired,
   sceneImageUrlInvalid,
   sceneImageUrlMaxLength,
-  sceneIncludeLabel,
   sceneKindDisplayLabel,
   sceneKindLabel,
   sceneKindOptions,
   sceneKindRequired,
   sceneKindUncategorizedLabel,
+  sceneNewLabel,
   sceneLauncherAriaLabel,
   sceneLauncherLabel,
-  sceneSaveLabel,
   sceneTitleMaxLength,
   sceneTitleRequired,
   sceneTitleTooLong,
@@ -112,6 +114,7 @@ export function ScenePanel({
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState<CampaignScene | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorOpen, setEditorOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [kind, setKind] = useState<AssignableKind | ''>('');
   const [imageUrl, setImageUrl] = useState('');
@@ -148,12 +151,19 @@ export function ScenePanel({
   }
 
   function resetForm() {
+    setEditorOpen(false);
     setEditingId(null);
     setTitle('');
     setKind('');
     setImageUrl('');
     setFile(null);
     setFileKey((key) => key + 1);
+  }
+
+  function openCreate() {
+    resetForm();
+    setEditorOpen(true);
+    setError(null);
   }
 
   function startEdit(scene: CampaignScene) {
@@ -165,6 +175,12 @@ export function ScenePanel({
     setImageUrl('');
     setFile(null);
     setFileKey((key) => key + 1);
+    setEditorOpen(true);
+    setError(null);
+  }
+
+  function closeEditor() {
+    resetForm();
     setError(null);
   }
 
@@ -225,12 +241,16 @@ export function ScenePanel({
         setFocused(null);
         return;
       }
+      if (editorOpen) {
+        closeEditor();
+        return;
+      }
       if (open) setOpen(false);
     }
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [focused, open]);
+  }, [focused, editorOpen, open]);
 
   function validateForm(requireImage: boolean): {
     trimmedTitle: string;
@@ -379,7 +399,13 @@ export function ScenePanel({
             </button>
           </div>
 
-          {error && <p className="error">{error}</p>}
+          {error && !editorOpen && <p className="error">{error}</p>}
+
+          {canEdit && (
+            <button type="button" disabled={busy} onClick={openCreate}>
+              {sceneNewLabel}
+            </button>
+          )}
 
           {canEdit && scenes.length > 0 && (
             <div className="scene-filters">
@@ -480,7 +506,34 @@ export function ScenePanel({
             </ul>
           )}
 
-          {canEdit && (
+        </aside>
+      )}
+
+      {canEdit && editorOpen && (
+        <div
+          className="modal-backdrop scene-editor-backdrop"
+          role="presentation"
+          onClick={closeEditor}
+        >
+          <div
+            className="modal-panel panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="modal-header">
+              <h2 id={titleId}>{sceneEditorHeading(editingId !== null)}</h2>
+              <button
+                type="button"
+                className="ghost"
+                onClick={closeEditor}
+                aria-label={sceneEditorCloseLabel}
+              >
+                Fechar
+              </button>
+            </header>
+            {error && <p className="error">{error}</p>}
             <form
               className="scene-form"
               onSubmit={(event) => {
@@ -488,10 +541,10 @@ export function ScenePanel({
                 void submitForm();
               }}
             >
-              <label htmlFor={titleId}>
+              <label htmlFor={`${titleId}-field`}>
                 Título
                 <input
-                  id={titleId}
+                  id={`${titleId}-field`}
                   value={title}
                   maxLength={sceneTitleMaxLength}
                   onChange={(event) => setTitle(event.target.value)}
@@ -537,25 +590,20 @@ export function ScenePanel({
               </label>
               <div className="scene-form-actions">
                 <button type="submit" disabled={busy}>
-                  {editingId ? sceneSaveLabel : sceneIncludeLabel}
+                  {sceneEditorSubmitLabel(editingId !== null)}
                 </button>
-                {editingId && (
-                  <button
-                    type="button"
-                    className="ghost"
-                    disabled={busy}
-                    onClick={() => {
-                      resetForm();
-                      setError(null);
-                    }}
-                  >
-                    {sceneCancelEditLabel}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="ghost"
+                  disabled={busy}
+                  onClick={closeEditor}
+                >
+                  {sceneCancelEditLabel}
+                </button>
               </div>
             </form>
-          )}
-        </aside>
+          </div>
+        </div>
       )}
 
       {focused && <SceneLightbox scene={focused} onClose={() => setFocused(null)} />}

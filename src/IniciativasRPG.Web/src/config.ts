@@ -154,10 +154,21 @@ export const sceneFilterNameLabel = 'Filtrar por nome';
 export const sceneFilterKindLabel = 'Filtrar por tipo';
 export const sceneFilterAllLabel = 'Todos';
 export const sceneKindUncategorizedLabel = 'Sem tipo';
+export const sceneNewLabel = 'Nova imagem';
+export const sceneEditDialogLabel = 'Editar imagem';
 export const sceneEditLabel = 'Editar';
 export const sceneSaveLabel = 'Salvar';
 export const sceneCancelEditLabel = 'Cancelar';
 export const sceneIncludeLabel = 'Incluir';
+export const sceneEditorCloseLabel = 'Fechar formulário';
+
+export function sceneEditorHeading(isEdit: boolean) {
+  return isEdit ? sceneEditDialogLabel : sceneNewLabel;
+}
+
+export function sceneEditorSubmitLabel(isEdit: boolean) {
+  return isEdit ? sceneSaveLabel : sceneIncludeLabel;
+}
 export const sceneKindOptions = [
   { value: 'Item' as const, label: 'Item' },
   { value: 'Npc' as const, label: 'NPC' },

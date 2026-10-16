@@ -30,16 +30,9 @@ A aba vazia diz “Nenhuma imagem nesta sessão.”
 
 Um botão **Fechar** na aba esconde a lista e deixa só o botão da borda.
 
-Clicar na miniatura ou no título abre a imagem na tela inteira, no computador e no celular. A imagem cabe na viewport (`object-fit: contain`) sobre um fundo escuro. Um botão **Fechar imagem**, com área de toque de pelo menos 44px, volta para a tela de baixo. A aba lateral permanece como estava. No teclado, Escape fecha primeiro a imagem aberta e, se não houver imagem aberta, fecha a aba.
+Clicar na miniatura ou no título abre a imagem na tela inteira, no computador e no celular. A imagem cabe na viewport (`object-fit: contain`) sobre um fundo escuro. Um botão **Fechar imagem**, com área de toque de pelo menos 44px, volta para a tela de baixo. A aba lateral permanece como estava. No teclado, Escape fecha primeiro a imagem aberta, depois o modal de cadastro e, por último, a aba.
 
-No mestre, a mesma aba também inclui o cadastro:
-
-- título
-- URL da imagem ou arquivo do computador (`jpeg`, `png`, `webp` ou `gif`)
-- botão para incluir
-- botão para remover cada item
-
-Os dois campos de imagem ficam visíveis. A inclusão exige o título e exatamente uma origem: URL preenchida ou arquivo escolhido.
+No mestre, o cadastro não fica no fim da lista. O botão **Nova imagem** fica no topo da aba e abre um modal, o mesmo usado por **Editar**, como em [modal-imagem.md](modal-imagem.md). Os campos continuam título, tipo e URL ou arquivo (`jpeg`, `png`, `webp` ou `gif`). A inclusão exige o título, o tipo e exatamente uma origem. Cada item da lista ainda tem o botão de remover.
 
 O jogador não vê esses controles. O mestre pode abrir a imagem do mesmo jeito, para conferir o que os jogadores verão.
 
