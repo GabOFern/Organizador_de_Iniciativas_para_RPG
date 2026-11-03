@@ -109,3 +109,23 @@ describe('iniciar.bat', () => {
   });
 });
 
+describe('bkpenv.env', () => {
+  it('BkpenvEnv_NaoDeveExistir', () => {
+    const webRoot = path.join(repoRoot, 'src', 'IniciativasRPG.Web');
+    const skip = new Set(['node_modules', 'dist', 'dist-ssr']);
+    const found: string[] = [];
+
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (skip.has(entry.name)) continue;
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (entry.name === 'bkpenv.env') found.push(path.relative(webRoot, full));
+      }
+    };
+
+    walk(webRoot);
+    expect(found).toEqual([]);
+  });
+});
+

@@ -36,7 +36,6 @@ Copie de [`.env.example`](../src/IniciativasRPG.Web/.env.example). Variáveis `V
 | `Jwt:Key` | string ≥ 32 chars | Assinatura do JWT (obrigatório). |
 | `Jwt:Issuer` / `Jwt:Audience` | `IniciativasRPG` / `IniciativasRPG.Web` | Validação do token. |
 | `Cors:AllowedOrigins` | `https://app.seudominio.com` | Origins do browser que podem chamar a API (com credentials). |
-| `CampaignSeed:Password` | senha | Senha da campanha seed (dev). |
 | `ConnectionStrings:Default` | `Data Source=iniciativasrpg.db` | SQLite. |
 | `Admin:Username` / `Admin:Password` | opcional | Seed de usuário admin legado. |
 
@@ -47,7 +46,6 @@ No ASP.NET Core, env vars usam `__` no lugar de `:`:
 export Jwt__Key="sua-chave-longa-aleatoria-min-32"
 export Cors__AllowedOrigins__0="https://app.seudominio.com"
 export Cors__AllowedOrigins__1="https://outro-front.example"
-export CampaignSeed__Password="..."
 ```
 
 PowerShell (sessão atual):
@@ -56,6 +54,14 @@ PowerShell (sessão atual):
 $env:Jwt__Key = "sua-chave-longa-aleatoria-min-32"
 $env:Cors__AllowedOrigins__0 = "https://abc123.ngrok-free.app"
 ```
+
+## CORS neste projeto
+
+No fluxo padrão (`iniciar.bat /publico`) o túnel aponta só para o Vite (`:5173`) e `VITE_API_BASE_URL` / `VITE_HUB_URL` ficam vazios. O browser fala com a origem do túnel; `/api` e `/hubs` são same-origin pelo proxy. **Não altere** `Cors:AllowedOrigins` nem `AllowedHosts`.
+
+`AllowedHosts: "*"` em [`appsettings.json`](../src/IniciativasRPG.Api/appsettings.json) é intencional: a API escuta só em localhost e o host do Quick Tunnel muda a cada execução. Restringir hosts quebraria esse fluxo sem ganho neste modelo.
+
+Acrescente origins em `Cors:AllowedOrigins` só quando o browser chamar a API em **outra origem** (cenários 2b e 3: front sem proxy, dois túneis ou build estático com `VITE_API_BASE_URL` na API pública).
 
 ## Cenários
 

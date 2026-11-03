@@ -8,6 +8,7 @@ import {
   lineupRemoveMemberLabel,
   lineupRollLabel,
   invokeLineupLabel,
+  scenesLoadFailedMessage,
   resolveApiUrl,
 } from '../config';
 import { lineupInitiativeNotation, lineupRowsReady } from '../lineupInvoke';
@@ -46,7 +47,7 @@ export function InvokeSceneModal({ open, onClose, onInvoke }: InvokeSceneModalPr
     void api
       .listLineups()
       .then(setLineups)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Falha ao carregar cenas.'));
+      .catch((err) => setError(err instanceof ApiError ? err.message : scenesLoadFailedMessage));
   }, [open]);
 
   useEffect(() => {

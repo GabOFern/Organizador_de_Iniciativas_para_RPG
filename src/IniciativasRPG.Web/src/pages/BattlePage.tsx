@@ -7,6 +7,7 @@ import { InvokeModal, type InvokePayload } from '../components/InvokeModal';
 import { InvokeSceneModal } from '../components/InvokeSceneModal';
 import { InvokeSplit } from '../components/InvokeSplit';
 import { TacticalPanel } from '../components/TacticalPanel';
+import { battleLoadFailedMessage, invokeFailedMessage } from '../config';
 import { shouldRunTestBattleTicks, TEST_BATTLE_TICK_MS } from '../demoBattle';
 import { useBattleHub } from '../hooks/useBattleHub';
 import { useCombatantViewPrefs } from '../hooks/useCombatantViewPrefs';
@@ -77,7 +78,7 @@ export function BattlePage() {
         setModifierTypes(types);
         setShareOrigin(origin);
       } catch (err) {
-        setError(err instanceof ApiError ? err.message : 'Falha ao carregar batalha.');
+        setError(err instanceof ApiError ? err.message : battleLoadFailedMessage);
       }
     })();
   }, []);
@@ -212,7 +213,7 @@ export function BattlePage() {
         }),
       );
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : 'Falha ao invocar.';
+      const message = err instanceof ApiError ? err.message : invokeFailedMessage;
       setError(message);
       throw err instanceof Error ? err : new Error(message);
     }

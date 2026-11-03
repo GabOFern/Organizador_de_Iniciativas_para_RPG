@@ -2,7 +2,7 @@ import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from './auth';
 import { ScenePanel } from './components/ScenePanel';
 import { ThemePicker } from './components/ThemePicker';
-import { lineupsNavLabel, routes } from './config';
+import { appBrandName, lineupsNavLabel, routes } from './config';
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -19,7 +19,7 @@ export function MestreLayout() {
     <div className="mestre-shell">
       <header className="mestre-header">
         <div className="mestre-brand">
-          <div className="mestre-brand-name">Iniciativas RPG</div>
+          <div className="mestre-brand-name">{appBrandName}</div>
           <span className="muted">Campanha: {campaignName}</span>
         </div>
         <nav className="mestre-nav">

@@ -53,6 +53,17 @@ public class SheetRulesTests
     }
 
     [Fact]
+    public void SheetRules_MaxNameLength_MatchesExpected()
+    {
+        SheetRules.MaxNameLength.Should().Be(200);
+        SheetRules.MaxResistancesLength.Should().Be(4000);
+        SheetRules.MaxSpellSlotLevel.Should().Be(9);
+        SheetRules.MinSpellSlotLevel.Should().Be(0);
+        SheetRules.ImageFocusMin.Should().Be(0);
+        SheetRules.ImageFocusMax.Should().Be(100);
+    }
+
+    [Fact]
     public void ImageScaleDefaults_AreConsistent()
     {
         SheetRules.ImageScaleDefault.Should().Be(1);

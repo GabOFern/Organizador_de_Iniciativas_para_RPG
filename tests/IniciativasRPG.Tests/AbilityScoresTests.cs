@@ -5,6 +5,16 @@ namespace IniciativasRPG.Tests;
 
 public class AbilityScoresTests
 {
+    [Fact]
+    public void AbilityScores_Modifier_UsesDefaultScore()
+    {
+        AbilityScores.DefaultScore.Should().Be(10);
+        AbilityScores.Modifier(10).Should().Be(0);
+        AbilityScores.Modifier(AbilityScores.DefaultScore).Should().Be(0);
+        AbilityScores.Modifier(12).Should().Be(1);
+        AbilityScores.Modifier(AbilityScores.DefaultScore + 2).Should().Be(1);
+    }
+
     [Theory]
     [InlineData(10, 0)]
     [InlineData(1, -5)]

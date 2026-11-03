@@ -34,6 +34,11 @@ export const campaignsLoadMaxConsecutiveFailures = 3;
 export const campaignsLoadingMessage = 'Carregando dados…';
 export const campaignsLoadFailedMessage = 'Falha ao carregar campanhas.';
 export const requestFailedMessage = 'Falha na requisição.';
+export const appBrandName = 'Iniciativas RPG';
+export const battleLoadFailedMessage = 'Falha ao carregar batalha.';
+export const invokeFailedMessage = 'Falha ao invocar.';
+export const scenesLoadFailedMessage = 'Falha ao carregar cenas.';
+export const noPublicBattleMessage = 'Não há combate em andamento.';
 
 export const sheetFilterNameLabel = 'Filtrar por nome';
 export const sheetFilterCategoryLabel = 'Filtrar por categoria';
@@ -114,6 +119,15 @@ export const abilityLabels: Record<(typeof abilityNames)[number], string> = {
   Charisma: 'Carisma',
 };
 
+/** Espelho numérico de AbilityScores.MinScore / MaxScore / DefaultScore. */
+export const abilityScoreMin = 1;
+export const abilityScoreMax = 30;
+export const abilityScoreDefault = 10;
+
+/** Espelho numérico de SheetRules.MinSpellSlotLevel / MaxSpellSlotLevel. */
+export const spellSlotMin = 0;
+export const spellSlotMax = 9;
+
 export const defaultProficiencyBonus = 2;
 
 export const sheetImageUrlMaxLength = 1000;
@@ -135,6 +149,9 @@ export const sheetImageScaleMax = 4;
 export const sheetImageScaleStep = 1.25;
 /** Um notch típico da roda (deltaY 100) equivale a um passo de zoom. */
 export const sheetImageScaleWheelDivisor = 100;
+/** Espelho numérico de SheetRules.ImageFocusMin / ImageFocusMax. */
+export const sheetImageFocusMin = 0;
+export const sheetImageFocusMax = 100;
 export const sheetImageFocusCenter = 50;
 export const sceneTitleMaxLength = 120;
 export const sceneImageUrlMaxLength = sheetImageUrlMaxLength;

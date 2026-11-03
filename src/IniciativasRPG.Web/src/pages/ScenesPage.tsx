@@ -13,6 +13,7 @@ import {
   lineupNeedsMembers,
   lineupNewHeading,
   lineupSaveLabel,
+  scenesLoadFailedMessage,
   lineupQuantityDecreaseLabel,
   lineupQuantityFieldLabel,
   lineupQuantityIncreaseLabel,
@@ -47,7 +48,7 @@ export function ScenesPage() {
 
   useEffect(() => {
     void load().catch((err) =>
-      setError(err instanceof ApiError ? err.message : 'Falha ao carregar cenas.'),
+      setError(err instanceof ApiError ? err.message : scenesLoadFailedMessage),
     );
   }, []);
 

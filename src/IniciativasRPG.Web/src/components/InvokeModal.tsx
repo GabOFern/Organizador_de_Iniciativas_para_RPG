@@ -1,4 +1,5 @@
 import { useEffect, useId, useState, type FormEvent } from 'react';
+import { invokeFailedMessage } from '../config';
 import type { Sheet, SheetType } from '../types';
 
 export interface InvokePayload {
@@ -105,7 +106,7 @@ export function InvokeModal({ open, sheets, onClose, onInvoke }: InvokeModalProp
       });
       onClose();
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : 'Falha ao invocar.');
+      setLocalError(err instanceof Error ? err.message : invokeFailedMessage);
     } finally {
       setSubmitting(false);
     }

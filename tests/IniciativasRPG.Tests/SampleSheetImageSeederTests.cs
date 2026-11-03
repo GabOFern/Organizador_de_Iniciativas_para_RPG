@@ -38,7 +38,23 @@ public class SampleSheetImageSeederTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Apply_CampaignCreature_GetsMatchingLocalArt()
+    public async Task Apply_CampaignCreatureWithoutImage_DoesNotSeedCampaignArt()
+    {
+        SampleSeedArt.TryLoad("banshee.jpg", out _, out _).Should().BeTrue();
+        AddSheet("Banshee");
+        await _testDb.Context.SaveChangesAsync();
+
+        await SampleSheetImageSeeder.ApplyAsync(_testDb.Context);
+
+        var banshee = await _testDb.Context.Sheets
+            .Include(s => s.Image)
+            .SingleAsync(s => s.Name == "Banshee");
+        banshee.Image.Should().BeNull();
+        banshee.ImageUrl.Should().BeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task Apply_CampaignCreatureWithLegacyUrl_ClearsUrlWithoutSeedingArt()
     {
         SampleSeedArt.TryLoad("banshee.jpg", out _, out _).Should().BeTrue();
         AddSheet("Banshee", SampleSheetImageUrls.LegacyCatalogUrls[2]);
@@ -49,8 +65,7 @@ public class SampleSheetImageSeederTests : IAsyncDisposable
         var banshee = await _testDb.Context.Sheets
             .Include(s => s.Image)
             .SingleAsync(s => s.Name == "Banshee");
-        banshee.Image.Should().NotBeNull();
-        banshee.Image!.Content.Should().NotBeEmpty();
+        banshee.Image.Should().BeNull();
         banshee.ImageUrl.Should().BeNull();
     }
 
@@ -89,7 +104,7 @@ public class SampleSheetImageSeederTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task Apply_SampleWithoutImage_AttachesLocalArt()
+    public async Task Apply_SampleNpcWithoutImage_StillSeedsArt()
     {
         SampleSeedArt.TryLoad("goblin.jpg", out _, out _).Should().BeTrue();
         AddSheet("Goblin");

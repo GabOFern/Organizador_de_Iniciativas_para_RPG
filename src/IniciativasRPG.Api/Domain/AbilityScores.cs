@@ -7,7 +7,7 @@ public static class AbilityScores
     public const int MaxScore = 30;
 
     public static int Modifier(int score) =>
-        (int)Math.Floor((Clamp(score) - 10) / 2.0);
+        (int)Math.Floor((Clamp(score) - DefaultScore) / 2.0);
 
     public static int Clamp(int score) =>
         Math.Clamp(score, MinScore, MaxScore);

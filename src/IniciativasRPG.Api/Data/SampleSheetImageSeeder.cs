@@ -5,10 +5,9 @@ namespace IniciativasRPG.Api.Data;
 
 /// <summary>
 /// Atualiza imagens no banco (sem migration):
-/// - 6 exemplos: arte local se ainda não tiverem binário;
-/// - demais fichas do catálogo de campanha: arte correta da criatura;
-/// - remove URLs genéricas erradas do seed antigo;
-/// - não toca Lysander, Sammy, Falsa Hidra, Foco da Canção.
+/// - 6 exemplos: arte local se ainda não tiverem binário próprio ou só URL legada;
+/// - remove URLs genéricas erradas do seed antigo em qualquer ficha;
+/// - não grava arte do catálogo de campanha.
 /// </summary>
 public static class SampleSheetImageSeeder
 {
@@ -24,24 +23,8 @@ public static class SampleSheetImageSeeder
 
         foreach (var sheet in sheets)
         {
-            if (CampaignSheetArtCatalog.ShouldSkip(sheet.Name))
+            if (!sampleArt.TryGetValue(sheet.Name, out var artFile))
             {
-                continue;
-            }
-
-            string? artFile = null;
-            if (sampleArt.TryGetValue(sheet.Name, out var sampleFile))
-            {
-                artFile = sampleFile;
-            }
-            else if (CampaignSheetArtCatalog.TryGetArtFile(sheet.Name, out var campaignFile))
-            {
-                artFile = campaignFile;
-            }
-
-            if (artFile is null)
-            {
-                // Fora dos catálogos: só limpa URL legada errada.
                 if (SampleSheetImageUrls.IsLegacyCatalogUrl(sheet.ImageUrl))
                 {
                     sheet.ImageUrl = null;

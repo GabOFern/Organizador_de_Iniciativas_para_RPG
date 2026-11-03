@@ -1,3 +1,5 @@
+import { characterClassLabels } from './config';
+
 /** Temas UI (FR-033): padrão + 12 classes. Independente da classe da ficha (FR-034). */
 export const uiThemes = [
   'Default',
@@ -17,20 +19,21 @@ export const uiThemes = [
 
 export type UiTheme = (typeof uiThemes)[number];
 
+type ClassTheme = Exclude<UiTheme, 'Default'>;
+
+function classThemeLabels(): Record<ClassTheme, string> {
+  const labels = {} as Record<ClassTheme, string>;
+  for (const theme of uiThemes) {
+    if (theme === 'Default') continue;
+    labels[theme] = characterClassLabels[theme];
+  }
+  return labels;
+}
+
+/** Labels de classe vêm de characterClassLabels; Default é só o tema padrão. */
 export const uiThemeLabels: Record<UiTheme, string> = {
   Default: 'Padrão',
-  Barbarian: 'Bárbaro',
-  Bard: 'Bardo',
-  Cleric: 'Clérigo',
-  Druid: 'Druida',
-  Fighter: 'Guerreiro',
-  Monk: 'Monge',
-  Paladin: 'Paladino',
-  Ranger: 'Patrulheiro',
-  Rogue: 'Ladino',
-  Sorcerer: 'Feiticeiro',
-  Warlock: 'Bruxo',
-  Wizard: 'Mago',
+  ...classThemeLabels(),
 };
 
 export function isUiTheme(value: string | null | undefined): value is UiTheme {

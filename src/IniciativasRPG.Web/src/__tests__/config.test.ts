@@ -7,7 +7,15 @@ import {
   sheetFeatureTextLimit,
   sheetFeatureTextMaxLength,
   sheetAnnotationTextMaxLength,
+  appBrandName,
+  battleLoadFailedMessage,
+  invokeFailedMessage,
+  scenesLoadFailedMessage,
+  noPublicBattleMessage,
+  characterClasses,
+  characterClassLabels,
 } from '../config';
+import { uiThemeLabels, uiThemes } from '../themes';
 
 describe('formatModifier', () => {
   it('positivo inclui +', () => {
@@ -83,5 +91,26 @@ describe('sheetFeatureTextLimit', () => {
 
   it('Note retorna limite padrão', () => {
     expect(sheetFeatureTextLimit('Note')).toBe(sheetFeatureTextMaxLength);
+  });
+});
+
+describe('mensagens de UI', () => {
+  it('exporta marca e falhas centralizadas', () => {
+    expect(appBrandName).toBe('Iniciativas RPG');
+    expect(battleLoadFailedMessage).toBe('Falha ao carregar batalha.');
+    expect(invokeFailedMessage).toBe('Falha ao invocar.');
+    expect(scenesLoadFailedMessage).toBe('Falha ao carregar cenas.');
+    expect(noPublicBattleMessage).toBe('Não há combate em andamento.');
+  });
+});
+
+describe('labels de classe', () => {
+  it('temas de classe coincidem com characterClassLabels', () => {
+    const classKeys = characterClasses.filter((name) => name !== 'None');
+    const themeClassKeys = uiThemes.filter((theme) => theme !== 'Default');
+    expect([...themeClassKeys]).toEqual([...classKeys]);
+    for (const key of classKeys) {
+      expect(uiThemeLabels[key]).toBe(characterClassLabels[key]);
+    }
   });
 });

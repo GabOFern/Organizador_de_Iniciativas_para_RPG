@@ -5,6 +5,9 @@ import { MarkdownText } from '../components/MarkdownText';
 import {
   abilityLabels,
   abilityNames,
+  abilityScoreDefault,
+  abilityScoreMax,
+  abilityScoreMin,
   characterClassLabels,
   characterClasses,
   defaultProficiencyBonus,
@@ -25,6 +28,8 @@ import {
   sheetRepositoryEmptyMessage,
   sheetTypeLabels,
   sheetPlayerNameMaxLength,
+  spellSlotMax,
+  spellSlotMin,
   sheetPlayerNameTooLong,
   sheetDeletedMessage,
   sheetDeleteFailedMessage,
@@ -46,7 +51,7 @@ import type {
 } from '../types';
 
 function abilityMod(score: number) {
-  return Math.floor((score - 10) / 2);
+  return Math.floor((score - abilityScoreDefault) / 2);
 }
 
 function formAbilityMods(form: {
@@ -529,8 +534,8 @@ export function SheetsPage() {
                 {label} <span className="muted">({formatMod(form[key])})</span>
                 <input
                   type="number"
-                  min={1}
-                  max={30}
+                  min={abilityScoreMin}
+                  max={abilityScoreMax}
                   value={form[key]}
                   onChange={(e) => {
                     const value = Number(e.target.value);
@@ -808,11 +813,11 @@ export function SheetsPage() {
                   />
                 </label>
                 <label>
-                  Slot (0–9)
+                  Slot ({spellSlotMin}–{spellSlotMax})
                   <input
                     type="number"
-                    min={0}
-                    max={9}
+                    min={spellSlotMin}
+                    max={spellSlotMax}
                     value={spell.slotLevel}
                     onChange={(e) =>
                       setForm((f) => {

@@ -18,6 +18,16 @@ public static class SheetRules
     public const int WebpQualityFloor = 80;
     public const int MaxImageRequestBytes = MaxImageUploadBytes;
     public const int MaxImageContentTypeLength = 32;
+    public const int MaxNameLength = 200;
+    public const int MaxResistancesLength = 4000;
+    public const int MaxEnumStringLength = 20;
+    public const int MaxAttackDescriptionLength = 500;
+    public const int MaxDiceExpressionLength = 40;
+    public const int MaxWeaponRangeLength = 80;
+    public const int MinSpellSlotLevel = 0;
+    public const int MaxSpellSlotLevel = 9;
+    public const double ImageFocusMin = 0;
+    public const double ImageFocusMax = 100;
 
     public const string JpegContentType = "image/jpeg";
     public const string PngContentType = "image/png";

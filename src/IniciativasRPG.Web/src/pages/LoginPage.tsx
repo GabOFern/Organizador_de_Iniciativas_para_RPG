@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ApiError } from '../api';
 import { useAuth } from '../auth';
-import { routes } from '../config';
+import { appBrandName, routes } from '../config';
 
 export function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -34,7 +34,7 @@ export function LoginPage() {
       <div className="login-hero">
         <div className="brand-mark">
           <div className="brand-ornament" aria-hidden />
-          <h1 className="brand-title">Iniciativas RPG</h1>
+          <h1 className="brand-title">{appBrandName}</h1>
           <p className="brand-subtitle">A mesa do mestre aguarda</p>
           <div className="brand-ornament" aria-hidden />
         </div>

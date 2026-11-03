@@ -118,8 +118,8 @@ public class SheetServiceTests : IAsyncDisposable
 
         var result = await _sut.CreateAsync(_campaignId, request);
 
-        result.ImageFocusX.Should().Be(0);
-        result.ImageFocusY.Should().Be(100);
+        result.ImageFocusX.Should().Be(SheetRules.ImageFocusMin);
+        result.ImageFocusY.Should().Be(SheetRules.ImageFocusMax);
         result.ImageScale.Should().Be(SheetRules.ImageScaleMax);
     }
 
@@ -486,13 +486,28 @@ public class SheetServiceTests : IAsyncDisposable
     {
         var request = ValidCreateRequest() with
         {
-            Spells = [new("Bola de fogo", "8d6", 10, false, AbilityName.Intelligence)]
+            Spells = [new("Bola de fogo", "8d6", SheetRules.MaxSpellSlotLevel + 1, false, AbilityName.Intelligence)]
         };
 
         var act = () => _sut.CreateAsync(_campaignId, request);
 
         (await act.Should().ThrowAsync<DomainException>())
             .WithMessage(DomainMessages.InvalidSpellSlot);
+    }
+
+    [Fact]
+    public async Task Create_SpellWithMaxSlot_PersistsSpell()
+    {
+        var request = ValidCreateRequest() with
+        {
+            Spells = [new("Truque maior", null, SheetRules.MaxSpellSlotLevel, false, AbilityName.Intelligence)]
+        };
+
+        var result = await _sut.CreateAsync(_campaignId, request);
+
+        result.Spells.Should().ContainSingle();
+        result.Spells[0].SlotLevel.Should().Be(SheetRules.MaxSpellSlotLevel);
+        result.Spells[0].Description.Should().Be("Truque maior");
     }
 
     [Fact]

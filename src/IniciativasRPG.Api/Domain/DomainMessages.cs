@@ -65,8 +65,7 @@ public static class DomainMessages
     public static readonly string SceneCampaignFull =
         $"Esta campanha já tem {SceneRules.MaxScenesPerCampaign} imagens.";
     public const string SceneNotFound = "Imagem não encontrada.";
-    public const string DemoBattleSheetsMissing =
-        "Não foi possível iniciar a batalha teste: faltam as fichas Guarda Veterano, Goblin e Lobo nesta campanha.";
+    public static readonly string DemoBattleSheetsMissing = BuildDemoBattleSheetsMissing();
     public const string DemoBattleNotActive = "Não há batalha teste ativa para avançar.";
     public const string DemoBattleActorHasNoAttack = "O combatente do turno não possui ataques para simular.";
     public const string LineupNameRequired = "O nome da cena é obrigatório.";
@@ -80,4 +79,17 @@ public static class DomainMessages
     public const string LineupMembersMismatch = "A cena mudou. Abra de novo e confirme.";
     public const string LineupInvokeNeedsMembers = "Escolha ao menos uma ficha para invocar.";
     public const string LineupInitiativeRequired = "Informe a iniciativa ou escolha rolar o dado.";
+
+    private static string BuildDemoBattleSheetsMissing()
+    {
+        var names = DemoBattleRules.RequiredSheetNames;
+        var list = names.Count switch
+        {
+            0 => string.Empty,
+            1 => names[0],
+            _ => string.Join(", ", names.Take(names.Count - 1)) + " e " + names[^1],
+        };
+
+        return $"Não foi possível iniciar a batalha teste: faltam as fichas {list} nesta campanha.";
+    }
 }

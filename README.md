@@ -16,7 +16,6 @@ O mestre gerencia campanhas, fichas e combate; jogadores acompanham a batalha em
 ```bash
 cd src/IniciativasRPG.Api
 dotnet user-secrets set "Jwt:Key" "SUA_CHAVE_ALEATORIA_COM_PELO_MENOS_32_CHARS"
-dotnet user-secrets set "CampaignSeed:Password" "SuaSenhaDaCampanhaInicial"
 ```
 
 Opcional (seed de usuário admin legado, se ainda usado):

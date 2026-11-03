@@ -70,6 +70,7 @@ public class CampaignService : ICampaignService
 
         _db.Campaigns.Add(campaign);
         await _db.SaveChangesAsync(ct);
+        await SampleNpcSheetSeeder.ApplyForCampaignAsync(_db, campaign.Id, ct);
 
         return new CampaignSummaryDto(
             campaign.Id,

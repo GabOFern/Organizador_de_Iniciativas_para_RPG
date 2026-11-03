@@ -291,7 +291,7 @@ public class SheetService : ISheetService
                 throw new DomainException(DomainMessages.DescriptionRequired);
             }
 
-            if (item.SlotLevel is < 0 or > 9)
+            if (item.SlotLevel is < SheetRules.MinSpellSlotLevel or > SheetRules.MaxSpellSlotLevel)
             {
                 throw new DomainException(DomainMessages.InvalidSpellSlot);
             }
@@ -485,7 +485,8 @@ public class SheetService : ISheetService
         return trimmed;
     }
 
-    private static double ClampFocus(double value) => Math.Clamp(value, 0, 100);
+    private static double ClampFocus(double value) =>
+        Math.Clamp(value, SheetRules.ImageFocusMin, SheetRules.ImageFocusMax);
 
     private static double ClampScale(double value) =>
         Math.Clamp(value, SheetRules.ImageScaleMin, SheetRules.ImageScaleMax);

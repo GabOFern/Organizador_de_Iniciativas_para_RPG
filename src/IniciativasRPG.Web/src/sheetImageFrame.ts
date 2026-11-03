@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   sheetImageFocusCenter,
+  sheetImageFocusMax,
+  sheetImageFocusMin,
   sheetImageScaleDefault,
   sheetImageScaleMax,
   sheetImageScaleMin,
@@ -40,19 +42,19 @@ export function sheetImageBox(
   return {
     width,
     height,
-    left: ((frame.width - width) * focusX) / 100,
-    top: ((frame.height - height) * focusY) / 100,
+    left: ((frame.width - width) * focusX) / sheetImageFocusMax,
+    top: ((frame.height - height) * focusY) / sheetImageFocusMax,
   };
 }
 
 export function focusAfterDrag(origin: number, pixelDelta: number, frame: number, display: number) {
   const slack = frame - display;
   if (Math.abs(slack) < axisSlack) return origin;
-  return origin + (pixelDelta * 100) / slack;
+  return origin + (pixelDelta * sheetImageFocusMax) / slack;
 }
 
 export function clampFocus(value: number) {
-  return Math.min(100, Math.max(0, value));
+  return Math.min(sheetImageFocusMax, Math.max(sheetImageFocusMin, value));
 }
 
 export function isWholeImage(scale: number, whole: number, focusX: number, focusY: number) {

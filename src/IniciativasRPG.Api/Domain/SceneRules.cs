@@ -10,7 +10,7 @@ public static class SceneRules
     public const int MaxImageRequestBytes = SheetRules.MaxImageRequestBytes;
     public const int MaxImageContentTypeLength = 32;
     public const int ImageFetchTimeoutSeconds = 15;
-    public const int MaxKindLength = 20;
+    public const int MaxKindLength = SheetRules.MaxEnumStringLength;
 
     /// <summary>Novas imagens ficam ocultas aos jogadores até o mestre abrir o olho.</summary>
     public const bool VisibleToPlayersDefault = false;

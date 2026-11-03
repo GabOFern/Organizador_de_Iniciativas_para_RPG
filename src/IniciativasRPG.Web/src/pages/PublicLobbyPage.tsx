@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
-import { routes } from '../config';
+import { appBrandName, routes } from '../config';
 import type { PublicBattleSummary } from '../types';
 
 const POLL_MS = 5000;
@@ -59,7 +59,7 @@ export function PublicLobbyPage() {
     <main className="page public-page">
       <header className="public-header brand-mark">
         <div className="brand-ornament" aria-hidden />
-        <h1 className="brand-title">Iniciativas RPG</h1>
+        <h1 className="brand-title">{appBrandName}</h1>
         <p className="lede">Batalhas em andamento</p>
         <div className="brand-ornament" aria-hidden />
       </header>
