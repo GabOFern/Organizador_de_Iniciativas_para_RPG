@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { CombatantViewMode } from '../combatantView';
+import type { CombatantFocusMode, CombatantViewMode } from '../combatantView';
 import { clampItemsPerView } from '../combatantView';
 import {
   loadCombatantViewPrefs,
@@ -18,6 +18,7 @@ export function useCombatantViewPrefs(
         const next: CombatantViewPrefs = {
           mode: patch.mode ?? current.mode,
           itemsPerView: clampItemsPerView(patch.itemsPerView ?? current.itemsPerView),
+          focusMode: patch.focusMode ?? current.focusMode,
         };
         saveCombatantViewPrefs(next, storage);
         return next;
@@ -26,15 +27,17 @@ export function useCombatantViewPrefs(
     [storage],
   );
 
-  const setMode = useCallback(
-    (mode: CombatantViewMode) => update({ mode }),
-    [update],
-  );
+  const setMode = useCallback((mode: CombatantViewMode) => update({ mode }), [update]);
 
   const setItemsPerView = useCallback(
     (itemsPerView: number) => update({ itemsPerView }),
     [update],
   );
 
-  return { prefs, setMode, setItemsPerView };
+  const setFocusMode = useCallback(
+    (focusMode: CombatantFocusMode) => update({ focusMode }),
+    [update],
+  );
+
+  return { prefs, setMode, setItemsPerView, setFocusMode };
 }

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { combatantViewMaxItems, combatantViewMinItems } from '../config';
-import { clampItemsPerView, clampPage, pageCount, pageSlice } from '../combatantView';
+import {
+  clampItemsPerView,
+  clampPage,
+  findCurrentTurnIndex,
+  pageCount,
+  pageForCombatantIndex,
+  pageSlice,
+} from '../combatantView';
 
 describe('combatantView', () => {
   it('clampItemsPerView_AbaixoDoMinimo_RetornaMinimo', () => {
@@ -55,5 +62,65 @@ describe('combatantView', () => {
 
   it('clampPage_AcimaDoTotal_RetornaUltima', () => {
     expect(clampPage(8, 5, 2)).toBe(3);
+  });
+
+  it('findCurrentTurnIndex_ComTurnoVivo_RetornaIndice', () => {
+    expect(
+      findCurrentTurnIndex([
+        { isCurrentTurn: false, isDead: false },
+        { isCurrentTurn: true, isDead: false },
+      ]),
+    ).toBe(1);
+  });
+
+  it('findCurrentTurnIndex_TurnoMortoEOutroVivo_PrefereVivo', () => {
+    expect(
+      findCurrentTurnIndex([
+        { isCurrentTurn: true, isDead: true },
+        { isCurrentTurn: false },
+        { isCurrentTurn: true },
+      ]),
+    ).toBe(2);
+  });
+
+  it('findCurrentTurnIndex_DoisVivos_PrimeiroIndice', () => {
+    expect(
+      findCurrentTurnIndex([
+        { isCurrentTurn: true, isDead: false },
+        { isCurrentTurn: true, isDead: false },
+      ]),
+    ).toBe(0);
+  });
+
+  it('findCurrentTurnIndex_SoTurnoMorto_RetornaMenosUm', () => {
+    expect(
+      findCurrentTurnIndex([
+        { isCurrentTurn: false, isDead: true },
+        { isCurrentTurn: true, isDead: true },
+        { isCurrentTurn: true, isDead: true },
+      ]),
+    ).toBe(-1);
+  });
+
+  it('findCurrentTurnIndex_SemTurno_RetornaMenosUm', () => {
+    expect(findCurrentTurnIndex([])).toBe(-1);
+    expect(findCurrentTurnIndex([{ isCurrentTurn: false }, { isCurrentTurn: false }])).toBe(-1);
+  });
+
+  it('pageForCombatantIndex_IndiceNegativo_RetornaUm', () => {
+    expect(pageForCombatantIndex(-1, 3)).toBe(1);
+    expect(pageForCombatantIndex(Number.NaN, 2)).toBe(1);
+  });
+
+  it('pageForCombatantIndex_IndiceNaPagina_RetornaPagina', () => {
+    expect(pageForCombatantIndex(0, 2)).toBe(1);
+    expect(pageForCombatantIndex(1, 2)).toBe(1);
+    expect(pageForCombatantIndex(2, 2)).toBe(2);
+    expect(pageForCombatantIndex(5, 2)).toBe(3);
+  });
+
+  it('pageForCombatantIndex_ItemsPorViewForaDoLimite_UsaLimite', () => {
+    expect(pageForCombatantIndex(6, combatantViewMaxItems + 10)).toBe(2);
+    expect(pageForCombatantIndex(1, 0)).toBe(2);
   });
 });

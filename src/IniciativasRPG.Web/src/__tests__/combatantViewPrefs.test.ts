@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { CombatantFocusMode } from '../combatantView';
 import {
+  combatantViewDefaultFocusMode,
   combatantViewDefaultItems,
   combatantViewDefaultMode,
   combatantViewMaxItems,
@@ -29,14 +31,21 @@ describe('combatantViewPrefs', () => {
     expect(defaultCombatantViewPrefs()).toEqual({
       mode: combatantViewDefaultMode,
       itemsPerView: combatantViewDefaultItems,
+      focusMode: combatantViewDefaultFocusMode,
     });
   });
 
   it('saveCombatantViewPrefs_RoundTrip_RestauraPrefs', () => {
     const storage = memoryStorage();
-    saveCombatantViewPrefs({ mode: 'carousel', itemsPerView: 4 }, storage);
-    expect(storage.map.get(combatantViewPrefsStorageKey)).toBeTruthy();
-    expect(loadCombatantViewPrefs(storage)).toEqual({ mode: 'carousel', itemsPerView: 4 });
+    saveCombatantViewPrefs(
+      { mode: 'carousel', itemsPerView: 4, focusMode: 'turn' },
+      storage,
+    );
+    expect(loadCombatantViewPrefs(storage)).toEqual({
+      mode: 'carousel',
+      itemsPerView: 4,
+      focusMode: 'turn',
+    });
   });
 
   it('loadCombatantViewPrefs_JsonInvalido_RetornaPadrao', () => {
@@ -53,6 +62,7 @@ describe('combatantViewPrefs', () => {
     expect(loadCombatantViewPrefs(storage)).toEqual({
       mode: combatantViewDefaultMode,
       itemsPerView: 5,
+      focusMode: combatantViewDefaultFocusMode,
     });
   });
 
@@ -61,5 +71,32 @@ describe('combatantViewPrefs', () => {
       [combatantViewPrefsStorageKey]: JSON.stringify({ mode: 'grid', itemsPerView: 99 }),
     });
     expect(loadCombatantViewPrefs(storage).itemsPerView).toBe(combatantViewMaxItems);
+  });
+
+  it('loadCombatantViewPrefs_FocusAusente_Livre', () => {
+    const storage = memoryStorage({
+      [combatantViewPrefsStorageKey]: JSON.stringify({ mode: 'carousel', itemsPerView: 2 }),
+    });
+    expect(loadCombatantViewPrefs(storage).focusMode).toBe('free');
+  });
+
+  it('loadCombatantViewPrefs_FocoInvalido_UsaLivre', () => {
+    const storage = memoryStorage({
+      [combatantViewPrefsStorageKey]: JSON.stringify({
+        mode: 'grid',
+        itemsPerView: 2,
+        focusMode: 'locked',
+      }),
+    });
+    expect(loadCombatantViewPrefs(storage).focusMode).toBe('free');
+  });
+
+  it('saveCombatantViewPrefs_FocoInvalido_GravaLivre', () => {
+    const storage = memoryStorage();
+    saveCombatantViewPrefs(
+      { mode: 'grid', itemsPerView: 2, focusMode: 'locked' as CombatantFocusMode },
+      storage,
+    );
+    expect(loadCombatantViewPrefs(storage).focusMode).toBe('free');
   });
 });

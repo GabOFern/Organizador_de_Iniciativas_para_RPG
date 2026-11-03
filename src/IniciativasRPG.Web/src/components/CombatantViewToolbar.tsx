@@ -1,6 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import {
   combatantViewCarouselLabel,
+  combatantViewFocusFreeLabel,
+  combatantViewFocusToggleAriaLabel,
+  combatantViewFocusTurnLabel,
   combatantViewGridLabel,
   combatantViewMaxItems,
   combatantViewMinItems,
@@ -10,20 +13,28 @@ import {
   combatantViewQuantityIncreaseLabel,
   combatantViewQuantityLabel,
 } from '../config';
-import { clampItemsPerView, type CombatantViewMode } from '../combatantView';
+import {
+  clampItemsPerView,
+  type CombatantFocusMode,
+  type CombatantViewMode,
+} from '../combatantView';
 
 interface CombatantViewToolbarProps {
   mode: CombatantViewMode;
   itemsPerView: number;
+  focusMode: CombatantFocusMode;
   onModeChange: (mode: CombatantViewMode) => void;
   onItemsPerViewChange: (value: number) => void;
+  onFocusModeChange: (mode: CombatantFocusMode) => void;
 }
 
 export function CombatantViewToolbar({
   mode,
   itemsPerView,
+  focusMode,
   onModeChange,
   onItemsPerViewChange,
+  onFocusModeChange,
 }: CombatantViewToolbarProps) {
   const titleId = useId();
   const [quantityOpen, setQuantityOpen] = useState(false);
@@ -49,6 +60,10 @@ export function CombatantViewToolbar({
     onItemsPerViewChange(next);
   }
 
+  function toggleFocus() {
+    onFocusModeChange(focusMode === 'turn' ? 'free' : 'turn');
+  }
+
   return (
     <div className="combatant-view-toolbar" role="group" aria-label="Visualização da fila">
       <button
@@ -67,6 +82,17 @@ export function CombatantViewToolbar({
       >
         {combatantViewCarouselLabel}
       </button>
+      {mode === 'carousel' && (
+        <button
+          type="button"
+          className={focusMode === 'turn' ? 'primary' : 'ghost'}
+          aria-pressed={focusMode === 'turn'}
+          aria-label={combatantViewFocusToggleAriaLabel}
+          onClick={toggleFocus}
+        >
+          {focusMode === 'turn' ? combatantViewFocusTurnLabel : combatantViewFocusFreeLabel}
+        </button>
+      )}
       <button type="button" className="ghost" onClick={() => setQuantityOpen(true)}>
         {combatantViewQuantityLabel}
       </button>

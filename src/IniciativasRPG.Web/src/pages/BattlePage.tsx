@@ -37,7 +37,7 @@ export function BattlePage() {
   const [sceneOpen, setSceneOpen] = useState(false);
   const [tactical, setTactical] = useState<CombatantTactical | null>(null);
   const [shareOrigin, setShareOrigin] = useState<string | null>(null);
-  const { prefs, setMode, setItemsPerView } = useCombatantViewPrefs();
+  const { prefs, setMode, setItemsPerView, setFocusMode } = useCombatantViewPrefs();
 
   const applySnapshot = useCallback((snapshot: BattleSnapshot) => {
     setBattle(snapshot);
@@ -311,8 +311,10 @@ export function BattlePage() {
             combatants={battle.combatants}
             mode={prefs.mode}
             itemsPerView={prefs.itemsPerView}
+            focusMode={prefs.focusMode}
             onModeChange={setMode}
             onItemsPerViewChange={setItemsPerView}
+            onFocusModeChange={setFocusMode}
             renderCard={(c) => (
               <CombatantCard
                 combatant={c}

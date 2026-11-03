@@ -25,7 +25,7 @@ export function PublicBattlePage() {
   const { token } = useParams<{ token: string }>();
   const [battle, setBattle] = useState<BattleSnapshot>(empty);
   const [error, setError] = useState<string | null>(null);
-  const { prefs, setMode, setItemsPerView } = useCombatantViewPrefs();
+  const { prefs, setMode, setItemsPerView, setFocusMode } = useCombatantViewPrefs();
 
   const onUpdate = useCallback((snapshot: BattleSnapshot) => {
     setBattle(snapshot);
@@ -85,8 +85,10 @@ export function PublicBattlePage() {
             combatants={battle.combatants}
             mode={prefs.mode}
             itemsPerView={prefs.itemsPerView}
+            focusMode={prefs.focusMode}
             onModeChange={setMode}
             onItemsPerViewChange={setItemsPerView}
+            onFocusModeChange={setFocusMode}
             renderCard={(c) => <CombatantCard combatant={c} readOnly />}
           />
         </section>
