@@ -6,12 +6,7 @@ rem Sem barra final: "…RPG\" no PowerShell engole a aspas e corrompe -Root.
 set "ROOT=%~dp0"
 if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
 
-rem Uso:
-rem   iniciar.bat              - roda testes; so inicia se todos passarem
-rem   iniciar.bat /force       - inicia mesmo se algum teste falhar
-rem   iniciar.bat /skiptests   - pula os testes e inicia direto
-rem   iniciar.bat /publico     - sobe Cloudflare Quick Tunnel (link sem tela Visit)
-rem   Flags podem combinar: iniciar.bat /skiptests /publico
+rem Uso: iniciar.bat /h   (ou -h, /?, -?, /help)
 
 set "FORCE_START=0"
 set "SKIP_TESTS=0"
@@ -21,13 +16,52 @@ set "WEB_PORT=5173"
 
 :parse_args
 if "%~1"=="" goto args_done
+if /I "%~1"=="/h" goto show_help
+if /I "%~1"=="-h" goto show_help
+if /I "%~1"=="/?" goto show_help
+if /I "%~1"=="-?" goto show_help
+if /I "%~1"=="/help" goto show_help
+if /I "%~1"=="-help" goto show_help
+if /I "%~1"=="--help" goto show_help
 if /I "%~1"=="/force" set "FORCE_START=1"
+if /I "%~1"=="-force" set "FORCE_START=1"
 if /I "%~1"=="/skiptests" set "SKIP_TESTS=1"
+if /I "%~1"=="-skiptests" set "SKIP_TESTS=1"
 if /I "%~1"=="/skiptest" set "SKIP_TESTS=1"
+if /I "%~1"=="-skiptest" set "SKIP_TESTS=1"
 if /I "%~1"=="/publico" set "PUBLICO=1"
+if /I "%~1"=="-publico" set "PUBLICO=1"
+if /I "%~1"=="/public" set "PUBLICO=1"
+if /I "%~1"=="-public" set "PUBLICO=1"
 shift
 goto parse_args
 :args_done
+goto after_help
+
+:show_help
+echo.
+echo Iniciativas RPG - iniciar.bat
+echo.
+echo Uso:
+echo   iniciar.bat [flags...]
+echo.
+echo Flags:
+echo   /h, -h, /?, /help     Mostra esta ajuda e sai
+echo   /publico, /public     Sobe Cloudflare Quick Tunnel ^(link publico trycloudflare.com^)
+echo   /skiptests, /skiptest  Pula os testes e inicia direto
+echo   /force                Inicia mesmo se algum teste falhar
+echo.
+echo Exemplos:
+echo   iniciar.bat /publico
+echo   iniciar.bat /skiptests /publico
+echo.
+echo Com /publico e preciso ter o cloudflared no PATH:
+echo   winget install -e --id Cloudflare.cloudflared
+echo O mestre fica em localhost; o link dos jogadores e copiado para a area de transferencia.
+echo.
+exit /b 0
+
+:after_help
 
 rem Evita ProgramFiles(x86) quebrando o parser do cmd (parenteses).
 set "PF86=%ProgramFiles(x86)%"
