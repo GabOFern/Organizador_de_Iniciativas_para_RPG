@@ -1,43 +1,15 @@
 import * as signalR from '@microsoft/signalr';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../api';
 import { useSceneImageSrc } from '../sceneImage';
 import { SceneLightbox } from './SceneLightbox';
 import { useAuth } from '../auth';
 import {
   config,
-  sceneCancelEditLabel,
-  sceneEditLabel,
-  sceneEditorCloseLabel,
-  sceneEditorHeading,
-  sceneEditorSubmitLabel,
   sceneEmptyMessage,
-  sceneFilterAllLabel,
-  sceneFilterKindLabel,
-  sceneFilterNameLabel,
-  sceneImageAccept,
-  imageExceedsUploadLimit,
-  sceneImageSourceConflict,
-  sceneImageSourceRequired,
-  sceneImageUrlInvalid,
-  sceneImageUrlMaxLength,
-  sceneKindDisplayLabel,
-  sceneKindLabel,
-  sceneKindOptions,
-  sceneKindRequired,
-  sceneKindUncategorizedLabel,
-  sceneNewLabel,
   sceneLauncherAriaLabel,
   sceneLauncherLabel,
-  sceneTitleMaxLength,
-  sceneTitleRequired,
-  sceneTitleTooLong,
-  sceneVisibilityHideLabel,
-  sceneVisibilityShowLabel,
-  sheetImageTooLarge,
-  sheetImageTypeInvalid,
 } from '../config';
-import { filterScenes } from '../sceneFilters';
 import {
   countUnseen,
   isSceneUnseen,
@@ -46,46 +18,11 @@ import {
   reconcileSeenOnVisibleChange,
   saveSeenIds,
 } from '../sceneSeen';
-import type { CampaignScene, SceneKindFilter } from '../types';
+import type { CampaignScene } from '../types';
 
-function isHttpUrl(value: string) {
-  try {
-    const url = new URL(value);
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
+function visibleToPlayers(list: CampaignScene[]) {
+  return list.filter((scene) => scene.isVisibleToPlayers);
 }
-
-function EyeOpenIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="1.25rem" height="1.25rem" aria-hidden focusable="false">
-      <path
-        d="M2 12C4.5 7 8.5 4.5 12 4.5S19.5 7 22 12C19.5 17 15.5 19.5 12 19.5S4.5 17 2 12Z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-      />
-      <circle cx="12" cy="12" r="3" fill="currentColor" />
-    </svg>
-  );
-}
-
-function EyeClosedIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="1.25rem" height="1.25rem" aria-hidden focusable="false">
-      <path
-        d="M3 9C5.5 12.5 8.5 14.5 12 14.5S18.5 12.5 21 9"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.75"
-      />
-      <path d="M4 18 L20 6" fill="none" stroke="currentColor" strokeWidth="1.75" />
-    </svg>
-  );
-}
-
-type AssignableKind = (typeof sceneKindOptions)[number]['value'];
 
 function SceneThumb({ url }: { url: string }) {
   const src = useSceneImageSrc(url);
@@ -96,95 +33,75 @@ function SceneThumb({ url }: { url: string }) {
 export function ScenePanel({
   publicToken,
   canEdit,
+  scenes: scenesFromParent,
+  onScenesChange,
 }: {
   publicToken: string;
+  /** true: lista completa do mestre, filtrada no drawer. false: lista pública, visto e hub do jogador. */
   canEdit: boolean;
+  /** `null` = o pai ainda não recebeu a lista. Array = lista controlada. Omitir = o painel busca sozinho. */
+  scenes?: CampaignScene[] | null;
+  onScenesChange?: (scenes: CampaignScene[]) => void;
 }) {
   const { token } = useAuth();
-  const titleId = useId();
-  const kindId = useId();
-  const urlId = useId();
-  const fileId = useId();
-  const filterNameId = useId();
-  const filterKindId = useId();
-  const [scenes, setScenes] = useState<CampaignScene[]>([]);
+  const scenesControlled = !canEdit && scenesFromParent !== undefined;
+  const [scenesState, setScenesState] = useState<CampaignScene[]>([]);
+  const scenes = scenesControlled ? (scenesFromParent ?? []) : scenesState;
   const [seenIds, setSeenIds] = useState<Set<string>>(() =>
     canEdit ? new Set() : loadSeenIds(publicToken),
   );
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState<CampaignScene | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [kind, setKind] = useState<AssignableKind | ''>('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [file, setFile] = useState<File | null>(null);
-  const [fileKey, setFileKey] = useState(0);
-  const [filterName, setFilterName] = useState('');
-  const [filterKind, setFilterKind] = useState<SceneKindFilter>('all');
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
   const hubToken = canEdit ? token : null;
   const prevVisibleIdsRef = useRef<string[]>([]);
   const hasLoadedPublicRef = useRef(false);
+  const seenTokenRef = useRef(publicToken);
+
+  if (!canEdit && seenTokenRef.current !== publicToken) {
+    seenTokenRef.current = publicToken;
+    hasLoadedPublicRef.current = false;
+    prevVisibleIdsRef.current = [];
+    setSeenIds(loadSeenIds(publicToken));
+  }
+
+  function syncPublicSeen(list: CampaignScene[]) {
+    const nextIds = list.map((scene) => scene.id);
+    if (hasLoadedPublicRef.current) {
+      setSeenIds((prevSeen) => {
+        const reconciled = reconcileSeenOnVisibleChange(
+          prevVisibleIdsRef.current,
+          nextIds,
+          prevSeen,
+        );
+        saveSeenIds(publicToken, reconciled);
+        return reconciled;
+      });
+    } else {
+      hasLoadedPublicRef.current = true;
+      setSeenIds(loadSeenIds(publicToken));
+    }
+    prevVisibleIdsRef.current = nextIds;
+  }
 
   function applyScenes(list: CampaignScene[]) {
     if (!canEdit) {
-      const nextIds = list.map((scene) => scene.id);
-      if (hasLoadedPublicRef.current) {
-        setSeenIds((prevSeen) => {
-          const reconciled = reconcileSeenOnVisibleChange(
-            prevVisibleIdsRef.current,
-            nextIds,
-            prevSeen,
-          );
-          saveSeenIds(publicToken, reconciled);
-          return reconciled;
-        });
-      } else {
-        hasLoadedPublicRef.current = true;
-        setSeenIds(loadSeenIds(publicToken));
-      }
-      prevVisibleIdsRef.current = nextIds;
+      syncPublicSeen(visibleToPlayers(list));
     }
-    setScenes(list);
-  }
-
-  function resetForm() {
-    setEditorOpen(false);
-    setEditingId(null);
-    setTitle('');
-    setKind('');
-    setImageUrl('');
-    setFile(null);
-    setFileKey((key) => key + 1);
-  }
-
-  function openCreate() {
-    resetForm();
-    setEditorOpen(true);
-    setError(null);
-  }
-
-  function startEdit(scene: CampaignScene) {
-    setEditingId(scene.id);
-    setTitle(scene.title);
-    setKind(
-      scene.kind === 'Uncategorized' ? '' : (scene.kind as AssignableKind),
-    );
-    setImageUrl('');
-    setFile(null);
-    setFileKey((key) => key + 1);
-    setEditorOpen(true);
-    setError(null);
-  }
-
-  function closeEditor() {
-    resetForm();
-    setError(null);
+    if (scenesControlled) {
+      onScenesChange?.(list);
+      return;
+    }
+    setScenesState(list);
   }
 
   useEffect(() => {
+    if (!scenesControlled || scenesFromParent == null) return;
+    syncPublicSeen(visibleToPlayers(scenesFromParent));
+  }, [scenesControlled, scenesFromParent, publicToken]);
+
+  useEffect(() => {
+    if (scenesControlled) return;
     let cancelled = false;
     const load = canEdit ? api.listScenes() : api.listPublicScenes(publicToken);
     void load
@@ -199,9 +116,10 @@ export function ScenePanel({
     return () => {
       cancelled = true;
     };
-  }, [publicToken, canEdit]);
+  }, [publicToken, canEdit, scenesControlled]);
 
   useEffect(() => {
+    if (scenesControlled) return;
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(config.hubUrl, {
         accessTokenFactory: hubToken ? () => hubToken : undefined,
@@ -232,7 +150,7 @@ export function ScenePanel({
       connection.off('ScenesUpdated');
       void connection.stop();
     };
-  }, [publicToken, hubToken]);
+  }, [publicToken, hubToken, scenesControlled]);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
@@ -241,118 +159,12 @@ export function ScenePanel({
         setFocused(null);
         return;
       }
-      if (editorOpen) {
-        closeEditor();
-        return;
-      }
       if (open) setOpen(false);
     }
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [focused, editorOpen, open]);
-
-  function validateForm(requireImage: boolean): {
-    trimmedTitle: string;
-    trimmedUrl: string;
-    selectedKind: AssignableKind;
-  } | null {
-    const trimmedTitle = title.trim();
-    const trimmedUrl = imageUrl.trim();
-    if (!trimmedTitle) {
-      setError(sceneTitleRequired);
-      return null;
-    }
-    if (trimmedTitle.length > sceneTitleMaxLength) {
-      setError(sceneTitleTooLong);
-      return null;
-    }
-    if (!kind) {
-      setError(sceneKindRequired);
-      return null;
-    }
-    if (trimmedUrl && file) {
-      setError(sceneImageSourceConflict);
-      return null;
-    }
-    if (requireImage && !trimmedUrl && !file) {
-      setError(sceneImageSourceRequired);
-      return null;
-    }
-    if (trimmedUrl && (trimmedUrl.length > sceneImageUrlMaxLength || !isHttpUrl(trimmedUrl))) {
-      setError(sceneImageUrlInvalid);
-      return null;
-    }
-    if (file && imageExceedsUploadLimit(file.size)) {
-      setError(sheetImageTooLarge);
-      return null;
-    }
-    if (file?.type && !sceneImageAccept.split(',').includes(file.type)) {
-      setError(sheetImageTypeInvalid);
-      return null;
-    }
-    return { trimmedTitle, trimmedUrl, selectedKind: kind };
-  }
-
-  async function submitForm() {
-    const isEdit = editingId !== null;
-    const validated = validateForm(!isEdit);
-    if (!validated) return;
-
-    setBusy(true);
-    setError(null);
-    try {
-      const payload = {
-        title: validated.trimmedTitle,
-        kind: validated.selectedKind,
-        imageUrl: validated.trimmedUrl || undefined,
-        file: file ?? undefined,
-      };
-      const list = isEdit
-        ? await api.updateScene(editingId, payload)
-        : await api.createScene(payload);
-      applyScenes(list);
-      resetForm();
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : isEdit
-            ? 'Falha ao salvar imagem.'
-            : 'Falha ao incluir imagem.',
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function removeScene(scene: CampaignScene) {
-    setBusy(true);
-    setError(null);
-    try {
-      const list = await api.deleteScene(scene.id);
-      applyScenes(list);
-      if (focused?.id === scene.id) setFocused(null);
-      if (editingId === scene.id) resetForm();
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Falha ao remover imagem.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function toggleVisibility(scene: CampaignScene) {
-    setBusy(true);
-    setError(null);
-    try {
-      const list = await api.setSceneVisibility(scene.id, !scene.isVisibleToPlayers);
-      applyScenes(list);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Falha ao alterar visibilidade.');
-    } finally {
-      setBusy(false);
-    }
-  }
+  }, [focused, open]);
 
   function openScene(scene: CampaignScene) {
     setFocused(scene);
@@ -362,14 +174,12 @@ export function ScenePanel({
     }
   }
 
-  const visibleScenes = canEdit
-    ? filterScenes(scenes, { nameQuery: filterName, kind: filterKind })
-    : scenes;
+  const visibleScenes = visibleToPlayers(scenes);
 
   const unseenCount = canEdit
     ? 0
     : countUnseen(
-        scenes.map((scene) => scene.id),
+        visibleScenes.map((scene) => scene.id),
         seenIds,
       );
   const launcherText =
@@ -399,56 +209,15 @@ export function ScenePanel({
             </button>
           </div>
 
-          {error && !editorOpen && <p className="error">{error}</p>}
+          {error && <p className="error">{error}</p>}
 
-          {canEdit && (
-            <button type="button" disabled={busy} onClick={openCreate}>
-              {sceneNewLabel}
-            </button>
-          )}
-
-          {canEdit && scenes.length > 0 && (
-            <div className="scene-filters">
-              <label htmlFor={filterNameId}>
-                {sceneFilterNameLabel}
-                <input
-                  id={filterNameId}
-                  value={filterName}
-                  onChange={(event) => setFilterName(event.target.value)}
-                />
-              </label>
-              <label htmlFor={filterKindId}>
-                {sceneFilterKindLabel}
-                <select
-                  id={filterKindId}
-                  value={filterKind}
-                  onChange={(event) => setFilterKind(event.target.value as SceneKindFilter)}
-                >
-                  <option value="all">{sceneFilterAllLabel}</option>
-                  <option value="Uncategorized">{sceneKindUncategorizedLabel}</option>
-                  {sceneKindOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-          )}
-
-          {scenes.length === 0 && !error ? (
+          {visibleScenes.length === 0 && !error ? (
             <p>{sceneEmptyMessage}</p>
-          ) : visibleScenes.length === 0 ? (
-            canEdit ? <p>{sceneEmptyMessage}</p> : null
-          ) : (
+          ) : visibleScenes.length > 0 ? (
             <ul className="scene-list">
               {visibleScenes.map((scene) => {
                 const unread = !canEdit && isSceneUnseen(scene.id, seenIds);
-                const rowClass = [
-                  'scene-row',
-                  canEdit ? 'scene-row-master' : '',
-                  unread ? 'scene-row-unread' : '',
-                ]
+                const rowClass = ['scene-row', unread ? 'scene-row-unread' : '']
                   .filter(Boolean)
                   .join(' ');
                 return (
@@ -456,154 +225,15 @@ export function ScenePanel({
                     <button type="button" className="scene-open" onClick={() => openScene(scene)}>
                       <SceneThumb url={scene.imageUrl} />
                       <span className="scene-open-text">
-                        {canEdit && (
-                          <span className="scene-kind">{sceneKindDisplayLabel(scene.kind)}</span>
-                        )}
                         <span>{scene.title}</span>
                       </span>
                     </button>
-                    {canEdit && (
-                      <div className="scene-row-actions">
-                        <button
-                          type="button"
-                          className={
-                            scene.isVisibleToPlayers
-                              ? 'ghost scene-visibility scene-visibility-on'
-                              : 'ghost scene-visibility scene-visibility-off'
-                          }
-                          disabled={busy}
-                          aria-label={
-                            scene.isVisibleToPlayers
-                              ? sceneVisibilityHideLabel
-                              : sceneVisibilityShowLabel
-                          }
-                          aria-pressed={scene.isVisibleToPlayers}
-                          onClick={() => void toggleVisibility(scene)}
-                        >
-                          {scene.isVisibleToPlayers ? <EyeOpenIcon /> : <EyeClosedIcon />}
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost"
-                          disabled={busy}
-                          onClick={() => startEdit(scene)}
-                        >
-                          {sceneEditLabel}
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost danger"
-                          disabled={busy}
-                          onClick={() => void removeScene(scene)}
-                        >
-                          Remover
-                        </button>
-                      </div>
-                    )}
                   </li>
                 );
               })}
             </ul>
-          )}
-
+          ) : null}
         </aside>
-      )}
-
-      {canEdit && editorOpen && (
-        <div
-          className="modal-backdrop scene-editor-backdrop"
-          role="presentation"
-          onClick={closeEditor}
-        >
-          <div
-            className="modal-panel panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <header className="modal-header">
-              <h2 id={titleId}>{sceneEditorHeading(editingId !== null)}</h2>
-              <button
-                type="button"
-                className="ghost"
-                onClick={closeEditor}
-                aria-label={sceneEditorCloseLabel}
-              >
-                Fechar
-              </button>
-            </header>
-            {error && <p className="error">{error}</p>}
-            <form
-              className="scene-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                void submitForm();
-              }}
-            >
-              <label htmlFor={`${titleId}-field`}>
-                Título
-                <input
-                  id={`${titleId}-field`}
-                  value={title}
-                  maxLength={sceneTitleMaxLength}
-                  onChange={(event) => setTitle(event.target.value)}
-                />
-              </label>
-              <label htmlFor={kindId}>
-                {sceneKindLabel}
-                <select
-                  id={kindId}
-                  value={kind}
-                  required
-                  onChange={(event) => setKind(event.target.value as AssignableKind | '')}
-                >
-                  <option value="" disabled>
-                    {sceneKindRequired}
-                  </option>
-                  {sceneKindOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label htmlFor={urlId}>
-                Link da imagem
-                <input
-                  id={urlId}
-                  value={imageUrl}
-                  maxLength={sceneImageUrlMaxLength}
-                  onChange={(event) => setImageUrl(event.target.value)}
-                  placeholder={editingId ? 'Deixe vazio para manter' : undefined}
-                />
-              </label>
-              <label htmlFor={fileId}>
-                Arquivo da imagem
-                <input
-                  id={fileId}
-                  key={fileKey}
-                  type="file"
-                  accept={sceneImageAccept}
-                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                />
-              </label>
-              <div className="scene-form-actions">
-                <button type="submit" disabled={busy}>
-                  {sceneEditorSubmitLabel(editingId !== null)}
-                </button>
-                <button
-                  type="button"
-                  className="ghost"
-                  disabled={busy}
-                  onClick={closeEditor}
-                >
-                  {sceneCancelEditLabel}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
       )}
 
       {focused && <SceneLightbox scene={focused} onClose={() => setFocused(null)} />}

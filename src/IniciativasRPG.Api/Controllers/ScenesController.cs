@@ -24,6 +24,16 @@ public class ScenesController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> List(CancellationToken ct) =>
         Ok(await _sceneService.ListByCampaignAsync(CampaignId, ct));
 
+    [HttpGet("tags")]
+    public async Task<ActionResult<IReadOnlyList<CampaignImageTagDto>>> ListTags(CancellationToken ct) =>
+        Ok(await _sceneService.ListTagsAsync(CampaignId, ct));
+
+    [HttpPost("tags")]
+    public async Task<ActionResult<CampaignImageTagDto>> CreateTag(
+        [FromBody] CreateCampaignImageTagRequest request,
+        CancellationToken ct) =>
+        Ok(await _sceneService.CreateTagAsync(CampaignId, request.Name, ct));
+
     [HttpGet("{id:guid}/image")]
     public async Task<IActionResult> Image(Guid id, CancellationToken ct)
     {
@@ -38,8 +48,11 @@ public class ScenesController : ControllerBase
         [FromForm] string? kind,
         [FromForm] string? imageUrl,
         IFormFile? file,
+        [FromForm] Guid[]? tagIds,
+        [FromForm] Guid? sheetId,
         CancellationToken ct) =>
-        Ok(await _sceneService.CreateAsync(CampaignId, title, kind, imageUrl, file, ct));
+        Ok(await _sceneService.CreateAsync(
+            CampaignId, title, kind, imageUrl, file, tagIds, sheetId, ct));
 
     [HttpPut("{id:guid}")]
     [RequestSizeLimit(SceneRules.MaxImageRequestBytes)]
@@ -49,8 +62,11 @@ public class ScenesController : ControllerBase
         [FromForm] string? kind,
         [FromForm] string? imageUrl,
         IFormFile? file,
+        [FromForm] Guid[]? tagIds,
+        [FromForm] Guid? sheetId,
         CancellationToken ct) =>
-        Ok(await _sceneService.UpdateAsync(CampaignId, id, title, kind, imageUrl, file, ct));
+        Ok(await _sceneService.UpdateAsync(
+            CampaignId, id, title, kind, imageUrl, file, tagIds, sheetId, ct));
 
     [HttpPatch("{id:guid}/visibility")]
     public async Task<ActionResult<IReadOnlyList<CampaignSceneDto>>> SetVisibility(

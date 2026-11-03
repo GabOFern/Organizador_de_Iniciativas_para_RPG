@@ -17,6 +17,8 @@ public class AppDbContext : DbContext
     public DbSet<SheetWeapon> SheetWeapons => Set<SheetWeapon>();
     public DbSet<SheetImage> SheetImages => Set<SheetImage>();
     public DbSet<CampaignScene> CampaignScenes => Set<CampaignScene>();
+    public DbSet<CampaignImageTag> CampaignImageTags => Set<CampaignImageTag>();
+    public DbSet<CampaignSceneTag> CampaignSceneTags => Set<CampaignSceneTag>();
     public DbSet<Lineup> Lineups => Set<Lineup>();
     public DbSet<LineupMember> LineupMembers => Set<LineupMember>();
     public DbSet<Battle> Battles => Set<Battle>();
@@ -50,7 +52,40 @@ public class AppDbContext : DbContext
                 .WithMany(c => c.Scenes)
                 .HasForeignKey(x => x.CampaignId)
                 .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Sheet)
+                .WithMany()
+                .HasForeignKey(x => x.SheetId)
+                .OnDelete(DeleteBehavior.SetNull);
             e.HasIndex(x => x.CampaignId);
+            e.HasIndex(x => x.SheetId);
+        });
+
+        modelBuilder.Entity<CampaignImageTag>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name)
+                .HasMaxLength(SceneRules.MaxTagNameLength)
+                .UseCollation("NOCASE")
+                .IsRequired();
+            e.HasOne(x => x.Campaign)
+                .WithMany(c => c.ImageTags)
+                .HasForeignKey(x => x.CampaignId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => new { x.CampaignId, x.Name }).IsUnique();
+        });
+
+        modelBuilder.Entity<CampaignSceneTag>(e =>
+        {
+            e.HasKey(x => new { x.SceneId, x.TagId });
+            e.HasOne(x => x.Scene)
+                .WithMany(s => s.SceneTags)
+                .HasForeignKey(x => x.SceneId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(x => x.Tag)
+                .WithMany(t => t.SceneTags)
+                .HasForeignKey(x => x.TagId)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(x => x.TagId);
         });
 
         modelBuilder.Entity<Sheet>(e =>

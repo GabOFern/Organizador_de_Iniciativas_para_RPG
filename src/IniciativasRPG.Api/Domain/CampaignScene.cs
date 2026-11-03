@@ -10,7 +10,10 @@ public class CampaignScene
     public string? ImageUrl { get; set; }
     public byte[]? ImageContent { get; set; }
     public string? ImageContentType { get; set; }
+    public Guid? SheetId { get; set; }
+    public Sheet? Sheet { get; set; }
     public int SortOrder { get; set; }
     public bool IsVisibleToPlayers { get; set; } = SceneRules.VisibleToPlayersDefault;
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public ICollection<CampaignSceneTag> SceneTags { get; set; } = new List<CampaignSceneTag>();
 }

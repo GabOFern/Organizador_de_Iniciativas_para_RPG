@@ -99,6 +99,8 @@ No fluxo `/publico` (túnel só no Vite) **não é necessário** mudar CORS nem 
 | [docs/auth-campanha-mestre.md](docs/auth-campanha-mestre.md) | Senha do mestre, hash, JWT e gancho para auth futura |
 | [docs/remover-login-legado.md](docs/remover-login-legado.md) | Remoção do `/login` e da tabela Users |
 | [docs/design-system.md](docs/design-system.md) | Cores, fontes, espaçamento, cards e fila |
+| [docs/perf-jogador-mobile.md](docs/perf-jogador-mobile.md) | Menos hub/REST na visão pública do jogador |
+| [docs/galeria-imagens-admin.md](docs/galeria-imagens-admin.md) | Drawer só leitura + admin de imagens/tags/ficha |
 | [docs/fichas-campanha-editaveis.md](docs/fichas-campanha-editaveis.md) | Boot vazio e fichas só da batalha simulada |
 | [docs/visualizacao-fila-iniciativa.md](docs/visualizacao-fila-iniciativa.md) | Grade e carrossel na fila |
 | [docs/foco-carrossel-fila.md](docs/foco-carrossel-fila.md) | Foco Turno / Livre no carrossel |

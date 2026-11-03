@@ -4,6 +4,7 @@ import { routes } from './config';
 import { MestreLayout, RequireAuth } from './layout';
 import { BattlePage } from './pages/BattlePage';
 import { CampaignsHomePage } from './pages/CampaignsHomePage';
+import { ImagesAdminPage } from './pages/ImagesAdminPage';
 import { ModifiersPage } from './pages/ModifiersPage';
 import { PublicBattlePage } from './pages/PublicBattlePage';
 import { ScenesPage } from './pages/ScenesPage';
@@ -30,6 +31,7 @@ export default function App() {
               <Route path="batalha" element={<BattlePage />} />
               <Route path="fichas" element={<SheetsPage />} />
               <Route path="cenas" element={<ScenesPage />} />
+              <Route path="imagens" element={<ImagesAdminPage />} />
               <Route path="modificadores" element={<ModifiersPage />} />
             </Route>
             <Route path="*" element={<Navigate to={routes.home} replace />} />

@@ -14,6 +14,8 @@ import {
   noPublicBattleMessage,
   characterClasses,
   characterClassLabels,
+  imagesNavLabel,
+  routes,
 } from '../config';
 import { uiThemeLabels, uiThemes } from '../themes';
 
@@ -101,6 +103,13 @@ describe('mensagens de UI', () => {
     expect(invokeFailedMessage).toBe('Falha ao invocar.');
     expect(scenesLoadFailedMessage).toBe('Falha ao carregar cenas.');
     expect(noPublicBattleMessage).toBe('Não há combate em andamento.');
+  });
+});
+
+describe('rota admin de imagens', () => {
+  it('imagens_RotaELabel', () => {
+    expect(routes.mestreImages).toBe('/mestre/imagens');
+    expect(imagesNavLabel).toBe('Imagens');
   });
 });
 

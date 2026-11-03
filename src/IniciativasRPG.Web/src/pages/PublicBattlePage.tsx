@@ -1,14 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { CombatantCard } from '../components/CombatantCard';
 import { CombatantListView } from '../components/CombatantListView';
 import { ScenePanel } from '../components/ScenePanel';
 import { ThemePicker } from '../components/ThemePicker';
-import { appBrandName, noPublicBattleMessage, routes } from '../config';
+import {
+  appBrandName,
+  noPublicBattleMessage,
+  publicBattleHubFallbackMs,
+  routes,
+  scenesLoadFailedMessage,
+} from '../config';
 import { useBattleHub } from '../hooks/useBattleHub';
 import { useCombatantViewPrefs } from '../hooks/useCombatantViewPrefs';
-import type { BattleSnapshot } from '../types';
+import { shouldUsePublicRestFallback } from '../publicBattleLoad';
+import type { BattleSnapshot, CampaignScene } from '../types';
 
 const empty: BattleSnapshot = {
   id: null,
@@ -24,24 +31,100 @@ const empty: BattleSnapshot = {
 export function PublicBattlePage() {
   const { token } = useParams<{ token: string }>();
   const [battle, setBattle] = useState<BattleSnapshot>(empty);
+  const [scenes, setScenes] = useState<CampaignScene[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hubFailed, setHubFailed] = useState(false);
+  const [receivedSnapshot, setReceivedSnapshot] = useState(false);
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const receivedSnapshotRef = useRef(false);
+  const receivedScenesRef = useRef(false);
+  const restStartedRef = useRef(false);
+  const trackedTokenRef = useRef(token);
   const { prefs, setMode, setItemsPerView, setFocusMode } = useCombatantViewPrefs();
 
+  if (trackedTokenRef.current !== token) {
+    trackedTokenRef.current = token;
+    receivedSnapshotRef.current = false;
+    receivedScenesRef.current = false;
+    restStartedRef.current = false;
+    setBattle(empty);
+    setScenes(null);
+    setError(null);
+    setHubFailed(false);
+    setReceivedSnapshot(false);
+    setElapsedMs(0);
+  }
+
   const onUpdate = useCallback((snapshot: BattleSnapshot) => {
+    receivedSnapshotRef.current = true;
+    setReceivedSnapshot(true);
     setBattle(snapshot);
+    setError(null);
   }, []);
 
-  useBattleHub(token, onUpdate);
+  const onScenesUpdated = useCallback((list: CampaignScene[]) => {
+    receivedScenesRef.current = true;
+    setScenes(list);
+  }, []);
+
+  const onHubFailed = useCallback(() => {
+    setHubFailed(true);
+  }, []);
+
+  useBattleHub(token, onUpdate, null, onScenesUpdated, onHubFailed);
+
+  useEffect(() => {
+    if (!token || receivedSnapshot || hubFailed) return;
+    const timer = window.setTimeout(() => {
+      setElapsedMs(publicBattleHubFallbackMs);
+    }, publicBattleHubFallbackMs);
+    return () => window.clearTimeout(timer);
+  }, [token, receivedSnapshot, hubFailed]);
 
   useEffect(() => {
     if (!token) return;
+    if (restStartedRef.current) return;
+    if (
+      !shouldUsePublicRestFallback({
+        hubFailed,
+        receivedSnapshot,
+        elapsedMs,
+        fallbackMs: publicBattleHubFallbackMs,
+      })
+    ) {
+      return;
+    }
+
+    restStartedRef.current = true;
+    const requestToken = token;
+
     void api
-      .getPublicBattle(token)
-      .then(setBattle)
-      .catch((err) =>
-        setError(err instanceof ApiError ? err.message : 'Falha ao carregar combate.'),
-      );
-  }, [token]);
+      .getPublicBattle(requestToken)
+      .then((snapshot) => {
+        if (trackedTokenRef.current !== requestToken || receivedSnapshotRef.current) return;
+        receivedSnapshotRef.current = true;
+        setReceivedSnapshot(true);
+        setBattle(snapshot);
+      })
+      .catch((err) => {
+        if (trackedTokenRef.current !== requestToken) return;
+        setError(err instanceof ApiError ? err.message : 'Falha ao carregar combate.');
+      });
+
+    if (!receivedScenesRef.current) {
+      void api
+        .listPublicScenes(requestToken)
+        .then((list) => {
+          if (trackedTokenRef.current !== requestToken || receivedScenesRef.current) return;
+          receivedScenesRef.current = true;
+          setScenes(list);
+        })
+        .catch((err) => {
+          if (trackedTokenRef.current !== requestToken) return;
+          setError(err instanceof ApiError ? err.message : scenesLoadFailedMessage);
+        });
+    }
+  }, [token, hubFailed, receivedSnapshot, elapsedMs]);
 
   const noActive =
     battle.status === 'Finished' ||
@@ -94,7 +177,14 @@ export function PublicBattlePage() {
         </section>
       )}
 
-      {token && <ScenePanel publicToken={token} canEdit={false} />}
+      {token && (
+        <ScenePanel
+          publicToken={token}
+          canEdit={false}
+          scenes={scenes}
+          onScenesChange={onScenesUpdated}
+        />
+      )}
     </main>
   );
 }

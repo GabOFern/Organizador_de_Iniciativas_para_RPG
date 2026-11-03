@@ -42,6 +42,13 @@ public class SheetsController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("{id:guid}/image")]
+    public async Task<IActionResult> Image(Guid id, CancellationToken ct)
+    {
+        var image = await _sheetService.GetMasterImageAsync(CampaignId, id, ct);
+        return File(image.Content, image.ContentType);
+    }
+
     [HttpPost("{id:guid}/image")]
     [RequestSizeLimit(SheetRules.MaxImageRequestBytes)]
     public async Task<ActionResult<SheetDto>> SetImage(Guid id, IFormFile file, CancellationToken ct)

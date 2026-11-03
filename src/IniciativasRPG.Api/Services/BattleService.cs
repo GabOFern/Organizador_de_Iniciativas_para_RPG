@@ -932,13 +932,13 @@ public class BattleService : IBattleService
 
         var ordered = await _db.Combatants
             .AsNoTracking()
-            .Include(c => c.Sheet)
             .Include(c => c.ActiveModifiers)
             .Where(c => c.BattleId == battleId)
             .OrderBy(c => c.SortOrder)
             .ToListAsync(ct);
 
-        var sheetIds = ordered.Select(c => c.SheetId).ToList();
+        var sheetIds = ordered.Select(c => c.SheetId).Distinct().ToList();
+        var sheets = await LoadSnapshotSheetsAsync(sheetIds, ct);
         var storedImageIds = (await _db.SheetImages
             .Where(i => sheetIds.Contains(i.SheetId))
             .Select(i => i.SheetId)
@@ -946,19 +946,20 @@ public class BattleService : IBattleService
 
         var combatants = ordered.Select((c, index) =>
         {
+            var sheet = sheets[c.SheetId];
             var hideHp = forPublic && c.HideHpFromPublic;
             var imageUrl = storedImageIds.Contains(c.SheetId)
                 ? SheetImagePaths.Public(battle.Campaign.PublicToken, c.SheetId)
-                : c.Sheet.ImageUrl;
+                : sheet.ImageUrl;
             return new CombatantDto(
                 c.Id,
                 c.SheetId,
-                c.Sheet.Name,
+                sheet.Name,
                 imageUrl,
-                c.Sheet.ImageFocusX,
-                c.Sheet.ImageFocusY,
-                c.Sheet.ImageScale,
-                c.Sheet.Type.ToString(),
+                sheet.ImageFocusX,
+                sheet.ImageFocusY,
+                sheet.ImageScale,
+                sheet.Type.ToString(),
                 c.Initiative,
                 hideHp ? 0 : c.CurrentHp,
                 hideHp ? 0 : c.MaxHp,
@@ -981,10 +982,44 @@ public class BattleService : IBattleService
             combatants,
             message ?? battle.LastActionMessage,
             lastDiceRoll ?? battle.LastActionDiceRoll,
-            lastTickEvents,
+            forPublic ? null : lastTickEvents,
             CanSavePlayerStats: false,
             IsTestBattle: battle.IsTestBattle);
     }
+
+    private async Task<Dictionary<Guid, SnapshotSheet>> LoadSnapshotSheetsAsync(
+        List<Guid> sheetIds,
+        CancellationToken ct)
+    {
+        if (sheetIds.Count == 0)
+        {
+            return new Dictionary<Guid, SnapshotSheet>();
+        }
+
+        var rows = await _db.Sheets
+            .AsNoTracking()
+            .Where(s => sheetIds.Contains(s.Id))
+            .Select(s => new SnapshotSheet(
+                s.Id,
+                s.Name,
+                s.ImageUrl,
+                s.ImageFocusX,
+                s.ImageFocusY,
+                s.ImageScale,
+                s.Type))
+            .ToListAsync(ct);
+
+        return rows.ToDictionary(s => s.Id);
+    }
+
+    private sealed record SnapshotSheet(
+        Guid Id,
+        string Name,
+        string? ImageUrl,
+        double ImageFocusX,
+        double ImageFocusY,
+        double ImageScale,
+        SheetType Type);
 
     private static ActiveModifierDto MapActiveModifier(ActiveModifier m) =>
         new(

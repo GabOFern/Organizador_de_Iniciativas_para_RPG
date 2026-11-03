@@ -75,6 +75,8 @@ export function CombatantCard({
             src={portraitSrc}
             alt={combatant.name}
             draggable={false}
+            loading={readOnly ? 'lazy' : undefined}
+            decoding={readOnly ? 'async' : undefined}
             className={natural && frame ? 'sheet-framed-image' : undefined}
             style={framedImageStyle(frame, natural, focusX, focusY, scale)}
             onLoad={(event) =>

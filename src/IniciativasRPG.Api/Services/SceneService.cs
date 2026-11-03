@@ -8,6 +8,8 @@ namespace IniciativasRPG.Api.Services;
 public interface ISceneService
 {
     Task<IReadOnlyList<CampaignSceneDto>> ListByCampaignAsync(Guid campaignId, CancellationToken ct = default);
+    Task<IReadOnlyList<CampaignImageTagDto>> ListTagsAsync(Guid campaignId, CancellationToken ct = default);
+    Task<CampaignImageTagDto> CreateTagAsync(Guid campaignId, string? name, CancellationToken ct = default);
     Task<IReadOnlyList<CampaignSceneDto>> ListByPublicTokenAsync(string publicToken, CancellationToken ct = default);
     Task<IReadOnlyList<CampaignSceneDto>> ListMasterByPublicTokenAsync(string publicToken, CancellationToken ct = default);
     Task<SceneImageFile> GetMasterImageAsync(Guid campaignId, Guid sceneId, CancellationToken ct = default);
@@ -18,6 +20,8 @@ public interface ISceneService
         string? kind,
         string? imageUrl,
         IFormFile? file,
+        IReadOnlyCollection<Guid>? tagIds = null,
+        Guid? sheetId = null,
         CancellationToken ct = default);
     Task<IReadOnlyList<CampaignSceneDto>> UpdateAsync(
         Guid campaignId,
@@ -26,6 +30,8 @@ public interface ISceneService
         string? kind,
         string? imageUrl,
         IFormFile? file,
+        IReadOnlyCollection<Guid>? tagIds = null,
+        Guid? sheetId = null,
         CancellationToken ct = default);
     Task<IReadOnlyList<CampaignSceneDto>> SetVisibilityAsync(
         Guid campaignId,
@@ -56,6 +62,51 @@ public class SceneService : ISceneService
     {
         var token = await PublicTokenAsync(campaignId, ct);
         return await ListAsync(campaignId, token, visibleOnly: false, forMaster: true, ct);
+    }
+
+    public async Task<IReadOnlyList<CampaignImageTagDto>> ListTagsAsync(
+        Guid campaignId,
+        CancellationToken ct = default) =>
+        await _db.CampaignImageTags
+            .AsNoTracking()
+            .Where(t => t.CampaignId == campaignId)
+            .OrderBy(t => t.Name)
+            .Select(t => new CampaignImageTagDto(t.Id, t.Name))
+            .ToListAsync(ct);
+
+    public async Task<CampaignImageTagDto> CreateTagAsync(
+        Guid campaignId,
+        string? name,
+        CancellationToken ct = default)
+    {
+        var normalizedName = NormalizeTagName(name);
+        var campaignTags = await _db.CampaignImageTags
+            .AsNoTracking()
+            .Where(t => t.CampaignId == campaignId)
+            .Select(t => new CampaignImageTagDto(t.Id, t.Name))
+            .ToListAsync(ct);
+        var existing = campaignTags.FirstOrDefault(
+            t => string.Equals(t.Name, normalizedName, StringComparison.OrdinalIgnoreCase));
+
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        if (campaignTags.Count >= SceneRules.MaxTagsPerCampaign)
+        {
+            throw new DomainException(DomainMessages.SceneTagCampaignFull);
+        }
+
+        var tag = new CampaignImageTag
+        {
+            Id = Guid.NewGuid(),
+            CampaignId = campaignId,
+            Name = normalizedName,
+        };
+        _db.CampaignImageTags.Add(tag);
+        await _db.SaveChangesAsync(ct);
+        return new CampaignImageTagDto(tag.Id, tag.Name);
     }
 
     public async Task<IReadOnlyList<CampaignSceneDto>> ListByPublicTokenAsync(
@@ -111,19 +162,22 @@ public class SceneService : ISceneService
         string? kind,
         string? imageUrl,
         IFormFile? file,
+        IReadOnlyCollection<Guid>? tagIds = null,
+        Guid? sheetId = null,
         CancellationToken ct = default)
     {
         var normalizedTitle = NormalizeTitle(title);
         var sceneKind = ParseAssignableKind(kind);
         var hasFile = file is not null && file.Length > 0;
         var trimmedUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+        var sourceCount = CountImageSources(hasFile, trimmedUrl, sheetId);
 
-        if (hasFile && trimmedUrl is not null)
+        if (sourceCount > 1)
         {
             throw new DomainException(DomainMessages.SceneImageSourceConflict);
         }
 
-        if (!hasFile && trimmedUrl is null)
+        if (sourceCount == 0)
         {
             throw new DomainException(DomainMessages.SceneImageSourceRequired);
         }
@@ -149,7 +203,8 @@ public class SceneService : ISceneService
             CreatedAtUtc = DateTime.UtcNow,
         };
 
-        await ApplyImageSourceAsync(scene, trimmedUrl, file, hasFile, ct);
+        await ApplyImageSourceAsync(scene, campaignId, trimmedUrl, file, hasFile, sheetId, ct);
+        await ApplyTagsAsync(scene, campaignId, tagIds ?? Array.Empty<Guid>(), ct);
 
         _db.CampaignScenes.Add(scene);
         await _db.SaveChangesAsync(ct);
@@ -166,6 +221,8 @@ public class SceneService : ISceneService
         string? kind,
         string? imageUrl,
         IFormFile? file,
+        IReadOnlyCollection<Guid>? tagIds = null,
+        Guid? sheetId = null,
         CancellationToken ct = default)
     {
         var scene = await _db.CampaignScenes
@@ -177,16 +234,19 @@ public class SceneService : ISceneService
 
         var hasFile = file is not null && file.Length > 0;
         var trimmedUrl = string.IsNullOrWhiteSpace(imageUrl) ? null : imageUrl.Trim();
+        var sourceCount = CountImageSources(hasFile, trimmedUrl, sheetId);
 
-        if (hasFile && trimmedUrl is not null)
+        if (sourceCount > 1)
         {
             throw new DomainException(DomainMessages.SceneImageSourceConflict);
         }
 
-        if (hasFile || trimmedUrl is not null)
+        if (sourceCount == 1)
         {
-            await ApplyImageSourceAsync(scene, trimmedUrl, file, hasFile, ct);
+            await ApplyImageSourceAsync(scene, campaignId, trimmedUrl, file, hasFile, sheetId, ct);
         }
+
+        await ApplyTagsAsync(scene, campaignId, tagIds ?? Array.Empty<Guid>(), ct);
 
         await _db.SaveChangesAsync(ct);
 
@@ -261,24 +321,91 @@ public class SceneService : ISceneService
             : query.OrderBy(s => s.SortOrder).ThenBy(s => s.CreatedAtUtc);
 
         var rows = await ordered
-            .Select(s => new { s.Id, s.Title, s.SortOrder, s.IsVisibleToPlayers, s.Kind })
+            .Select(s => new { s.Id, s.Title, s.SortOrder, s.IsVisibleToPlayers, s.Kind, s.SheetId })
             .ToListAsync(ct);
+
+        var tagsByScene = new Dictionary<Guid, IReadOnlyList<CampaignImageTagDto>>();
+        if (forMaster && rows.Count > 0)
+        {
+            var sceneIds = rows.Select(s => s.Id).ToArray();
+            var tagRows = await _db.CampaignSceneTags
+                .AsNoTracking()
+                .Where(st => sceneIds.Contains(st.SceneId))
+                .OrderBy(st => st.Tag.Name)
+                .Select(st => new { st.SceneId, st.Tag.Id, st.Tag.Name })
+                .ToListAsync(ct);
+            tagsByScene = tagRows
+                .GroupBy(t => t.SceneId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => (IReadOnlyList<CampaignImageTagDto>)group
+                        .Select(t => new CampaignImageTagDto(t.Id, t.Name))
+                        .ToList());
+        }
 
         return rows
             .Select(s => new CampaignSceneDto(
                 s.Id,
                 s.Title,
-                forMaster
-                    ? SceneImagePaths.Master(s.Id)
-                    : SceneImagePaths.Public(publicToken, s.Id),
+                s.SheetId.HasValue
+                    ? forMaster
+                        ? SheetImagePaths.Master(s.SheetId.Value)
+                        : SheetImagePaths.Public(publicToken, s.SheetId.Value)
+                    : forMaster
+                        ? SceneImagePaths.Master(s.Id)
+                        : SceneImagePaths.Public(publicToken, s.Id),
                 s.SortOrder,
                 s.IsVisibleToPlayers,
-                s.Kind))
+                s.Kind,
+                tagsByScene.GetValueOrDefault(s.Id) ?? Array.Empty<CampaignImageTagDto>(),
+                s.SheetId))
+            .ToList();
+    }
+
+    private async Task ApplyTagsAsync(
+        CampaignScene scene,
+        Guid campaignId,
+        IReadOnlyCollection<Guid> tagIds,
+        CancellationToken ct)
+    {
+        var distinctTagIds = tagIds.Distinct().ToArray();
+        if (distinctTagIds.Length > SceneRules.MaxTagsPerScene)
+        {
+            throw new DomainException(DomainMessages.SceneTooManyTags);
+        }
+
+        var validTagIds = await _db.CampaignImageTags
+            .Where(t => t.CampaignId == campaignId && distinctTagIds.Contains(t.Id))
+            .Select(t => t.Id)
+            .ToListAsync(ct);
+        if (validTagIds.Count != distinctTagIds.Length)
+        {
+            throw new DomainException(DomainMessages.SceneTagNotFound);
+        }
+
+        var currentTags = await _db.CampaignSceneTags
+            .Where(st => st.SceneId == scene.Id)
+            .ToListAsync(ct);
+        _db.CampaignSceneTags.RemoveRange(currentTags);
+        scene.SceneTags = validTagIds
+            .Select(tagId => new CampaignSceneTag { SceneId = scene.Id, TagId = tagId })
             .ToList();
     }
 
     private async Task<SceneImageFile> LoadOrFetchAsync(CampaignScene scene, CancellationToken ct)
     {
+        if (scene.SheetId.HasValue)
+        {
+            var sheetImage = await _db.SheetImages
+                .AsNoTracking()
+                .Where(i => i.SheetId == scene.SheetId.Value && i.Sheet.CampaignId == scene.CampaignId)
+                .Select(i => new SceneImageFile(i.Content, i.ContentType))
+                .FirstOrDefaultAsync(ct);
+
+            return sheetImage
+                ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);
+        }
+
         if (scene.ImageContent is { Length: > 0 } && !string.IsNullOrWhiteSpace(scene.ImageContentType))
         {
             return new SceneImageFile(scene.ImageContent, scene.ImageContentType);
@@ -321,11 +448,30 @@ public class SceneService : ISceneService
 
     private async Task ApplyImageSourceAsync(
         CampaignScene scene,
+        Guid campaignId,
         string? trimmedUrl,
         IFormFile? file,
         bool hasFile,
+        Guid? sheetId,
         CancellationToken ct)
     {
+        if (sheetId.HasValue)
+        {
+            var belongsToCampaign = await _db.Sheets
+                .AnyAsync(s => s.Id == sheetId.Value && s.CampaignId == campaignId, ct);
+            if (!belongsToCampaign)
+            {
+                throw new DomainException(DomainMessages.SceneSheetNotFound);
+            }
+
+            scene.SheetId = sheetId;
+            scene.ImageContent = null;
+            scene.ImageContentType = null;
+            scene.ImageUrl = null;
+            return;
+        }
+
+        scene.SheetId = null;
         if (hasFile)
         {
             var image = await ReadImageAsync(file!, ct);
@@ -341,6 +487,9 @@ public class SceneService : ISceneService
         scene.ImageUrl = null;
     }
 
+    private static int CountImageSources(bool hasFile, string? trimmedUrl, Guid? sheetId) =>
+        (hasFile ? 1 : 0) + (trimmedUrl is not null ? 1 : 0) + (sheetId.HasValue ? 1 : 0);
+
     private static string NormalizeTitle(string? title)
     {
         var trimmed = title?.Trim() ?? string.Empty;
@@ -352,6 +501,22 @@ public class SceneService : ISceneService
         if (trimmed.Length > SceneRules.MaxTitleLength)
         {
             throw new DomainException(DomainMessages.SceneTitleTooLong);
+        }
+
+        return trimmed;
+    }
+
+    private static string NormalizeTagName(string? name)
+    {
+        var trimmed = name?.Trim() ?? string.Empty;
+        if (trimmed.Length == 0)
+        {
+            throw new DomainException(DomainMessages.SceneTagNameRequired);
+        }
+
+        if (trimmed.Length > SceneRules.MaxTagNameLength)
+        {
+            throw new DomainException(DomainMessages.SceneTagNameTooLong);
         }
 
         return trimmed;

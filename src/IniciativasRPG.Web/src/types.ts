@@ -315,6 +315,11 @@ export type SceneKind = 'Uncategorized' | 'Item' | 'Npc' | 'Card' | 'Map';
 
 export type SceneKindFilter = 'all' | SceneKind;
 
+export interface CampaignImageTag {
+  id: string;
+  name: string;
+}
+
 export interface CampaignScene {
   id: string;
   title: string;
@@ -322,6 +327,8 @@ export interface CampaignScene {
   sortOrder: number;
   isVisibleToPlayers: boolean;
   kind: SceneKind;
+  tags?: CampaignImageTag[];
+  sheetId?: string | null;
 }
 
 export interface ModifierTypePayload {

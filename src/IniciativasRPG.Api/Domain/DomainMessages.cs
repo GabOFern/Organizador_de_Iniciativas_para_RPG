@@ -58,13 +58,21 @@ public static class DomainMessages
     public const string SceneTitleRequired = "O título da imagem é obrigatório.";
     public const string SceneTitleTooLong = "O título da imagem é longo demais.";
     public const string SceneImageLinkFailed = "Não foi possível usar a imagem desse link.";
-    public const string SceneImageSourceRequired = "Informe o link ou o arquivo.";
-    public const string SceneImageSourceConflict = "Use o link ou o arquivo.";
+    public const string SceneImageSourceRequired = "Informe o link, o arquivo ou a ficha.";
+    public const string SceneImageSourceConflict = "Use apenas uma origem: link, arquivo ou ficha.";
+    public const string SceneSheetNotFound = "A ficha selecionada não pertence a esta campanha.";
     public const string SceneKindRequired = "Escolha o tipo da imagem.";
     public const string SceneKindInvalid = "Tipo de imagem inválido.";
     public static readonly string SceneCampaignFull =
         $"Esta campanha já tem {SceneRules.MaxScenesPerCampaign} imagens.";
     public const string SceneNotFound = "Imagem não encontrada.";
+    public const string SceneTagNameRequired = "O nome da tag é obrigatório.";
+    public const string SceneTagNameTooLong = "O nome da tag é longo demais.";
+    public static readonly string SceneTagCampaignFull =
+        $"Esta campanha já tem {SceneRules.MaxTagsPerCampaign} tags.";
+    public static readonly string SceneTooManyTags =
+        $"Uma imagem pode ter no máximo {SceneRules.MaxTagsPerScene} tags.";
+    public const string SceneTagNotFound = "Uma ou mais tags não pertencem a esta campanha.";
     public static readonly string DemoBattleSheetsMissing = BuildDemoBattleSheetsMissing();
     public const string DemoBattleNotActive = "Não há batalha teste ativa para avançar.";
     public const string DemoBattleActorHasNoAttack = "O combatente do turno não possui ataques para simular.";

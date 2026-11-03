@@ -11,6 +11,9 @@ public static class SceneRules
     public const int MaxImageContentTypeLength = 32;
     public const int ImageFetchTimeoutSeconds = 15;
     public const int MaxKindLength = SheetRules.MaxEnumStringLength;
+    public const int MaxTagNameLength = 40;
+    public const int MaxTagsPerScene = 20;
+    public const int MaxTagsPerCampaign = 100;
 
     /// <summary>Novas imagens ficam ocultas aos jogadores até o mestre abrir o olho.</summary>
     public const bool VisibleToPlayersDefault = false;

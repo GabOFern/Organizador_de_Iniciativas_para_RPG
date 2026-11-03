@@ -178,6 +178,29 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.ToTable("Campaigns");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignImageTag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CampaignId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("TEXT")
+                        .UseCollation("NOCASE");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CampaignId", "Name")
+                        .IsUnique();
+
+                    b.ToTable("CampaignImageTags");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignScene", b =>
                 {
                     b.Property<Guid>("Id")
@@ -213,6 +236,9 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValue("Uncategorized");
 
+                    b.Property<Guid?>("SheetId")
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("SortOrder")
                         .HasColumnType("INTEGER");
 
@@ -225,7 +251,24 @@ namespace IniciativasRPG.Api.Data.Migrations
 
                     b.HasIndex("CampaignId");
 
+                    b.HasIndex("SheetId");
+
                     b.ToTable("CampaignScenes");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignSceneTag", b =>
+                {
+                    b.Property<Guid>("SceneId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("TagId")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("SceneId", "TagId");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("CampaignSceneTags");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
@@ -677,6 +720,17 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.Navigation("Campaign");
                 });
 
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignImageTag", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.Campaign", "Campaign")
+                        .WithMany("ImageTags")
+                        .HasForeignKey("CampaignId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Campaign");
+                });
+
             modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignScene", b =>
                 {
                     b.HasOne("IniciativasRPG.Api.Domain.Campaign", "Campaign")
@@ -685,7 +739,33 @@ namespace IniciativasRPG.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("IniciativasRPG.Api.Domain.Sheet", "Sheet")
+                        .WithMany()
+                        .HasForeignKey("SheetId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Campaign");
+
+                    b.Navigation("Sheet");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignSceneTag", b =>
+                {
+                    b.HasOne("IniciativasRPG.Api.Domain.CampaignScene", "Scene")
+                        .WithMany("SceneTags")
+                        .HasForeignKey("SceneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("IniciativasRPG.Api.Domain.CampaignImageTag", "Tag")
+                        .WithMany("SceneTags")
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Scene");
+
+                    b.Navigation("Tag");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>
@@ -812,11 +892,23 @@ namespace IniciativasRPG.Api.Data.Migrations
                 {
                     b.Navigation("Battles");
 
+                    b.Navigation("ImageTags");
+
                     b.Navigation("Lineups");
 
                     b.Navigation("Scenes");
 
                     b.Navigation("Sheets");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignImageTag", b =>
+                {
+                    b.Navigation("SceneTags");
+                });
+
+            modelBuilder.Entity("IniciativasRPG.Api.Domain.CampaignScene", b =>
+                {
+                    b.Navigation("SceneTags");
                 });
 
             modelBuilder.Entity("IniciativasRPG.Api.Domain.Combatant", b =>

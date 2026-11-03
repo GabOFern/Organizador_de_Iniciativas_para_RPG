@@ -36,8 +36,15 @@ export const campaignsLoadFailedMessage = 'Falha ao carregar campanhas.';
 export const requestFailedMessage = 'Falha na requisição.';
 export const appBrandName = 'Iniciativas RPG';
 export const battleLoadFailedMessage = 'Falha ao carregar batalha.';
+/** Espera do snapshot via hub antes do GET REST na visão pública. */
+export const publicBattleHubFallbackMs = 4000;
 export const invokeFailedMessage = 'Falha ao invocar.';
 export const scenesLoadFailedMessage = 'Falha ao carregar cenas.';
+export const imagesLoadFailedMessage = 'Falha ao carregar imagens.';
+export const sceneCreateFailedMessage = 'Falha ao incluir imagem.';
+export const sceneSaveFailedMessage = 'Falha ao salvar imagem.';
+export const sceneDeleteFailedMessage = 'Falha ao remover imagem.';
+export const sceneVisibilityFailedMessage = 'Falha ao alterar visibilidade.';
 export const noPublicBattleMessage = 'Não há combate em andamento.';
 
 export const sheetFilterNameLabel = 'Filtrar por nome';
@@ -62,6 +69,7 @@ export const routes = {
   mestre: '/mestre',
   mestreSheets: '/mestre/fichas',
   mestreLineups: '/mestre/cenas',
+  mestreImages: '/mestre/imagens',
   mestreBattle: '/mestre/batalha',
   mestreModifiers: '/mestre/modificadores',
   publicLobby: '/',
@@ -158,8 +166,12 @@ export const sceneImageMaxBytes = sheetImageMaxBytes;
 export const sceneImageAccept = sheetImageAccept;
 export const sceneTitleRequired = 'O título da imagem é obrigatório.';
 export const sceneTitleTooLong = 'O título da imagem é longo demais.';
-export const sceneImageSourceRequired = 'Informe o link ou o arquivo.';
-export const sceneImageSourceConflict = sheetImageSourceConflict;
+export const sceneImageSourceRequired = 'Informe o link, o arquivo ou a ficha.';
+export const sceneImageSourceConflict = 'Use apenas uma origem: link, arquivo ou ficha.';
+export const sceneImageUrlLabel = 'Link da imagem';
+export const sceneImageFileLabel = 'Arquivo da imagem';
+export const sceneImageSheetLabel = 'Ficha da campanha';
+export const sceneImageSheetNoneLabel = 'Nenhuma ficha';
 export const sceneImageUrlInvalid = 'O link da imagem precisa ser http ou https.';
 export const sceneEmptyMessage = 'Nenhuma imagem nesta sessão.';
 export const sceneZoomMin = 1;
@@ -204,18 +216,32 @@ export function sceneLauncherAriaLabel(unseenCount: number) {
 export const sceneKindRequired = 'Escolha o tipo da imagem.';
 export const sceneKindLabel = 'Tipo';
 export const sceneFilterNameLabel = 'Filtrar por nome';
-export const sceneFilterKindLabel = 'Filtrar por tipo';
+export const sceneFilterKindLabel = 'Categoria';
 export const sceneFilterAllLabel = 'Todos';
+export const sceneFilterEmptyMessage = 'Nenhuma imagem com esse filtro.';
+export const sceneFilterTagsLabel = 'Tags';
+export const sceneFilterExcludeTagsLabel = 'Tags excluídas (NOT)';
+export const sceneFilterTagModeLabel = 'Modo das tags';
+export const sceneFilterTagModeAndLabel = 'Todas (AND)';
+export const sceneFilterTagModeOrLabel = 'Qualquer (OR)';
+export const sceneTagsLabel = 'Tags';
+export const sceneNewTagLabel = 'Nova tag';
+export const sceneCreateTagLabel = 'Criar tag';
+export const sceneTagNameRequired = 'Informe o nome da tag.';
+export const sceneTagCreateFailedMessage = 'Falha ao criar tag.';
 export const sceneKindUncategorizedLabel = 'Sem tipo';
 export const sceneNewLabel = 'Nova imagem';
 export const sceneEditDialogLabel = 'Editar imagem';
 export const sceneEditLabel = 'Editar';
+export const sceneDeleteLabel = 'Excluir';
+export const sceneVisibilityToggleLabel = 'Visualização';
 export const sceneSaveLabel = 'Salvar';
 export const sceneCancelEditLabel = 'Cancelar';
 export const sceneIncludeLabel = 'Incluir';
 export const sceneEditorCloseLabel = 'Fechar formulário';
 
 export const lineupsNavLabel = 'Cenas';
+export const imagesNavLabel = 'Imagens';
 export const invokeOptionsLabel = 'Opções de invocar';
 export const invokeSheetLabel = 'Invocar ficha';
 export const invokeLineupLabel = 'Invocar cena';

@@ -84,6 +84,9 @@ public static class SheetRules
 
 public static class SheetImagePaths
 {
+    public static string Master(Guid sheetId) =>
+        $"/api/sheets/{sheetId}/image";
+
     public static string Public(string publicToken, Guid sheetId) =>
         $"/api/public/campaigns/{publicToken}/sheets/{sheetId}/image";
 }

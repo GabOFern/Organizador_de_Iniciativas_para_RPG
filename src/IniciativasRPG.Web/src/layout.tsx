@@ -2,7 +2,7 @@ import { Link, Navigate, NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from './auth';
 import { ScenePanel } from './components/ScenePanel';
 import { ThemePicker } from './components/ThemePicker';
-import { appBrandName, lineupsNavLabel, routes } from './config';
+import { appBrandName, imagesNavLabel, lineupsNavLabel, routes } from './config';
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -26,6 +26,7 @@ export function MestreLayout() {
           <NavLink to={routes.mestreBattle}>Batalha</NavLink>
           <NavLink to={routes.mestreSheets}>Fichas</NavLink>
           <NavLink to={routes.mestreLineups}>{lineupsNavLabel}</NavLink>
+          <NavLink to={routes.mestreImages}>{imagesNavLabel}</NavLink>
           <NavLink to={routes.mestreModifiers}>Modificadores</NavLink>
           {campaignPublicToken && (
             <Link to={routes.publicBattle(campaignPublicToken)} target="_blank" rel="noreferrer">

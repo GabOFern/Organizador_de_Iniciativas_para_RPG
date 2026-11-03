@@ -45,8 +45,111 @@ public class SceneServiceTests : IAsyncDisposable
     }
 
     private Task<IReadOnlyList<IniciativasRPG.Api.Contracts.CampaignSceneDto>> CreateItem(
-        string title = "Sala") =>
-        _sut.CreateAsync(_campaignId, title, nameof(SceneKind.Item), null, PngFile());
+        string title = "Sala",
+        IReadOnlyCollection<Guid>? tagIds = null) =>
+        _sut.CreateAsync(_campaignId, title, nameof(SceneKind.Item), null, PngFile(), tagIds);
+
+    private async Task<Guid> SeedSheetWithImageAsync()
+    {
+        var sheet = new Sheet
+        {
+            Id = Guid.NewGuid(),
+            CampaignId = _campaignId,
+            Name = "Lysander",
+            Type = SheetType.Npc,
+        };
+        _testDb.Context.Sheets.Add(sheet);
+        _testDb.Context.SheetImages.Add(new SheetImage
+        {
+            SheetId = sheet.Id,
+            Content = PngBytes(),
+            ContentType = SheetRules.PngContentType,
+        });
+        await _testDb.Context.SaveChangesAsync();
+        return sheet.Id;
+    }
+
+    [Fact]
+    public async Task Create_WithSheetId_NoBlob_UsesSheetImageUrl()
+    {
+        var sheetId = await SeedSheetWithImageAsync();
+
+        var scenes = await _sut.CreateAsync(
+            _campaignId,
+            "Lysander",
+            nameof(SceneKind.Npc),
+            null,
+            null,
+            sheetId: sheetId);
+
+        scenes.Should().ContainSingle();
+        scenes[0].ImageUrl.Should().Be(SheetImagePaths.Master(sheetId));
+        scenes[0].SheetId.Should().Be(sheetId);
+        var stored = await _testDb.Context.CampaignScenes.AsNoTracking().SingleAsync();
+        stored.SheetId.Should().Be(sheetId);
+        stored.ImageContent.Should().BeNull();
+        stored.ImageContentType.Should().BeNull();
+        stored.ImageUrl.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetSceneImage_WithSheetId_ReturnsSheetBytes()
+    {
+        var sheetId = await SeedSheetWithImageAsync();
+        var scenes = await _sut.CreateAsync(
+            _campaignId,
+            "Lysander",
+            nameof(SceneKind.Npc),
+            null,
+            null,
+            sheetId: sheetId);
+
+        var image = await _sut.GetMasterImageAsync(_campaignId, scenes[0].Id);
+        await _sut.SetVisibilityAsync(_campaignId, scenes[0].Id, true);
+        var publicImage = await _sut.GetPublicImageAsync(_publicToken, scenes[0].Id);
+        var publicScene = (await _sut.ListByPublicTokenAsync(_publicToken)).Single();
+
+        image.Content.Should().BeEquivalentTo(PngBytes());
+        image.ContentType.Should().Be(SheetRules.PngContentType);
+        publicImage.Content.Should().BeEquivalentTo(PngBytes());
+        publicScene.ImageUrl.Should().Be(SheetImagePaths.Public(_publicToken, sheetId));
+        _fetcher.Calls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Create_SheetIdAndUrl_Throws()
+    {
+        var sheetId = await SeedSheetWithImageAsync();
+
+        var act = () => _sut.CreateAsync(
+            _campaignId,
+            "Lysander",
+            nameof(SceneKind.Npc),
+            "https://cdn.example/lysander.png",
+            null,
+            sheetId: sheetId);
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SceneImageSourceConflict);
+        (await _testDb.Context.CampaignScenes.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Create_WithoutSheet_UrlAndFileOriginsContinueWorking()
+    {
+        var fromFile = await CreateItem("Arquivo");
+        var fromUrl = await _sut.CreateAsync(
+            _campaignId,
+            "Link",
+            nameof(SceneKind.Map),
+            "https://cdn.example/map.png",
+            null);
+
+        fromFile.Should().Contain(s => s.Title == "Arquivo");
+        fromUrl.Should().Contain(s => s.Title == "Link");
+        (await _testDb.Context.CampaignScenes.AsNoTracking().ToListAsync())
+            .Should().OnlyContain(s => s.SheetId == null && s.ImageContent != null);
+    }
 
     [Fact]
     public async Task Create_ValidFile_IsHiddenFromPlayersByDefault()
@@ -93,6 +196,99 @@ public class SceneServiceTests : IAsyncDisposable
         master.Should().HaveCount(2);
         master.Should().Contain(s => s.Title == "Oculta" && !s.IsVisibleToPlayers);
         master.Should().Contain(s => s.Title == "Visivel" && s.IsVisibleToPlayers);
+    }
+
+    [Fact]
+    public async Task CreateTag_SameTrimmedNameIgnoringCase_ReturnsExistingTag()
+    {
+        var created = await _sut.CreateTagAsync(_campaignId, "  Vilão  ");
+        var repeated = await _sut.CreateTagAsync(_campaignId, "vilão");
+
+        repeated.Should().Be(created);
+        (await _sut.ListTagsAsync(_campaignId)).Should().ContainSingle()
+            .Which.Name.Should().Be("Vilão");
+    }
+
+    [Fact]
+    public async Task Create_WithTags_AssignsAndListsSceneTags()
+    {
+        var enemy = await _sut.CreateTagAsync(_campaignId, "Inimigo");
+        var night = await _sut.CreateTagAsync(_campaignId, "Noite");
+
+        var scenes = await CreateItem("Emboscada", [enemy.Id, night.Id]);
+
+        scenes.Should().ContainSingle();
+        scenes[0].Tags.Should().BeEquivalentTo([enemy, night]);
+        (await _testDb.Context.CampaignSceneTags.CountAsync()).Should().Be(2);
+    }
+
+    [Fact]
+    public async Task Update_WithTags_ReplacesExistingSceneTags()
+    {
+        var oldTag = await _sut.CreateTagAsync(_campaignId, "Antiga");
+        var newTag = await _sut.CreateTagAsync(_campaignId, "Nova");
+        var created = await CreateItem("Cena", [oldTag.Id]);
+
+        var scenes = await _sut.UpdateAsync(
+            _campaignId,
+            created[0].Id,
+            "Cena",
+            nameof(SceneKind.Item),
+            null,
+            null,
+            [newTag.Id]);
+
+        scenes[0].Tags.Should().ContainSingle().Which.Should().Be(newTag);
+    }
+
+    [Fact]
+    public async Task CreateTag_NameLongerThanLimit_Throws()
+    {
+        var act = () => _sut.CreateTagAsync(
+            _campaignId,
+            new string('x', SceneRules.MaxTagNameLength + 1));
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SceneTagNameTooLong);
+    }
+
+    [Fact]
+    public async Task Create_MoreTagsThanSceneLimit_Throws()
+    {
+        var tags = Enumerable.Range(0, SceneRules.MaxTagsPerScene + 1)
+            .Select(index => new CampaignImageTag
+            {
+                Id = Guid.NewGuid(),
+                CampaignId = _campaignId,
+                Name = $"Tag {index}",
+            })
+            .ToArray();
+        _testDb.Context.CampaignImageTags.AddRange(tags);
+        await _testDb.Context.SaveChangesAsync();
+
+        var act = () => CreateItem("Com tags demais", tags.Select(t => t.Id).ToArray());
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SceneTooManyTags);
+    }
+
+    [Fact]
+    public async Task CreateTag_WhenCampaignReachedLimit_Throws()
+    {
+        var tags = Enumerable.Range(0, SceneRules.MaxTagsPerCampaign)
+            .Select(index => new CampaignImageTag
+            {
+                Id = Guid.NewGuid(),
+                CampaignId = _campaignId,
+                Name = $"Tag {index}",
+            });
+        _testDb.Context.CampaignImageTags.AddRange(tags);
+        await _testDb.Context.SaveChangesAsync();
+
+        var act = () => _sut.CreateTagAsync(_campaignId, "Excedente");
+
+        (await act.Should().ThrowAsync<DomainException>())
+            .WithMessage(DomainMessages.SceneTagCampaignFull);
     }
 
     [Fact]

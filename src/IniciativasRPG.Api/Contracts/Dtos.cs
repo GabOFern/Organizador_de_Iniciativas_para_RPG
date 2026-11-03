@@ -105,7 +105,13 @@ public record CampaignSceneDto(
     string ImageUrl,
     int SortOrder,
     bool IsVisibleToPlayers,
-    SceneKind Kind);
+    SceneKind Kind,
+    IReadOnlyList<CampaignImageTagDto> Tags,
+    Guid? SheetId);
+
+public record CampaignImageTagDto(Guid Id, string Name);
+
+public record CreateCampaignImageTagRequest(string? Name);
 
 public record SetSceneVisibilityRequest(bool IsVisibleToPlayers);
 

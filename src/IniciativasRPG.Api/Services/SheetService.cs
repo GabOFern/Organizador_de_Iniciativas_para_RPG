@@ -14,6 +14,7 @@ public interface ISheetService
     Task DeleteAsync(Guid campaignId, Guid id, CancellationToken ct = default);
     Task<SheetDto> SetImageAsync(Guid campaignId, Guid id, IFormFile file, CancellationToken ct = default);
     Task<SheetDto> ClearImageAsync(Guid campaignId, Guid id, CancellationToken ct = default);
+    Task<SheetImageFile> GetMasterImageAsync(Guid campaignId, Guid sheetId, CancellationToken ct = default);
     Task<SheetImageFile> GetPublicImageAsync(string publicToken, Guid sheetId, CancellationToken ct = default);
 }
 
@@ -221,11 +222,25 @@ public class SheetService : ISheetService
         return await MapAsync(sheet, ct);
     }
 
-    public async Task<SheetImageFile> GetPublicImageAsync(string publicToken, Guid sheetId, CancellationToken ct = default)
+    public async Task<SheetImageFile> GetMasterImageAsync(
+        Guid campaignId,
+        Guid sheetId,
+        CancellationToken ct = default) =>
+        await GetImageAsync(i => i.SheetId == sheetId && i.Sheet.CampaignId == campaignId, ct);
+
+    public async Task<SheetImageFile> GetPublicImageAsync(
+        string publicToken,
+        Guid sheetId,
+        CancellationToken ct = default) =>
+        await GetImageAsync(i => i.SheetId == sheetId && i.Sheet.Campaign.PublicToken == publicToken, ct);
+
+    private async Task<SheetImageFile> GetImageAsync(
+        System.Linq.Expressions.Expression<Func<SheetImage, bool>> predicate,
+        CancellationToken ct)
     {
         var image = await _db.SheetImages
             .AsNoTracking()
-            .Where(i => i.SheetId == sheetId && i.Sheet.Campaign.PublicToken == publicToken)
+            .Where(predicate)
             .Select(i => new SheetImageFile(i.Content, i.ContentType))
             .FirstOrDefaultAsync(ct)
             ?? throw new DomainException(DomainMessages.SheetNotFound, StatusCodes.Status404NotFound);

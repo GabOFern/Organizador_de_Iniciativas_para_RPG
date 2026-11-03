@@ -4,6 +4,7 @@ import type {
   BattleSnapshot,
   CampaignMasterLoginResponse,
   CampaignSummary,
+  CampaignImageTag,
   CombatantTactical,
   ModifierType,
   ModifierTypePayload,
@@ -176,6 +177,14 @@ export const api = {
 
   fetchAuthorizedBlob: (path: string) => fetchAuthorizedBlob(path),
 
+  listSceneTags: () => request<CampaignImageTag[]>('/api/scenes/tags'),
+
+  createSceneTag: (name: string) =>
+    request<CampaignImageTag>('/api/scenes/tags', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+
   listPublicScenes: (token: string) =>
     request<CampaignScene[]>(`/api/public/campaigns/${token}/scenes`),
 
@@ -184,24 +193,37 @@ export const api = {
     kind: string;
     imageUrl?: string;
     file?: File;
+    tagIds?: string[];
+    sheetId?: string;
   }) => {
     const form = new FormData();
     form.append('title', body.title);
     form.append('kind', body.kind);
     if (body.imageUrl) form.append('imageUrl', body.imageUrl);
     if (body.file) form.append('file', body.file);
+    if (body.sheetId) form.append('sheetId', body.sheetId);
+    body.tagIds?.forEach((tagId) => form.append('tagIds', tagId));
     return request<CampaignScene[]>('/api/scenes', { method: 'POST', body: form });
   },
 
   updateScene: (
     id: string,
-    body: { title: string; kind: string; imageUrl?: string; file?: File },
+    body: {
+      title: string;
+      kind: string;
+      imageUrl?: string;
+      file?: File;
+      tagIds?: string[];
+      sheetId?: string;
+    },
   ) => {
     const form = new FormData();
     form.append('title', body.title);
     form.append('kind', body.kind);
     if (body.imageUrl) form.append('imageUrl', body.imageUrl);
     if (body.file) form.append('file', body.file);
+    if (body.sheetId) form.append('sheetId', body.sheetId);
+    body.tagIds?.forEach((tagId) => form.append('tagIds', tagId));
     return request<CampaignScene[]>(`/api/scenes/${id}`, { method: 'PUT', body: form });
   },
 
