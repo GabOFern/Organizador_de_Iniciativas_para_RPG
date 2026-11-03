@@ -47,6 +47,7 @@ public class JwtTokenService : IJwtTokenService
             new Claim(JwtRegisteredClaimNames.Sub, campaign.Id.ToString()),
             new Claim(CampaignClaims.CampaignId, campaign.Id.ToString()),
             new Claim(CampaignClaims.CampaignName, campaign.Name),
+            new Claim(CampaignClaims.Role, CampaignRoles.Master),
             new Claim(ClaimTypes.Name, campaign.Name)
         };
 
