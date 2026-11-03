@@ -9,7 +9,6 @@ public class AppDbContext : DbContext
     {
     }
 
-    public DbSet<User> Users => Set<User>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<Sheet> Sheets => Set<Sheet>();
     public DbSet<SheetFeature> SheetFeatures => Set<SheetFeature>();
@@ -27,14 +26,6 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>(e =>
-        {
-            e.HasKey(x => x.Id);
-            e.HasIndex(x => x.Username).IsUnique();
-            e.Property(x => x.Username).HasMaxLength(AuthRules.MaxUsernameLength).IsRequired();
-            e.Property(x => x.PasswordHash).IsRequired();
-        });
-
         modelBuilder.Entity<Campaign>(e =>
         {
             e.HasKey(x => x.Id);

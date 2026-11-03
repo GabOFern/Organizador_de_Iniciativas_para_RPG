@@ -2,9 +2,6 @@ using IniciativasRPG.Api.Domain;
 
 namespace IniciativasRPG.Api.Contracts;
 
-public record LoginRequest(string Username, string Password);
-public record LoginResponse(string Token, string Username);
-
 public record CreateCampaignRequest(string Name, string? ImageUrl, string? Description, string Password);
 public record CampaignMasterLoginRequest(string Password);
 public record CampaignSummaryDto(

@@ -37,7 +37,6 @@ Copie de [`.env.example`](../src/IniciativasRPG.Web/.env.example). Variáveis `V
 | `Jwt:Issuer` / `Jwt:Audience` | `IniciativasRPG` / `IniciativasRPG.Web` | Validação do token. |
 | `Cors:AllowedOrigins` | `https://app.seudominio.com` | Origins do browser que podem chamar a API (com credentials). |
 | `ConnectionStrings:Default` | `Data Source=iniciativasrpg.db` | SQLite. |
-| `Admin:Username` / `Admin:Password` | opcional | Seed de usuário admin legado. |
 
 No ASP.NET Core, env vars usam `__` no lugar de `:`:
 

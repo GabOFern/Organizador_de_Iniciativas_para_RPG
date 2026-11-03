@@ -14,6 +14,8 @@ Quem conhece a senha entra como mestre daquela campanha. Não há dono/usuário 
 
 Jogador continua pelo `PublicToken` (leitura), sem senha de mestre.
 
+Não existe login global de usuário (`/login`, tabela `Users`, `Admin:*`). A única porta de mestre é a senha da campanha.
+
 ## Fluxo
 
 ```text

@@ -33,14 +33,7 @@ cd src/IniciativasRPG.Api
 dotnet user-secrets set "Jwt:Key" "SUA_CHAVE_ALEATORIA_COM_PELO_MENOS_32_CHARS"
 ```
 
-Opcional (usuário admin legado, só se ainda usar a tela `/login` antiga):
-
-```bash
-dotnet user-secrets set "Admin:Username" "mestre"
-dotnet user-secrets set "Admin:Password" "SuaSenhaSegura"
-```
-
-A senha do **mestre da campanha** não vem de User Secrets: é definida na criação da campanha na UI e guardada com `PasswordHasher` (PBKDF2 + salt), nunca em texto puro.
+A senha do **mestre da campanha** não vem de User Secrets: é definida na criação da campanha na UI e guardada com `PasswordHasher` (PBKDF2 + salt), nunca em texto puro. Não há login global de usuário.
 
 Estrutura de exemplo: [`src/IniciativasRPG.Api/appsettings.Example.json`](src/IniciativasRPG.Api/appsettings.Example.json).
 
@@ -104,6 +97,8 @@ No fluxo `/publico` (túnel só no Vite) **não é necessário** mudar CORS nem 
 |-----------|----------|
 | [docs/CONFIGURACAO-E-DEPLOY.md](docs/CONFIGURACAO-E-DEPLOY.md) | URLs, CORS, Cloudflare Tunnel, ngrok |
 | [docs/auth-campanha-mestre.md](docs/auth-campanha-mestre.md) | Senha do mestre, hash, JWT e gancho para auth futura |
+| [docs/remover-login-legado.md](docs/remover-login-legado.md) | Remoção do `/login` e da tabela Users |
+| [docs/design-system.md](docs/design-system.md) | Cores, fontes, espaçamento, cards e fila |
 | [docs/fichas-campanha-editaveis.md](docs/fichas-campanha-editaveis.md) | Boot vazio e fichas só da batalha simulada |
 | [docs/visualizacao-fila-iniciativa.md](docs/visualizacao-fila-iniciativa.md) | Grade e carrossel na fila |
 | [docs/foco-carrossel-fila.md](docs/foco-carrossel-fila.md) | Foco Turno / Livre no carrossel |

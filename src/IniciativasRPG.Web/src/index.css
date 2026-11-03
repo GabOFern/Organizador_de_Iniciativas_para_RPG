@@ -38,6 +38,13 @@
 
   --font-display: 'Cinzel', 'Palatino Linotype', Palatino, serif;
   --font-body: 'Crimson Pro', 'Palatino Linotype', Palatino, serif;
+  --space-2xs: 0.35rem;
+  --space-xs: 0.5rem;
+  --space-sm: 0.75rem;
+  --space-md: 0.85rem;
+  --space-lg: 1.35rem;
+  --space-xl: 1.5rem;
+  --space-section: 1.75rem;
   --touch-min: 44px;
   --player-phone-max: 767px;
   --player-phone-landscape-max: 500px;
@@ -190,7 +197,7 @@ textarea:focus {
 .mestre-shell {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: var(--space-xl);
   width: 100%;
   min-width: 0;
   position: relative;
@@ -251,13 +258,13 @@ textarea:focus {
 
 .stack {
   display: grid;
-  gap: 0.85rem;
+  gap: var(--space-md);
 }
 
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--space-sm);
   align-items: end;
 }
 
@@ -275,34 +282,7 @@ textarea:focus {
   color: var(--ink-muted);
 }
 
-/* —— Login hero —— */
-.login-page {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 1.5rem;
-  position: relative;
-}
-
-.login-page::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 20%, rgba(196, 163, 90, 0.12), transparent 45%),
-    radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.55) 100%);
-  pointer-events: none;
-}
-
-.login-hero {
-  position: relative;
-  z-index: 1;
-  width: min(100%, 460px);
-  display: grid;
-  gap: 1.5rem;
-  text-align: center;
-}
-
+/* —— Brand (home / campanhas) —— */
 .brand-mark {
   display: grid;
   gap: 0.45rem;
@@ -354,18 +334,6 @@ textarea:focus {
   color: var(--ink-muted);
   font-size: 1.1rem;
   font-style: italic;
-}
-
-.login-panel {
-  text-align: left;
-}
-
-.login-panel h2 {
-  font-size: 1rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--accent-ember);
-  margin-bottom: 1rem;
 }
 
 /* —— Mestre shell —— */
@@ -443,7 +411,7 @@ textarea:focus {
 
 .page-grid {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-xl);
   grid-template-columns: 1.1fr 1fr;
 }
 
@@ -476,7 +444,7 @@ textarea:focus {
 .battle-layout {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: var(--space-xl);
   width: 100%;
   min-width: 0;
 }
@@ -508,7 +476,7 @@ textarea:focus {
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: var(--space-lg);
 }
 
 .queue-header h2 {
@@ -547,7 +515,7 @@ textarea:focus {
 .sheet-filters {
   display: grid;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-lg);
 }
 
 .sheet-filters label {
@@ -687,7 +655,7 @@ textarea:focus {
 .combatant-list-view {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: var(--space-section);
   width: 100%;
   min-width: 0;
 }
@@ -695,7 +663,7 @@ textarea:focus {
 .combatant-view-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-xs);
   align-items: center;
 }
 
@@ -714,7 +682,8 @@ textarea:focus {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   grid-template-rows: auto auto;
-  gap: 0.5rem 0.35rem;
+  row-gap: var(--space-xs);
+  column-gap: var(--space-sm);
   align-items: center;
   width: 100%;
   min-width: 0;
@@ -751,7 +720,7 @@ textarea:focus {
 .combatant-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 1.35rem;
+  gap: var(--space-lg);
   width: 100%;
   min-width: 0;
 }
@@ -1483,19 +1452,6 @@ html[data-theme] .battle-lobby-card {
   display: block;
 }
 
-.login-public-link {
-  margin: 1rem 0 0;
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.login-public-link a {
-  font-family: var(--font-display);
-  font-size: 0.8rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .battle-lobby {
   display: grid;
   gap: 0.85rem;
@@ -2088,8 +2044,7 @@ a.button-link {
 
 @media (max-width: 400px) {
   .mestre-shell,
-  .page,
-  .login-page {
+  .page {
     padding: 0.75rem;
   }
 

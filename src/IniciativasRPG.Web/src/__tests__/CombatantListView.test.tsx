@@ -81,6 +81,9 @@ describe('CombatantListView', () => {
 
   it('fila_GradeComTresColunas_MostraTodasAsFichas', () => {
     const { container } = renderList({ mode: 'grid', itemsPerView: 3 });
+    // Gap toolbar → cards: .combatant-list-view { gap: var(--space-section) } em index.css (1.75rem).
+    expect(container.querySelector('.combatant-list-view')).toBeTruthy();
+    expect(container.querySelector('.combatant-view-toolbar')).toBeTruthy();
     const track = screen.getByTestId('combatant-view-track');
     expect(track.className).toContain('combatant-grid--cols-3');
     expect(within(track).getAllByText(/Ficha /)).toHaveLength(8);

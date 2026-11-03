@@ -17,7 +17,6 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path={routes.home} element={<CampaignsHomePage />} />
-            <Route path={routes.login} element={<Navigate to={routes.home} replace />} />
             <Route path="/publico/:token" element={<PublicBattlePage />} />
             <Route
               path={routes.mestre}

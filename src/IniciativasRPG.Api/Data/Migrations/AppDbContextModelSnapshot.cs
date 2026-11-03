@@ -648,29 +648,6 @@ namespace IniciativasRPG.Api.Data.Migrations
                     b.ToTable("SheetWeapons");
                 });
 
-            modelBuilder.Entity("IniciativasRPG.Api.Domain.User", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Username")
-                        .IsUnique();
-
-                    b.ToTable("Users");
-                });
-
             modelBuilder.Entity("IniciativasRPG.Api.Domain.ActiveModifier", b =>
                 {
                     b.HasOne("IniciativasRPG.Api.Domain.Combatant", "Combatant")

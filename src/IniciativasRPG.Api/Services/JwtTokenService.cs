@@ -10,7 +10,6 @@ namespace IniciativasRPG.Api.Services;
 
 public interface IJwtTokenService
 {
-    string CreateToken(User user);
     string CreateCampaignToken(Campaign campaign);
 }
 
@@ -26,18 +25,6 @@ public class JwtTokenService : IJwtTokenService
             throw new InvalidOperationException(
                 $"{DomainMessages.ConfigMissing} Configure Jwt:Key com ao menos 32 caracteres.");
         }
-    }
-
-    public string CreateToken(User user)
-    {
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.Username),
-            new Claim(ClaimTypes.Name, user.Username)
-        };
-
-        return WriteToken(claims);
     }
 
     public string CreateCampaignToken(Campaign campaign)

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../api';
+import { CardFrame } from '../components/CardFrame';
 import { appBrandName, routes } from '../config';
 import type { PublicBattleSummary } from '../types';
 
@@ -91,6 +92,7 @@ export function PublicLobbyPage() {
                 to={routes.publicBattle(battle.publicToken)}
                 className="battle-lobby-card"
               >
+                <CardFrame />
                 <div className="battle-lobby-card-top">
                   <span className={`battle-lobby-status is-${battle.status.toLowerCase()}`}>
                     {statusLabel(battle.status)}

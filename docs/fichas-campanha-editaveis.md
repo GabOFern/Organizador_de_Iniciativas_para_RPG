@@ -9,9 +9,8 @@ Na primeira subida o banco fica **sem campanhas**. O mestre cria a campanha pela
 Permitido:
 
 1. `MigrateAsync`
-2. Seed opcional de usuário admin **se** `Admin:Username` e `Admin:Password` vierem de config/env (já existia; não cria campanha)
-3. `SampleNpcSheetSeeder.ApplyAsync` — as 6 fichas por campanha existente, idempotente por nome
-4. `SampleSheetImageSeeder.ApplyAsync` — arte **apenas** para nomes de `SampleNpcSheetContent` (e limpeza de URL legada nessas / genéricas, sem catálogo de campanha)
+2. `SampleNpcSheetSeeder.ApplyAsync` — as 6 fichas por campanha existente, idempotente por nome
+3. `SampleSheetImageSeeder.ApplyAsync` — arte **apenas** para nomes de `SampleNpcSheetContent` (e limpeza de URL legada nessas / genéricas, sem catálogo de campanha)
 
 Proibido no boot:
 
@@ -49,7 +48,7 @@ Arquivos `Data/SeedArt/` de criaturas de campanha e `CampaignSheetArtCatalog.cs`
 
 `DbSeeder` / integração leve com `TestDb` ou teste do serviço:
 
-- `Seed_EmptyDatabase_DoesNotCreateCampaign` — após o fluxo de seed sem Admin/CampaignSeed, `Campaigns` vazio; não lança por falta de CampaignSeed:Password
+- `Seed_EmptyDatabase_DoesNotCreateCampaign` — após o fluxo de seed, `Campaigns` vazio
 - `CreateCampaign_AddsSampleNpcSheets` — `CreateAsync` deixa as 6 fichas na campanha
 
 `SampleNpcSheetSeederTests` / `DemoBattleServiceTests` — continuam verdes

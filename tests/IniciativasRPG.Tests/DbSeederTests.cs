@@ -1,8 +1,5 @@
 using FluentAssertions;
-using IniciativasRPG.Api.Configuration;
 using IniciativasRPG.Api.Data;
-using IniciativasRPG.Api.Domain;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,8 +19,6 @@ public class DbSeederTests : IAsyncDisposable
         var services = new ServiceCollection();
         services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
         services.AddLogging();
-        services.Configure<AdminOptions>(_ => { });
-        services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
         _services = services.BuildServiceProvider();
     }
 

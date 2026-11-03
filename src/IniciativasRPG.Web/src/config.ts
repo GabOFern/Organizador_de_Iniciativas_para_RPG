@@ -59,7 +59,6 @@ export const sheetDeleteFailedMessage = 'Falha ao excluir ficha.';
 
 export const routes = {
   home: '/',
-  login: '/login',
   mestre: '/mestre',
   mestreSheets: '/mestre/fichas',
   mestreLineups: '/mestre/cenas',

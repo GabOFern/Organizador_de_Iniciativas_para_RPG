@@ -14,7 +14,6 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection(JwtOptions.SectionName));
-builder.Services.Configure<AdminOptions>(builder.Configuration.GetSection(AdminOptions.SectionName));
 builder.Services.Configure<CorsOptions>(builder.Configuration.GetSection(CorsOptions.SectionName));
 builder.Services.Configure<FileLoggingOptions>(builder.Configuration.GetSection(FileLoggingOptions.SectionName));
 
@@ -36,10 +35,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")
         ?? throw new InvalidOperationException($"{DomainMessages.ConfigMissing} ConnectionStrings:Default.")));
 
-builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IPasswordHasher<Campaign>, PasswordHasher<Campaign>>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICampaignService, CampaignService>();
 builder.Services.AddScoped<ISheetService, SheetService>();
 builder.Services.AddScoped<ILineupService, LineupService>();
