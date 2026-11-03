@@ -90,11 +90,31 @@ public class BattleLineupInvokeTests : IAsyncDisposable
 
         var act = () => _battle.InvokeLineupAsync(
             _campaignId,
-            new InvokeLineupRequest(players.Id, [new InvokeLineupMemberRequest(diana, 1, false)]));
+            new InvokeLineupRequest(
+                players.Id,
+                [
+                    new InvokeLineupMemberRequest(diana, 1, false),
+                    new InvokeLineupMemberRequest(diana, 2, false),
+                ]));
 
         (await act.Should().ThrowAsync<DomainException>())
             .WithMessage(DomainMessages.LineupMembersMismatch);
         (await _testDb.Context.Combatants.CountAsync()).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task InvokeLineup_RemovedMember_AddsOnlyTheRest()
+    {
+        var skeleton = Seed("Esqueleto", SheetType.Creature, 2);
+        var bell = Seed("Sino", SheetType.Creature, 0);
+        var cemetery = await _lineups.CreateAsync(_campaignId, Scene("Cemitério", skeleton, bell));
+
+        var snapshot = await _battle.InvokeLineupAsync(
+            _campaignId,
+            new InvokeLineupRequest(cemetery.Id, [new InvokeLineupMemberRequest(bell, 9, false)]));
+
+        snapshot.Combatants.Should().ContainSingle().Which.Name.Should().Be("Sino");
+        snapshot.Message.Should().Be("Cena Cemitério: Sino 9.");
     }
 
     [Fact]

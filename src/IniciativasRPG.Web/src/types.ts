@@ -80,6 +80,7 @@ export interface LineupMember {
   initiativeBonus: number;
   quantity: number;
   sortOrder: number;
+  imageUrl?: string | null;
 }
 
 export interface Lineup {

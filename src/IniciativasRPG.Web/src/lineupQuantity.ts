@@ -6,12 +6,14 @@ export interface LineupQuantityMember {
   initiativeBonus: number;
   quantity: number;
   sortOrder: number;
+  imageUrl?: string | null;
 }
 
 export interface LineupInvokeRow {
   sheetId: string;
   name: string;
   bonus: number;
+  imageUrl: string | null;
 }
 
 export function lineupQuantityMax(type: string) {
@@ -31,6 +33,7 @@ export function expandLineupInvokeRows(members: LineupQuantityMember[]): LineupI
         sheetId: member.sheetId,
         name: member.quantity > 1 ? `${member.sheetName} ${index + 1}` : member.sheetName,
         bonus: member.initiativeBonus,
+        imageUrl: member.imageUrl ?? null,
       })),
     );
 }

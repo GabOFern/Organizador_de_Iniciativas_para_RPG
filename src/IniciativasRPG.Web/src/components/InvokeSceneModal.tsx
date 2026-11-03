@@ -5,8 +5,10 @@ import {
   lineupConfirmLabel,
   lineupInitiativeLabel,
   lineupNoScenesInvoke,
+  lineupRemoveMemberLabel,
   lineupRollLabel,
   invokeLineupLabel,
+  resolveApiUrl,
 } from '../config';
 import { lineupInitiativeNotation, lineupRowsReady } from '../lineupInvoke';
 import { expandLineupInvokeRows } from '../lineupQuantity';
@@ -22,6 +24,7 @@ interface RowState {
   sheetId: string;
   name: string;
   bonus: number;
+  imageUrl: string | null;
   initiative: string;
   roll: boolean;
 }
@@ -64,6 +67,7 @@ export function InvokeSceneModal({ open, onClose, onInvoke }: InvokeSceneModalPr
         sheetId: member.sheetId,
         name: member.name,
         bonus: member.bonus,
+        imageUrl: member.imageUrl,
         initiative: '',
         roll: false,
       })),
@@ -73,6 +77,10 @@ export function InvokeSceneModal({ open, onClose, onInvoke }: InvokeSceneModalPr
 
   function updateRow(index: number, patch: Partial<RowState>) {
     setRows((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, ...patch } : row)));
+  }
+
+  function removeRow(index: number) {
+    setRows((current) => current.filter((_, rowIndex) => rowIndex !== index));
   }
 
   async function confirm() {
@@ -130,27 +138,43 @@ export function InvokeSceneModal({ open, onClose, onInvoke }: InvokeSceneModalPr
           <>
             <ul className="lineup-initiatives">
               {rows.map((row, index) => (
-                <li key={`${row.sheetId}-${index}`}>
-                  <span>{row.name}</span>
-                  <label>
-                    {lineupInitiativeLabel}
-                    <input
-                      inputMode="numeric"
-                      value={row.initiative}
-                      disabled={row.roll || busy}
-                      onChange={(event) => updateRow(index, { initiative: event.target.value })}
-                    />
-                  </label>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={row.roll}
-                      disabled={busy}
-                      onChange={(event) => updateRow(index, { roll: event.target.checked })}
-                    />
-                    {lineupRollLabel}
-                    {row.roll ? ` (${lineupInitiativeNotation(row.bonus)})` : ''}
-                  </label>
+                <li key={`${row.sheetId}-${index}`} className="lineup-invoke-row">
+                  {row.imageUrl ? (
+                    <img className="lineup-invoke-thumb" src={resolveApiUrl(row.imageUrl)} alt="" />
+                  ) : (
+                    <span className="lineup-invoke-thumb" aria-hidden="true" />
+                  )}
+                  <span className="lineup-sheet-name">{row.name}</span>
+                  <button
+                    type="button"
+                    className="ghost lineup-invoke-remove"
+                    aria-label={lineupRemoveMemberLabel(row.name)}
+                    disabled={busy}
+                    onClick={() => removeRow(index)}
+                  >
+                    X
+                  </button>
+                  <div className="lineup-invoke-actions">
+                    <label className="lineup-invoke-initiative">
+                      {lineupInitiativeLabel}
+                      <input
+                        inputMode="numeric"
+                        value={row.initiative}
+                        disabled={row.roll || busy}
+                        onChange={(event) => updateRow(index, { initiative: event.target.value })}
+                      />
+                    </label>
+                    <label className="checkbox-inline">
+                      <input
+                        type="checkbox"
+                        checked={row.roll}
+                        disabled={busy}
+                        onChange={(event) => updateRow(index, { roll: event.target.checked })}
+                      />
+                      {lineupRollLabel}
+                      {row.roll ? ` (${lineupInitiativeNotation(row.bonus)})` : ''}
+                    </label>
+                  </div>
                 </li>
               ))}
             </ul>

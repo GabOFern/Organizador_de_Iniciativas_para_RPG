@@ -78,5 +78,6 @@ public static class DomainMessages
     public const string LineupNotFound = "Cena não encontrada.";
     public const string LineupEmpty = "A cena não tem fichas.";
     public const string LineupMembersMismatch = "A cena mudou. Abra de novo e confirme.";
+    public const string LineupInvokeNeedsMembers = "Escolha ao menos uma ficha para invocar.";
     public const string LineupInitiativeRequired = "Informe a iniciativa ou escolha rolar o dado.";
 }

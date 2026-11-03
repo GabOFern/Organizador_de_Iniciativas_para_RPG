@@ -162,10 +162,14 @@ public class BattleService : IBattleService
         }
 
         var given = request.Members ?? [];
+        if (given.Count == 0)
+        {
+            throw new DomainException(DomainMessages.LineupInvokeNeedsMembers);
+        }
+
         var expected = lineup.Members.ToDictionary(member => member.SheetId, member => member.Quantity);
         var counts = given.GroupBy(member => member.SheetId).ToDictionary(group => group.Key, group => group.Count());
-        if (counts.Count != expected.Count
-            || expected.Any(pair => !counts.TryGetValue(pair.Key, out var count) || count != pair.Value))
+        if (counts.Any(pair => !expected.TryGetValue(pair.Key, out var quantity) || pair.Value > quantity))
         {
             throw new DomainException(DomainMessages.LineupMembersMismatch);
         }
@@ -187,8 +191,13 @@ public class BattleService : IBattleService
         await using var tx = await _db.Database.BeginTransactionAsync(ct);
         foreach (var member in lineup.Members.OrderBy(m => m.SortOrder))
         {
+            if (!pending.TryGetValue(member.SheetId, out var copies))
+            {
+                continue;
+            }
+
             var sheet = member.Sheet;
-            foreach (var entry in pending[member.SheetId])
+            foreach (var entry in copies)
             {
                 if (sheet.Type == SheetType.Player && already.Contains(sheet.Id))
                 {

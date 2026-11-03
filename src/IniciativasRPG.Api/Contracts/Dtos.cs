@@ -325,7 +325,8 @@ public record LineupMemberDto(
     string SheetType,
     int InitiativeBonus,
     int Quantity,
-    int SortOrder);
+    int SortOrder,
+    string? ImageUrl);
 
 public record LineupDto(Guid Id, string Name, IReadOnlyList<LineupMemberDto> Members);
 

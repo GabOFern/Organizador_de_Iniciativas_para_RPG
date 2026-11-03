@@ -191,6 +191,9 @@ export function lineupQuantityIncreaseLabel(name: string) {
 export function lineupQuantityFieldLabel(name: string) {
   return `Quantidade de ${name}`;
 }
+export function lineupRemoveMemberLabel(name: string) {
+  return `Remover ${name}`;
+}
 export const lineupIncludeLabel = 'Incluir';
 export const lineupSaveLabel = 'Salvar';
 export const lineupCancelLabel = 'Cancelar';

@@ -36,13 +36,15 @@ Na fila de iniciativa, o botão **Invocar** continua abrindo o modal de uma fich
 - **Invocar ficha** (`invokeSheetLabel`): o mesmo modal de hoje.
 - **Invocar cena** (`invokeLineupLabel`): escolhe uma cena e abre as fichas dela.
 
-Na cena, cada ficha tem um número de iniciativa e a opção **Rolar**. Rolar usa `1d20` mais o bônus de iniciativa da ficha, como na invocação de criatura. Sem rolar, o número digitado vale, inclusive negativo. Confirmar só segue quando toda ficha tem número ou está marcada para rolar.
+Na cena, cada ficha ocupa duas linhas. A miniatura cobre as duas. Na primeira ficam o nome e o **X** (`lineupRemoveMemberLabel`). Na segunda, a iniciativa e **Rolar**. O X tira essa cópia só desta invocação; a cena gravada não muda. Sem imagem, o espaço da miniatura continua vazio.
+
+Rolar usa `1d20` mais o bônus de iniciativa da ficha, como na invocação de criatura. Sem rolar, o número digitado vale, inclusive negativo. Confirmar só segue quando toda ficha que restou tem número ou está marcada para rolar. Sem nenhuma ficha, confirmar fica desligado.
 
 Confirmar grava todos de uma vez. Jogador entra com a vida visível. Criatura e NPC entram com a vida oculta para o jogador, como na invocação avulsa.
 
 Se um jogador dessa cena já está na fila, ele não entra de novo e os outros entram. Criatura e NPC entram mesmo que a mesma ficha já esteja na batalha. A resposta traz a mensagem `Cena {nome}: {Nome} {iniciativa}, ... .` e, se alguém ficou de fora, ` Já na fila: {nomes}.` Se ninguém novo entrou: `Cena {nome}: ninguém entrou. Já na fila: {nomes}.`
 
-Se a cena não tem mais fichas, a invocação falha com `LineupEmpty` e a fila não muda. Se a lista enviada não é exatamente a da cena, falha com `LineupMembersMismatch` e a fila não muda. Sem número e sem rolar: `LineupInitiativeRequired`.
+Se a cena não tem mais fichas, a invocação falha com `LineupEmpty` e a fila não muda. Dá para enviar menos cópias do que a cena tem. Ficha que não está na cena, ou cópia a mais, falha com `LineupMembersMismatch` e a fila não muda. Lista vazia falha com `LineupInvokeNeedsMembers` e não abre batalha. Sem número e sem rolar: `LineupInitiativeRequired`.
 
 A seta e o botão ficam desligados na batalha teste, como o Invocar de hoje.
 

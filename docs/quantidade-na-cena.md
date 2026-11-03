@@ -27,7 +27,7 @@ A imagem da ficha aparece à esquerda, pequena. Sem imagem, fica um espaço vazi
 
 Cada cópia pede a própria iniciativa, ou **Rolar**. Três sinos abrem três linhas: `Sino 1`, `Sino 2`, `Sino 3`. Uma cópia só mantém o nome da ficha.
 
-A lista enviada tem de ter exatamente essas cópias. Outra quantidade falha com `LineupMembersMismatch` e a fila não muda.
+Dá para tirar cópias na hora, com o X. Enviar menos do que a quantidade gravada invoca só o que restou. Cópias a mais, ou ficha de fora da cena, falham com `LineupMembersMismatch` e a fila não muda.
 
 Jogador que já está na fila continua de fora. Criatura e NPC entram de novo, uma linha de combate por cópia.
 
@@ -50,5 +50,7 @@ Regressão:
 - `Create_Quantity_StoresCopies`
 - `Create_PlayerQuantityAboveOne_ThrowsDomainException`
 - `InvokeLineup_Quantity_AddsOneCombatantPerCopy`
+- `InvokeLineup_RemovedMember_AddsOnlyTheRest`
+- `invocarCena_RemoveDaFila_ENaoEnviaAFicha`
 - `cenas_Ficha_MiniaturaNomeEQuantidadeNaMesmaLinha`
 - `cenas_Quantidade_GravaCopiasEMantemOculta`

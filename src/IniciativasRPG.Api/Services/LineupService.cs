@@ -25,10 +25,8 @@ public class LineupService : ILineupService
 
     public async Task<IReadOnlyList<LineupDto>> ListAsync(Guid campaignId, CancellationToken ct = default)
     {
-        var lineups = await _db.Lineups
+        var lineups = await DetailedLineups()
             .AsNoTracking()
-            .Include(l => l.Members)
-            .ThenInclude(m => m.Sheet)
             .Where(l => l.CampaignId == campaignId)
             .OrderBy(l => l.Name)
             .ToListAsync(ct);
@@ -102,7 +100,7 @@ public class LineupService : ILineupService
 
     private async Task<Lineup> LoadAsync(Guid campaignId, Guid lineupId, bool tracking, CancellationToken ct)
     {
-        var query = _db.Lineups.Include(l => l.Members).ThenInclude(m => m.Sheet).AsQueryable();
+        var query = DetailedLineups();
         if (!tracking)
         {
             query = query.AsNoTracking();
@@ -204,8 +202,18 @@ public class LineupService : ILineupService
                     m.Sheet.Type.ToString(),
                     m.Sheet.InitiativeBonus,
                     m.Quantity,
-                    m.SortOrder))
+                    m.SortOrder,
+                    m.Sheet.Image is not null
+                        ? SheetImagePaths.Public(lineup.Campaign.PublicToken, m.Sheet.Id)
+                        : m.Sheet.ImageUrl))
                 .ToList());
+
+    private IQueryable<Lineup> DetailedLineups() =>
+        _db.Lineups
+            .Include(l => l.Campaign)
+            .Include(l => l.Members)
+            .ThenInclude(m => m.Sheet)
+            .ThenInclude(s => s.Image);
 
     private sealed record MemberDraft(Guid SheetId, int Quantity);
 }
