@@ -2,10 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api, ApiError } from '../api';
 import { CombatantCard } from '../components/CombatantCard';
+import { CombatantListView } from '../components/CombatantListView';
 import { ScenePanel } from '../components/ScenePanel';
 import { ThemePicker } from '../components/ThemePicker';
 import { routes } from '../config';
 import { useBattleHub } from '../hooks/useBattleHub';
+import { useCombatantViewPrefs } from '../hooks/useCombatantViewPrefs';
 import type { BattleSnapshot } from '../types';
 
 const empty: BattleSnapshot = {
@@ -23,6 +25,7 @@ export function PublicBattlePage() {
   const { token } = useParams<{ token: string }>();
   const [battle, setBattle] = useState<BattleSnapshot>(empty);
   const [error, setError] = useState<string | null>(null);
+  const { prefs, setMode, setItemsPerView } = useCombatantViewPrefs();
 
   const onUpdate = useCallback((snapshot: BattleSnapshot) => {
     setBattle(snapshot);
@@ -78,11 +81,14 @@ export function PublicBattlePage() {
             )}
           </p>
           {battle.message && <p className="success battle-sim-message">{battle.message}</p>}
-          <div className="combatant-grid">
-            {battle.combatants.map((c) => (
-              <CombatantCard key={c.id} combatant={c} readOnly />
-            ))}
-          </div>
+          <CombatantListView
+            combatants={battle.combatants}
+            mode={prefs.mode}
+            itemsPerView={prefs.itemsPerView}
+            onModeChange={setMode}
+            onItemsPerViewChange={setItemsPerView}
+            renderCard={(c) => <CombatantCard combatant={c} readOnly />}
+          />
         </section>
       )}
 

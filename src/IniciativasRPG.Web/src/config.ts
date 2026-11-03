@@ -152,6 +152,28 @@ export const sceneZoomStep = 1.25;
 /** Um notch típico da roda (deltaY 100) equivale a um passo de zoom. */
 export const sceneZoomWheelDivisor = 100;
 export const sceneSeenStorageKeyPrefix = 'iniciativasrpg.sceneSeen.';
+export const combatantViewPrefsStorageKey = 'iniciativasrpg.combatantViewPrefs';
+export const combatantViewMinItems = 1;
+export const combatantViewMaxItems = 6;
+export const combatantViewDefaultItems = 2;
+export const combatantViewDefaultMode = 'grid' as const;
+export const combatantViewGridLabel = 'Grade';
+export const combatantViewCarouselLabel = 'Carrossel';
+export const combatantViewQuantityLabel = 'Quantidade';
+export const combatantViewQuantityDialogTitle = 'Quantidade por linha/página';
+export const combatantViewQuantityFieldLabel = 'Quantidade em cada linha/página';
+export function combatantViewPageLabel(page: number, total: number) {
+  return `Pg ${page}/${total}`;
+}
+export const combatantViewPrevLabel = 'Página anterior';
+export const combatantViewNextLabel = 'Próxima página';
+export const combatantViewSwipeThresholdPx = 48;
+export function combatantViewQuantityDecreaseLabel() {
+  return 'Diminuir quantidade';
+}
+export function combatantViewQuantityIncreaseLabel() {
+  return 'Aumentar quantidade';
+}
 export const sceneVisibilityShowLabel = 'Mostrar aos jogadores';
 export const sceneVisibilityHideLabel = 'Ocultar dos jogadores';
 export const sceneLauncherLabel = 'Imagens';

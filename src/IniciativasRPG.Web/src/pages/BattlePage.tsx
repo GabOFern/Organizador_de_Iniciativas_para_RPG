@@ -2,12 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../api';
 import { useAuth } from '../auth';
 import { CombatantCard } from '../components/CombatantCard';
+import { CombatantListView } from '../components/CombatantListView';
 import { InvokeModal, type InvokePayload } from '../components/InvokeModal';
 import { InvokeSceneModal } from '../components/InvokeSceneModal';
 import { InvokeSplit } from '../components/InvokeSplit';
 import { TacticalPanel } from '../components/TacticalPanel';
 import { shouldRunTestBattleTicks, TEST_BATTLE_TICK_MS } from '../demoBattle';
 import { useBattleHub } from '../hooks/useBattleHub';
+import { useCombatantViewPrefs } from '../hooks/useCombatantViewPrefs';
 import { fetchShareOrigin, resolvePublicBattleUrl } from '../shareOrigin';
 import type { BattleSnapshot, CombatantTactical, InvokeLineupPayload, ModifierType, Sheet } from '../types';
 
@@ -35,6 +37,7 @@ export function BattlePage() {
   const [sceneOpen, setSceneOpen] = useState(false);
   const [tactical, setTactical] = useState<CombatantTactical | null>(null);
   const [shareOrigin, setShareOrigin] = useState<string | null>(null);
+  const { prefs, setMode, setItemsPerView } = useCombatantViewPrefs();
 
   const applySnapshot = useCallback((snapshot: BattleSnapshot) => {
     setBattle(snapshot);
@@ -304,10 +307,14 @@ export function BattlePage() {
         {battle.combatants.length === 0 ? (
           <p className="muted">{battle.message ?? 'Nenhum combatente na fila.'}</p>
         ) : (
-          <div className="combatant-grid">
-            {battle.combatants.map((c) => (
+          <CombatantListView
+            combatants={battle.combatants}
+            mode={prefs.mode}
+            itemsPerView={prefs.itemsPerView}
+            onModeChange={setMode}
+            onItemsPerViewChange={setItemsPerView}
+            renderCard={(c) => (
               <CombatantCard
-                key={c.id}
                 combatant={c}
                 modifierTypes={modifierTypes}
                 onOpenTactical={(id) => void openTactical(id)}
@@ -328,8 +335,8 @@ export function BattlePage() {
                   void handleBattleAction(() => api.removeModifier(modifierId))
                 }
               />
-            ))}
-          </div>
+            )}
+          />
         )}
       </section>
 
